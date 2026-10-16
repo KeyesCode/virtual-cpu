@@ -276,18 +276,22 @@ An instruction that faults precisely is not retired and adds no cycles. An instr
 The assembler ticket implements this syntax, and the disassembler emits it in canonical form: upper-case mnemonics, `R0`–`R7`, hex addresses `0x..`, and `, ` between operands.
 
 - **Comments** start with `;` and run to the end of the line.
-- **Case:** mnemonics and register names are case-insensitive. Labels and `.equ` names are case-sensitive identifiers matching `[A-Za-z_][A-Za-z0-9_]*`, and cannot be a register name (`R0`–`R7` in any case).
+- **Case:** mnemonics, register names and directives are case-insensitive. Labels and `.equ` names are case-sensitive identifiers matching `[A-Za-z_][A-Za-z0-9_]*`. A name cannot be a mnemonic or look like a register (`R` followed by digits, in any case, so `R9` is rejected too); both are errors.
 - **Labels:** `name:` on its own line or before an instruction. A label's value is the address of the next emitted byte.
-- **Literals:** decimal `42` and `-5`, hex `0x2A`, binary `0b101010`, character `'A'` (ASCII).
+- **Literals:** decimal `42` and `-5`, hex `0x2A`, binary `0b101010`, character `'A'` (printable ASCII, or one of the escapes `'\n'`, `'\t'`, `'\r'`, `'\0'`, `'\\'`, `'\''`). A `;` inside a character literal is not a comment.
 - **Ranges:** immediates (`LDI`) and `.byte` values accept −128..255. Negative values are stored in two's complement, so `-1` becomes `0xFF`. Addresses (`[addr8]`, jump targets, `.org`) accept 0..255. A value out of range is an assembler error, never silently wrapped.
 - **Operand forms:** `LDI R0, 10` · `MOV R1, R0` · `LOAD R1, [0x80]` · `LOAD R1, [R2]` · `STORE [OUT], R1` · `STORE [R2], R1` · `CMP R0, R1` · `JNZ loop` · `CALL sub` · `PUSH R3`. An address or immediate may be a literal, a label or a `.equ` name.
 - **Directives:**
   - `.org addr` moves the output position forward, and the skipped bytes stay 0. Moving it backward, or overlapping output that was already emitted, is an error.
   - `.byte v[, v…]` emits raw bytes.
-  - `.equ NAME, value` defines a constant.
-- **Errors** report the line and column, for example an unknown mnemonic, a bad register name, an operand form that does not match any variant of the mnemonic, an out-of-range value, an undefined or duplicate label, or a program that runs past `0xFF`.
+  - `.equ NAME, value` defines a constant in −128..255.
+  - The values of `.org` and `.equ` are needed during the first pass, so they must be literals or symbols defined above them. Labels and constants used by instructions and `.byte` may be defined anywhere.
+  - A backward `.org` is reported but still applied, so any instruction it makes overwrite earlier output is reported as an overlap too.
+- **Errors** report the line and column, for example an unknown mnemonic, a bad register name, an operand form that does not match any variant of the mnemonic, an out-of-range value, an undefined or duplicate label, or a program that runs past `0xFF`. One run reports every error, in source order, e.g. `line 1, col 5: unknown register "R9" (valid: R0–R7)` and `line 1, col 9: immediate 300 out of range (valid: -128..255)` for `LDI R9, 300`.
 
 `LOAD` and `STORE` have two opcodes each. The assembler picks the variant from the operand form: `[Rn]` selects the register-indirect variant, and any other bracketed operand selects the absolute one.
+
+The disassembler (`disassemble` in `@vcpu/assembler`) is a linear sweep, and it never throws on any byte sequence. Immediates are printed in decimal and addresses in hex (or as a label name, when labels are given). A byte that cannot start an instruction is printed as `.byte 0xNN` and decoding resumes at the next byte: an invalid opcode, an opcode whose register byte breaks the format's rules, and an instruction that would run past the end of the decoded range. Its output reassembles to the same bytes.
 
 ## Design decisions
 

@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-15-factorial-overflow",
+  "kind": "example",
+  "description": "A running product with MUL. MUL sets C when the true product does not fit in 8 bits; JNC skips the overflow bookkeeping otherwise. The loop counter uses INC/DEC, which never change C, so the carry of the last MUL survives to the end.",
+  "source": "; 15-factorial-overflow.asm — n! for n = 1..6, and where 8 bits run out\n;\n; Purpose:  A running product with MUL. MUL sets C when the true product does not fit in\n;           8 bits; JNC skips the overflow bookkeeping otherwise. The loop counter uses\n;           INC/DEC, which never change C, so the carry of the last MUL survives to the end.\n; Expected: mem[0x80..0x85] = 1! … 6! = 01 02 06 18 78 D0.\n;           6! = 720 = 0x2D0 wraps to 0xD0 (208) with C=1 from MUL (120 × 6).\n;           mem[0x88] = 6, the first n whose factorial overflowed.\n;           R0 = 0xD0, R1 = 7, R2 = 0x86, R3 = 0.\n;           Final FLAGS: C=1 (from the MUL); Z=1 N=0 V=0 (from the last DEC).\n; Overflow: 5! = 120 is the largest factorial that fits in 8 bits; 6! = 720 does not.\n\n        .equ OUT, 0x80\n        .equ WRAPPED_AT, 0x88\n        .equ N, 6\n\n        LDI R0, 1           ; running product\n        LDI R1, 1           ; n\n        LDI R2, OUT         ; output pointer\n        LDI R3, N           ; iterations left\nloop:   MUL R0, R1          ; R0 ← low byte of R0 × n\n        JNC fits\n        STORE [WRAPPED_AT], R1\nfits:   STORE [R2], R0\n        INC R2\n        INC R1\n        DEC R3\n        JNZ loop\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 1, 17, 16, 1, 17, 32, 128, 17, 48, 6, 34, 1, 68, 19,
+      20, 16, 136, 21, 32, 36, 32, 36, 16, 37, 48, 66, 12, 1, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 100,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 48,
+    "registers": [208, 7, 134, 0, 0, 0, 0, 0],
+    "pc": 29,
+    "sp": 255,
+    "sd": 0,
+    "flags": 12,
+    "memory": [
+      17, 0, 1, 17, 16, 1, 17, 32, 128, 17, 48, 6, 34, 1, 68, 19,
+      20, 16, 136, 21, 32, 36, 32, 36, 16, 37, 48, 66, 12, 1, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 2, 6, 24, 120, 208, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

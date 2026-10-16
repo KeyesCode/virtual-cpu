@@ -109,24 +109,25 @@ This is a conceptual datapath. The emulator executes each instruction as one ato
 
 `@vcpu/shared` (`packages/shared/src`) exports:
 
-| Export                                                                             | What it is                                                   |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `ISA`                                                                              | The whole definition in one frozen object                    |
-| `ISA_VERSION`, `CPU_NAME`                                                          | `"1.0.0"`, `"VCPU-8"`                                        |
-| `OPCODES`, `Op`, `opcodeByByte`, `opcodesByMnemonic`, `opcodeById`, `lookupOpcode` | The opcode table and its lookups                             |
-| `INSTRUCTION_FORMATS`, `REGISTER_BYTE_OFFSET`                                      | Format lengths and layouts                                   |
-| `MNEMONICS`, `OPCODE_IDS`, `FLAG_NAMES`, `FaultCode`, `CpuStatus` and the types    | Enumerations                                                 |
-| `MEMORY_SIZE`, `MEMORY_MAP`, `STACK_CAPACITY`, `RESET_*`, `REGISTER_NAMES`         | Machine constants                                            |
-| `FLAG_BITS`, `FLAG_MASKS`, `FLAGS_USED_MASK`, `packFlags`, `unpackFlags`           | FLAGS layout                                                 |
-| `TIMING_MODEL`, `estimatedCycles`                                                  | The instructional timing model                               |
-| `FAULT_CODE_NUMBERS`, `CPU_STATUS_NUMBERS`, `NO_FAULT_NUMBER`                      | Numeric encodings for hardware fixtures                      |
-| `u8`, `isU8`, `low8`, `toSigned8`, `fromSigned8`, `isS8`, `bit`                    | Checked 8-bit helpers (they throw a RangeError on bad input) |
-| `encodeRegisterByte`, `decodeRegisterByte`, `isRegisterIndex`                      | Register-byte encoding; decoding returns a typed error       |
-| `U8Schema`, `ProgramImageSchema`                                                   | Zod schemas for data loaded from outside the code            |
+| Export                                                                             | What it is                                                                                 |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `ISA`                                                                              | The whole definition in one frozen object                                                  |
+| `ISA_VERSION`, `CPU_NAME`                                                          | `"1.0.0"`, `"VCPU-8"`                                                                      |
+| `OPCODES`, `Op`, `opcodeByByte`, `opcodesByMnemonic`, `opcodeById`, `lookupOpcode` | The opcode table and its lookups                                                           |
+| `INSTRUCTION_FORMATS`, `REGISTER_BYTE_OFFSET`                                      | Format lengths and layouts                                                                 |
+| `MNEMONICS`, `OPCODE_IDS`, `FLAG_NAMES`, `FaultCode`, `CpuStatus` and the types    | Enumerations                                                                               |
+| `MEMORY_SIZE`, `MEMORY_MAP`, `STACK_CAPACITY`, `RESET_*`, `REGISTER_NAMES`         | Machine constants                                                                          |
+| `FLAG_BITS`, `FLAG_MASKS`, `FLAGS_USED_MASK`, `packFlags`, `unpackFlags`           | FLAGS layout                                                                               |
+| `TIMING_MODEL`, `estimatedCycles`                                                  | The instructional timing model                                                             |
+| `FAULT_CODE_NUMBERS`, `CPU_STATUS_NUMBERS`, `NO_FAULT_NUMBER`                      | Numeric encodings for hardware fixtures                                                    |
+| `u8`, `isU8`, `low8`, `toSigned8`, `fromSigned8`, `isS8`, `bit`                    | Checked 8-bit helpers (they throw a RangeError on bad input)                               |
+| `encodeRegisterByte`, `decodeRegisterByte`, `isRegisterIndex`                      | Register-byte encoding; decoding returns a typed error                                     |
+| `U8Schema`, `ProgramImageSchema`                                                   | Zod schemas for data loaded from outside the code                                          |
+| `FixtureSchemaV1`, `fixtureJsonSchemaV1`, `formatMemoryHex`, `parseTraceJsonl`, …  | The `vcpu8-fixture/1` hardware fixture format ([hardware-porting.md](hardware-porting.md)) |
 
 ## Versioning
 
-`ISA_VERSION` follows semantic versioning. Any change to an encoding, a length, a flag rule, a fault rule, reset values or the timing model bumps it. Such a change also gets an entry under [Design decisions](instruction-set.md#design-decisions) and regenerated hardware fixtures. Purely additive helpers in `@vcpu/shared` that change no behaviour do not bump it.
+`ISA_VERSION` follows semantic versioning. Any change to an encoding, a length, a flag rule, a fault rule, reset values or the timing model bumps it. Such a change also gets an entry under [Design decisions](instruction-set.md#design-decisions) and hardware fixtures regenerated into a new `fixtures/v<N>/` folder (see [hardware-porting.md](hardware-porting.md#isa-version-freeze-policy)). Purely additive helpers in `@vcpu/shared` that change no behaviour do not bump it.
 
 ## Limitations of v1.0
 

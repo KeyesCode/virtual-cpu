@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-07-xor",
+  "kind": "example",
+  "description": "XOR flips the bits selected by its second operand. Three XORs swap two registers without a temporary, and XOR of a register with itself clears it.",
+  "source": "; 07-xor.asm — bitwise XOR: toggling bits, swapping registers, clearing a register\n;\n; Purpose:  XOR flips the bits selected by its second operand. Three XORs swap two\n;           registers without a temporary, and XOR of a register with itself clears it.\n; Expected: mem[0x80] = 0x5A XOR 0xFF = 0xA5 (every bit toggled).\n;           XOR swap of R2 = 0x12 and R3 = 0x34: mem[0x81] = R2 = 0x34, mem[0x82] = R3 = 0x12.\n;           R0 = 0 after XOR R0, R0. Final FLAGS: Z=1 C=0 N=0 V=0.\n; Overflow: not possible; logic instructions always clear C and V.\n\n        LDI R0, 0x5A        ; 0101 1010\n        LDI R1, 0xFF\n        XOR R0, R1          ; 1010 0101\n        STORE [0x80], R0\n\n        LDI R2, 0x12\n        LDI R3, 0x34\n        XOR R2, R3          ; R2 = 0x12 ^ 0x34 = 0x26\n        XOR R3, R2          ; R3 = 0x34 ^ 0x26 = 0x12\n        XOR R2, R3          ; R2 = 0x26 ^ 0x12 = 0x34\n        STORE [0x81], R2\n        STORE [0x82], R3\n\n        XOR R0, R0          ; R0 ← 0, Z=1\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 90, 17, 16, 255, 50, 1, 20, 0, 128, 17, 32, 18, 17, 48,
+      52, 50, 35, 50, 50, 50, 35, 20, 32, 129, 20, 48, 130, 50, 0, 1,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 20,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 13,
+    "registers": [0, 255, 52, 18, 0, 0, 0, 0],
+    "pc": 31,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      17, 0, 90, 17, 16, 255, 50, 1, 20, 0, 128, 17, 32, 18, 17, 48,
+      52, 50, 35, 50, 50, 50, 35, 20, 32, 129, 20, 48, 130, 50, 0, 1,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      165, 52, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

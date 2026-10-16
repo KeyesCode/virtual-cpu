@@ -1,0 +1,14 @@
+{"step":0,"pc":0,"ir":[17,0,182],"status":"READY","fault":null,"regs":[182,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":3,"memWrites":[]}
+{"step":1,"pc":3,"ir":[17,16,15],"status":"READY","fault":null,"regs":[182,15,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":6,"memWrites":[]}
+{"step":2,"pc":6,"ir":[48,1],"status":"READY","fault":null,"regs":[6,15,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":8,"memWrites":[]}
+{"step":3,"pc":8,"ir":[20,0,128],"status":"READY","fault":null,"regs":[6,15,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":11,"memWrites":[{"address":128,"value":6}]}
+{"step":4,"pc":11,"ir":[17,32,182],"status":"READY","fault":null,"regs":[6,15,182,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":14,"memWrites":[]}
+{"step":5,"pc":14,"ir":[17,48,48],"status":"READY","fault":null,"regs":[6,15,182,48,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":17,"memWrites":[]}
+{"step":6,"pc":17,"ir":[51,48],"status":"READY","fault":null,"regs":[6,15,182,207,0,0,0,0],"flags":2,"sp":255,"sd":0,"nextPc":19,"memWrites":[]}
+{"step":7,"pc":19,"ir":[48,35],"status":"READY","fault":null,"regs":[6,15,134,207,0,0,0,0],"flags":2,"sp":255,"sd":0,"nextPc":21,"memWrites":[]}
+{"step":8,"pc":21,"ir":[20,32,129],"status":"READY","fault":null,"regs":[6,15,134,207,0,0,0,0],"flags":2,"sp":255,"sd":0,"nextPc":24,"memWrites":[{"address":129,"value":134}]}
+{"step":9,"pc":24,"ir":[17,64,240],"status":"READY","fault":null,"regs":[6,15,134,207,240,0,0,0],"flags":2,"sp":255,"sd":0,"nextPc":27,"memWrites":[]}
+{"step":10,"pc":27,"ir":[17,80,15],"status":"READY","fault":null,"regs":[6,15,134,207,240,15,0,0],"flags":2,"sp":255,"sd":0,"nextPc":30,"memWrites":[]}
+{"step":11,"pc":30,"ir":[48,69],"status":"READY","fault":null,"regs":[6,15,134,207,0,15,0,0],"flags":8,"sp":255,"sd":0,"nextPc":32,"memWrites":[]}
+{"step":12,"pc":32,"ir":[20,64,130],"status":"READY","fault":null,"regs":[6,15,134,207,0,15,0,0],"flags":8,"sp":255,"sd":0,"nextPc":35,"memWrites":[{"address":130,"value":0}]}
+{"step":13,"pc":35,"ir":[1],"status":"HALTED","fault":null,"regs":[6,15,134,207,0,15,0,0],"flags":8,"sp":255,"sd":0,"nextPc":35,"memWrites":[]}

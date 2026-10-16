@@ -1,0 +1,4 @@
+{"step":0,"pc":0,"ir":[17,0,255],"status":"READY","fault":null,"regs":[255,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":3,"memWrites":[]}
+{"step":1,"pc":3,"ir":[17,16,90],"status":"READY","fault":null,"regs":[255,90,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":6,"memWrites":[]}
+{"step":2,"pc":6,"ir":[50,1],"status":"READY","fault":null,"regs":[165,90,0,0,0,0,0,0],"flags":2,"sp":255,"sd":0,"nextPc":8,"memWrites":[]}
+{"step":3,"pc":8,"ir":[1],"status":"HALTED","fault":null,"regs":[165,90,0,0,0,0,0,0],"flags":2,"sp":255,"sd":0,"nextPc":8,"memWrites":[]}

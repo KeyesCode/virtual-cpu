@@ -370,7 +370,8 @@ export class DashboardStore {
     this.#frameId = null;
     if (!this.#running) return;
     const session = this.#loaded.session;
-    if (this.#samples.length === 0) {
+    if (this.#speed === 'max' && this.#samples.length === 0) {
+      // Unthrottled work starts now; a paced run's first sample is its first instruction.
       this.#samples.push({ time: this.#scheduler.now(), count: session.getInstructionCount() });
     }
     let stop: DebugStop | null = null;
@@ -404,9 +405,14 @@ export class DashboardStore {
     if (stop !== null || !this.#running) this.#publish();
   };
 
-  /** Records the instruction count now and drops samples older than one window. */
+  /**
+   * Records the instruction count now, when it changed, and drops samples older than one window.
+   * Sampling only frames that executed something measures between instructions, so a paced run
+   * at N/s reads N rather than flickering to N+1 when a window happens to hold both ends.
+   */
   #sampleThroughput(count: number): void {
     const now = this.#scheduler.now();
+    if (this.#samples.at(-1)?.count === count) return;
     this.#samples.push({ time: now, count });
     // Keep the newest sample at or before the window start, so a full window spans the window.
     while (

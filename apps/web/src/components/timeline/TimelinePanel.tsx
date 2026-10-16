@@ -32,7 +32,7 @@ export function TimelinePanel({
               onClick={() => {
                 setTab(name);
               }}
-              className={`rounded-[5px] border px-2.5 py-[3px] text-xs font-semibold ${tab === name ? 'border-line bg-panel-2 text-white' : 'border-transparent text-dim hover:text-ink'}`}
+              className={`rounded-[5px] border px-2.5 py-[3px] text-xs font-semibold whitespace-nowrap ${tab === name ? 'border-line bg-panel-2 text-white' : 'border-transparent text-dim hover:text-ink'}`}
             >
               {name}
               {name === 'Watchpoints' && cpu.watchpoints.length > 0 && (

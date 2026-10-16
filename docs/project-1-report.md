@@ -240,7 +240,7 @@ $ pnpm cpu disassemble add.bin
 - `apps/cli` has 50.7% branch coverage. The `benchmark` command and its formatter (`commands/benchmark.ts`, `format/benchmark.ts`) are mostly exercised by running them, not by unit tests.
 - `apps/web` has 65.5% branch coverage. `StackView`, `TraceLog` and `WatchpointsTab` have almost no component tests.
 - The dashboard has no automated browser end-to-end test. The screenshots in this report came from a one-off Playwright script against `vite preview`, which is not part of the repo.
-- Two CPU-heavy tests sit close to Vitest's default 5 s timeout. They are the assembler's 1,000-program round trip (about 1 s on an idle machine) and cpu-core's `DEFAULT_MAX_INSTRUCTIONS` endless-loop test. In a post-edit `pnpm check` run on a heavily loaded host (load average about 9.6 on 12 cores, against 5.7 s for the whole suite when idle), both timed out at 8.0 s and 6.1 s and the run exited 1. Rerun in isolation straight afterwards, both files passed (46 tests, 3.1 s). They are flaky under load, not broken. Giving them explicit timeouts is a follow-up.
+- Two CPU-heavy tests sit close to Vitest's default 5 s timeout. They are the assembler's 1,000-program round trip and cpu-core's `DEFAULT_MAX_INSTRUCTIONS` endless-loop test. In a post-edit `pnpm check` run on a heavily loaded host (load average about 9.6 on 12 cores, against 5.7 s for the whole suite when idle), both timed out at 8.0 s and 6.1 s and the run exited 1. Rerun in isolation straight afterwards, both files passed (46 tests, 3.1 s). They are flaky under load, not broken. Giving them explicit timeouts is a follow-up.
 
 **Platform and layout.**
 

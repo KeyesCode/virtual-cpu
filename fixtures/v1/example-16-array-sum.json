@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-16-array-sum",
+  "kind": "example",
+  "description": "Walk an array with a pointer (LOAD R4, [R2]) and add each element. The sum outgrows 8 bits, so every carry out of the low byte (ADD sets C, JNC skips) increments a high byte: a 16-bit sum built from 8-bit adds.",
+  "source": "; 16-array-sum.asm — sum a byte array into a 16-bit total\n;\n; Purpose:  Walk an array with a pointer (LOAD R4, [R2]) and add each element. The sum\n;           outgrows 8 bits, so every carry out of the low byte (ADD sets C, JNC skips)\n;           increments a high byte: a 16-bit sum built from 8-bit adds.\n; Expected: data = 200, 100, 50, 150, 75, 25, 220, 10 (at 0xA0), total 830 = 0x033E.\n;           mem[0x80] = low byte 0x3E (62), mem[0x81] = high byte 0x03 (three carries).\n;           R0 = 0x3E, R1 = 3, R2 = 0xA8, R3 = 0, R4 = 10.\n;           Final FLAGS: Z=1 N=0 V=0 from the last DEC; C=0 from the last ADD (52 + 10).\n; Overflow: the low byte wraps three times: 200 + 100, 244 + 75 and 88 + 220 each carry.\n\n        .equ COUNT, 8\n        .equ SUM_LO, 0x80\n        .equ SUM_HI, 0x81\n\n        LDI R0, 0           ; low byte of the sum\n        LDI R1, 0           ; high byte of the sum\n        LDI R2, data        ; element pointer\n        LDI R3, COUNT       ; elements left\nloop:   LOAD R4, [R2]\n        ADD R0, R4\n        JNC no_carry\n        INC R1              ; carry into the high byte\nno_carry:\n        INC R2\n        DEC R3\n        JNZ loop\n        STORE [SUM_LO], R0\n        STORE [SUM_HI], R1\n        HLT\n\n        .org 0xA0\ndata:   .byte 200, 100, 50, 150, 75, 25, 220, 10\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 0, 17, 16, 0, 17, 32, 160, 17, 48, 8, 19, 66, 32, 4,
+      68, 20, 36, 16, 36, 32, 37, 48, 66, 12, 20, 0, 128, 20, 16, 129,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      200, 100, 50, 150, 75, 25, 220, 10, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 100,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 58,
+    "registers": [62, 3, 168, 0, 10, 0, 0, 0],
+    "pc": 32,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      17, 0, 0, 17, 16, 0, 17, 32, 160, 17, 48, 8, 19, 66, 32, 4,
+      68, 20, 36, 16, 36, 32, 37, 48, 66, 12, 20, 0, 128, 20, 16, 129,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      62, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      200, 100, 50, 150, 75, 25, 220, 10, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

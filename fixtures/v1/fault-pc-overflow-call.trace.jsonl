@@ -1,0 +1,2 @@
+{"step":0,"pc":0,"ir":[64,254],"status":"READY","fault":null,"regs":[0,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":254,"memWrites":[]}
+{"step":1,"pc":254,"ir":[69,0],"status":"FAULTED","fault":"PC_OVERFLOW","regs":[0,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":254,"memWrites":[]}

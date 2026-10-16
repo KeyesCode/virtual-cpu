@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-18-memory-copy",
+  "kind": "example",
+  "description": "memcpy: LOAD through a source pointer, STORE through a destination pointer, advance both, count down.",
+  "source": "; 18-memory-copy.asm — copy a block of memory with two pointers\n;\n; Purpose:  memcpy: LOAD through a source pointer, STORE through a destination pointer,\n;           advance both, count down.\n; Expected: the 6 bytes \"VCPU-8\" at 0xA0 are copied to 0x80:\n;           mem[0x80..0x85] = 56 43 50 55 2D 38, and the source is unchanged.\n;           R0 = 0xA6, R1 = 0x86, R2 = 0, R3 = '8' (0x38).\n;           Final FLAGS: Z=1 C=0 N=0 V=0 (from the last DEC).\n; Overflow: none.\n\n        .equ DEST, 0x80\n        .equ COUNT, 6\n\n        LDI R0, source      ; source pointer\n        LDI R1, DEST        ; destination pointer\n        LDI R2, COUNT       ; bytes left\nloop:   LOAD R3, [R0]\n        STORE [R1], R3\n        INC R0\n        INC R1\n        DEC R2\n        JNZ loop\n        HLT\n\n        .org 0xA0\nsource: .byte 'V', 'C', 'P', 'U', '-', '8'\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 160, 17, 16, 128, 17, 32, 6, 19, 48, 21, 19, 36, 0, 36,
+      16, 37, 32, 66, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      86, 67, 80, 85, 45, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 100,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 40,
+    "registers": [166, 134, 0, 56, 0, 0, 0, 0],
+    "pc": 21,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      17, 0, 160, 17, 16, 128, 17, 32, 6, 19, 48, 21, 19, 36, 0, 36,
+      16, 37, 32, 66, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      86, 67, 80, 85, 45, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      86, 67, 80, 85, 45, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

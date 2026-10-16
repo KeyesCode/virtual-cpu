@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-11-conditional-branch",
+  "kind": "example",
+  "description": "Two if/else shapes. (1) Absolute value of a signed byte: there is no \"jump if negative\", so SHL a copy to move the sign bit into C and use JNC. Negation is two's complement: NOT, then INC. (2) A zero test with OR R, R (sets Z and N without changing R) and JZ, with a JMP over the else branch.",
+  "source": "; 11-conditional-branch.asm — if/else with conditional jumps\n;\n; Purpose:  Two if/else shapes. (1) Absolute value of a signed byte: there is no\n;           \"jump if negative\", so SHL a copy to move the sign bit into C and use JNC.\n;           Negation is two's complement: NOT, then INC. (2) A zero test with OR R, R\n;           (sets Z and N without changing R) and JZ, with a JMP over the else branch.\n; Expected: mem[0x80] = |−25| = 25 (0x19). −25 is stored as 0xE7; NOT gives 0x18, INC 0x19.\n;           mem[0x81] = 0x11 (the \"is zero\" branch ran; the 0xEE branch was skipped).\n;           R0 = 0x19, R1 = 0xE7 << 1 = 0xCE, R2 = 0, R3 = 0x11.\n;           Final FLAGS (from OR R2, R2): Z=1 C=0 N=0 V=0.\n; Overflow: |−128| is the one value this cannot represent: NOT 0x80 + 1 = 0x80 again.\n\n        LDI R0, -25         ; 0xE7\n        MOV R1, R0\n        SHL R1              ; C ← sign bit of R0\n        JNC positive\n        NOT R0              ; negate: one's complement…\n        INC R0              ; …plus one\npositive:\n        STORE [0x80], R0\n\n        LDI R2, 0\n        OR R2, R2           ; Z ← (R2 = 0)\n        JZ is_zero\n        LDI R3, 0xEE        ; else branch: skipped\n        JMP done\nis_zero:\n        LDI R3, 0x11\ndone:   STORE [0x81], R3\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 231, 16, 16, 52, 16, 68, 13, 51, 0, 36, 0, 20, 0, 128,
+      17, 32, 0, 49, 34, 65, 28, 17, 48, 238, 64, 31, 17, 48, 17, 20,
+      48, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 30,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 13,
+    "registers": [25, 206, 0, 17, 0, 0, 0, 0],
+    "pc": 34,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      17, 0, 231, 16, 16, 52, 16, 68, 13, 51, 0, 36, 0, 20, 0, 128,
+      17, 32, 0, 49, 34, 65, 28, 17, 48, 238, 64, 31, 17, 48, 17, 20,
+      48, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      25, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+{"step":0,"pc":0,"ir":[64,255],"status":"READY","fault":null,"regs":[0,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":255,"memWrites":[]}
+{"step":1,"pc":255,"ir":[1],"status":"HALTED","fault":null,"regs":[0,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":255,"memWrites":[]}

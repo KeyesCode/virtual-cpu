@@ -140,7 +140,13 @@ $ pnpm -s cpu disassemble fib.bin --start 0x18
 
 ### `benchmark`
 
-Reserved for the benchmark suite, which adds it. For now it exits with code 64.
+```
+pnpm cpu benchmark <file.asm|file.bin> [--warmup N] [--samples N] [--json out.json]
+pnpm cpu benchmark --suite [--json out.json]          # pnpm bench
+pnpm cpu benchmark --compare [report.json]            # pnpm bench:compare
+```
+
+Times a program on the emulator and prints two separate sections: **host time** measured on this machine (median, mean, stddev, p5/p95 and min/max per run, instructions per second, ns per instruction, trace overhead) and the **simulated** metrics (instructions, estimated cycles from the timing model, opcode frequencies, memory reads and writes, branches). `--json` writes the report, validated against `BenchmarkReportSchema` from `@vcpu/benchmarks`. `--suite` benchmarks every example and writes `benchmarks/results/<date>-<gitsha>.json`; `--compare` prints each program's change against `benchmarks/baseline.json`. A program that faults or does not halt is reported, not timed, and exits 2. [docs/benchmarks.md](../../docs/benchmarks.md) covers the method, every option and the report format.
 
 ## Exit codes
 
@@ -148,7 +154,7 @@ Reserved for the benchmark suite, which adds it. For now it exits with code 64.
 | ---- | ---------------------------------------------------------------------------------------------------------------- |
 | 0    | Success. For `run`, the program halted                                                                           |
 | 1    | The source did not assemble                                                                                      |
-| 2    | `run`: the CPU faulted                                                                                           |
+| 2    | `run`: the CPU faulted. `benchmark`: a program faulted or did not halt                                           |
 | 3    | `run`: `--max-instructions` was reached before the program halted                                                |
 | 64   | Usage error: a bad argument or flag, a missing or unreadable file, a wrong extension, or a `.bin` over 256 bytes |
 

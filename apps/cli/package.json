@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@vcpu/assembler": "workspace:*",
+    "@vcpu/benchmarks": "workspace:*",
     "@vcpu/cpu-core": "workspace:*",
     "@vcpu/debugger": "workspace:*",
     "@vcpu/shared": "workspace:*",

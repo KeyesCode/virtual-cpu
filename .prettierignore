@@ -5,3 +5,4 @@ coverage/
 .agents/
 .claude/
 fixtures/v1/
+benchmarks/

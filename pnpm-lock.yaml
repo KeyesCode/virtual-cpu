@@ -77,6 +77,9 @@ importers:
       '@vcpu/assembler':
         specifier: workspace:*
         version: link:../../packages/assembler
+      '@vcpu/benchmarks':
+        specifier: workspace:*
+        version: link:../../packages/benchmarks
       '@vcpu/cpu-core':
         specifier: workspace:*
         version: link:../../packages/cpu-core
@@ -181,6 +184,16 @@ importers:
         version: 5.0.5(@types/node@22.20.5)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
   packages/benchmarks:
+    dependencies:
+      '@vcpu/cpu-core':
+        specifier: workspace:*
+        version: link:../cpu-core
+      '@vcpu/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       typescript:
         specifier: 'catalog:'

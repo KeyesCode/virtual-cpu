@@ -1,10 +1,38 @@
-import { CPU_NAME } from '@vcpu/shared';
+import { AsmEditor } from './components/editor/AsmEditor';
+import { CpuPanel } from './components/cpu/CpuPanel';
+import { MemoryGrid } from './components/memory/MemoryGrid';
+import { TopBar } from './components/TopBar';
+import { Panel } from './components/ui';
+import type { DashboardStore } from './state/dashboardStore';
+import { useDebugSession } from './state/useDebugSession';
 
-export function App() {
+/**
+ * The VCPU-8 dashboard. At 1280px and wider it uses the mockup's three columns; narrower, the
+ * panels stack. Breakpoints are container queries on the page width.
+ */
+export function App({ createStore }: { createStore?: () => DashboardStore }) {
+  const [snapshot, store] = useDebugSession(createStore);
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-2 bg-zinc-950 font-mono text-zinc-100">
-      <h1 className="text-4xl font-semibold tracking-tight">{CPU_NAME}</h1>
-      <p className="text-sm text-zinc-400">Educational 8-bit virtual CPU. Dashboard coming soon.</p>
-    </main>
+    <div className="@container">
+      <div className="flex min-h-screen flex-col bg-bg text-ink @desk:h-screen @desk:min-h-[880px]">
+        <TopBar snapshot={snapshot} store={store} />
+        <main className="grid flex-1 grid-cols-1 gap-3 p-3 @desk:min-h-0 @desk:grid-cols-[330px_minmax(0,1fr)_500px] @wide:grid-cols-[430px_minmax(0,1fr)_500px] @desk:grid-rows-[500px_minmax(0,1fr)]">
+          <AsmEditor snapshot={snapshot} store={store} />
+          <CpuPanel snapshot={snapshot} />
+          <MemoryGrid snapshot={snapshot} />
+          {/* Filled by the follow-up ticket: timeline, stack, watchpoints, trace and performance. */}
+          <Panel title="Execution timeline" className="min-h-40">
+            <PendingPanel />
+          </Panel>
+          <Panel title="Performance" className="min-h-40">
+            <PendingPanel />
+          </Panel>
+        </main>
+      </div>
+    </div>
   );
+}
+
+function PendingPanel() {
+  return <p className="p-3 text-xs text-faint">Not part of this build yet.</p>;
 }

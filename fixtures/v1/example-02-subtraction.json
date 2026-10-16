@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-02-subtraction",
+  "kind": "example",
+  "description": "SUB with and without a borrow. A negative result is stored in two's complement, and C reports the borrow (the unsigned first operand was smaller).",
+  "source": "; 02-subtraction.asm — subtraction, borrow and two's complement\n;\n; Purpose:  SUB with and without a borrow. A negative result is stored in two's complement,\n;           and C reports the borrow (the unsigned first operand was smaller).\n; Expected: mem[0x80] = 50 − 20 = 30 (0x1E), with C=0.\n;           mem[0x81] = 20 − 50 = −30 → 256 − 30 = 226 (0xE2), with C=1 (borrow) and N=1.\n;           Final FLAGS (from the second SUB): Z=0 C=1 N=1 V=0. V stays 0 because both\n;           operands are non-negative, so a signed overflow is impossible.\n; Overflow: the second result wraps below zero: unsigned it reads 226, signed it reads −30.\n\n        .equ OUT, 0x80\n        .equ OUT_NEG, 0x81\n\n        LDI R0, 50\n        LDI R1, 20\n        SUB R0, R1          ; R0 ← 30, no borrow\n        STORE [OUT], R0\n\n        LDI R2, 20\n        LDI R3, 50\n        SUB R2, R3          ; R2 ← 0xE2 (−30), borrow → C=1\n        STORE [OUT_NEG], R2\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 50, 17, 16, 20, 33, 1, 20, 0, 128, 17, 32, 20, 17, 48,
+      50, 33, 35, 20, 32, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 20,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 9,
+    "registers": [30, 20, 226, 50, 0, 0, 0, 0],
+    "pc": 22,
+    "sp": 255,
+    "sd": 0,
+    "flags": 6,
+    "memory": [
+      17, 0, 50, 17, 16, 20, 33, 1, 20, 0, 128, 17, 32, 20, 17, 48,
+      50, 33, 35, 20, 32, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      30, 226, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

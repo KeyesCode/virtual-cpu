@@ -1,0 +1,8 @@
+{"step":0,"pc":0,"ir":[69,3],"status":"READY","fault":null,"regs":[0,0,0,0,0,0,0,0],"flags":0,"sp":254,"sd":1,"nextPc":3,"memWrites":[{"address":255,"value":2}]}
+{"step":1,"pc":3,"ir":[17,0,1],"status":"READY","fault":null,"regs":[1,0,0,0,0,0,0,0],"flags":0,"sp":254,"sd":1,"nextPc":6,"memWrites":[]}
+{"step":2,"pc":6,"ir":[69,11],"status":"READY","fault":null,"regs":[1,0,0,0,0,0,0,0],"flags":0,"sp":253,"sd":2,"nextPc":11,"memWrites":[{"address":254,"value":8}]}
+{"step":3,"pc":11,"ir":[17,16,2],"status":"READY","fault":null,"regs":[1,2,0,0,0,0,0,0],"flags":0,"sp":253,"sd":2,"nextPc":14,"memWrites":[]}
+{"step":4,"pc":14,"ir":[70],"status":"READY","fault":null,"regs":[1,2,0,0,0,0,0,0],"flags":0,"sp":254,"sd":1,"nextPc":8,"memWrites":[]}
+{"step":5,"pc":8,"ir":[36,0],"status":"READY","fault":null,"regs":[2,2,0,0,0,0,0,0],"flags":0,"sp":254,"sd":1,"nextPc":10,"memWrites":[]}
+{"step":6,"pc":10,"ir":[70],"status":"READY","fault":null,"regs":[2,2,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":2,"memWrites":[]}
+{"step":7,"pc":2,"ir":[1],"status":"HALTED","fault":null,"regs":[2,2,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":2,"memWrites":[]}

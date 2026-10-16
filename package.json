@@ -10,6 +10,7 @@
   },
   "scripts": {
     "cpu": "pnpm --filter @vcpu/cli start --",
+    "fixtures:export": "tsx scripts/export-fixtures.ts",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -21,12 +22,16 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "catalog:",
+    "@vcpu/assembler": "workspace:*",
+    "@vcpu/cpu-core": "workspace:*",
+    "@vcpu/shared": "workspace:*",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "typescript-eslint": "^8.71.2",
     "vitest": "catalog:"

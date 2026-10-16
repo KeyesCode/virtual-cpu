@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-10-compare",
+  "kind": "example",
+  "description": "Unsigned comparisons with CMP and the conditional jumps. After CMP Ra, Rb: Z=1 means Ra = Rb; C=1 (borrow) means Ra < Rb unsigned. Signed order is N XOR V.",
+  "source": "; 10-compare.asm — CMP sets flags like SUB without changing a register\n;\n; Purpose:  Unsigned comparisons with CMP and the conditional jumps. After CMP Ra, Rb:\n;           Z=1 means Ra = Rb; C=1 (borrow) means Ra < Rb unsigned. Signed order is N XOR V.\n; Expected: mem[0x80] = 1 because 10 < 20 (CMP borrows, C=1).\n;           mem[0x81] = 1 because 42 = 42 (Z=1).\n;           mem[0x82] = 1 because 0x90 ≥ 0x10 unsigned (C=0). Read as signed, 0x90 is −112,\n;           which is less than 16: the result 0x80 has N=1 and V=0, so N XOR V = 1.\n;           Registers are unchanged by CMP: R0 = 10, R1 = 20, R4 = 0x90, R5 = 0x10.\n;           Final FLAGS (last CMP): Z=0 C=0 N=1 V=0.\n; Overflow: none; CMP writes no register.\n\n        LDI R7, 1           ; the byte written for \"true\"\n\n        LDI R0, 10\n        LDI R1, 20\n        CMP R0, R1          ; 10 − 20 borrows → C=1\n        JNC not_below\n        STORE [0x80], R7\nnot_below:\n        LDI R2, 42\n        LDI R3, 42\n        CMP R2, R3          ; equal → Z=1\n        JNZ not_equal\n        STORE [0x81], R7\nnot_equal:\n        LDI R4, 0x90\n        LDI R5, 0x10\n        CMP R4, R5          ; 0x90 − 0x10 = 0x80: no borrow, N=1\n        JC below\n        STORE [0x82], R7\nbelow:  HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 112, 1, 17, 0, 10, 17, 16, 20, 54, 1, 68, 16, 20, 112, 128,
+      17, 32, 42, 17, 48, 42, 54, 35, 66, 29, 20, 112, 129, 17, 64, 144,
+      17, 80, 16, 54, 69, 67, 42, 20, 112, 130, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 30,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 17,
+    "registers": [10, 20, 42, 42, 144, 16, 0, 1],
+    "pc": 42,
+    "sp": 255,
+    "sd": 0,
+    "flags": 2,
+    "memory": [
+      17, 112, 1, 17, 0, 10, 17, 16, 20, 54, 1, 68, 16, 20, 112, 128,
+      17, 32, 42, 17, 48, 42, 54, 35, 66, 29, 20, 112, 129, 17, 64, 144,
+      17, 80, 16, 54, 69, 67, 42, 20, 112, 130, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-20-stack",
+  "kind": "example",
+  "description": "The stack is last in, first out: push five bytes, then pop them back into memory and they come out reversed. The stack starts at SP = 0xFF and grows down; each PUSH writes mem[SP] and then decrements SP.",
+  "source": "; 20-stack.asm — PUSH and POP reverse an array\n;\n; Purpose:  The stack is last in, first out: push five bytes, then pop them back into\n;           memory and they come out reversed. The stack starts at SP = 0xFF and grows\n;           down; each PUSH writes mem[SP] and then decrements SP.\n; Expected: data = 1 2 3 4 5 (at 0xA0); mem[0x80..0x84] = 05 04 03 02 01.\n;           The pushes left mem[0xFB..0xFF] = 05 04 03 02 01 (1 was pushed first, at 0xFF).\n;           After the pops SP = 0xFF again. R0 = 0x85, R1 = 0, R2 = 1.\n;           Final FLAGS: Z=1 C=0 N=0 V=0 (from the last DEC).\n; Overflow: none. More than 64 pushes would fault with STACK_OVERFLOW, and a POP from an\n;           empty stack with STACK_UNDERFLOW.\n\n        .equ OUT, 0x80\n        .equ COUNT, 5\n\n        LDI R0, data        ; source pointer\n        LDI R1, COUNT\npush_loop:\n        LOAD R2, [R0]\n        PUSH R2\n        INC R0\n        DEC R1\n        JNZ push_loop\n\n        LDI R0, OUT         ; destination pointer\n        LDI R1, COUNT\npop_loop:\n        POP R2\n        STORE [R0], R2\n        INC R0\n        DEC R1\n        JNZ pop_loop\n        HLT\n\n        .org 0xA0\ndata:   .byte 1, 2, 3, 4, 5\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 160, 17, 16, 5, 19, 32, 80, 32, 36, 0, 37, 16, 66, 6,
+      17, 0, 128, 17, 16, 5, 81, 32, 21, 2, 36, 0, 37, 16, 66, 22,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 100,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 55,
+    "registers": [133, 0, 1, 0, 0, 0, 0, 0],
+    "pc": 32,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      17, 0, 160, 17, 16, 5, 19, 32, 80, 32, 36, 0, 37, 16, 66, 6,
+      17, 0, 128, 17, 16, 5, 81, 32, 21, 2, 36, 0, 37, 16, 66, 22,
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 4, 3, 2, 1
+    ]
+  }
+}

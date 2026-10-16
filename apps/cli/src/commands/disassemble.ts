@@ -46,8 +46,9 @@ function run(args: readonly string[], io: CliIo): number {
   const file = singleFile(positionals, 'the <file.bin> to disassemble');
   programKind(file, ['bin']);
   const start = values.start === undefined ? 0 : parseAddress(values.start, '--start');
+  const requestedEnd = values.end === undefined ? null : parseAddress(values.end, '--end');
   const bytes = readBinary(io, file);
-  const end = values.end === undefined ? bytes.length - 1 : parseAddress(values.end, '--end');
+  const end = requestedEnd ?? bytes.length - 1;
   if (end >= bytes.length) {
     throw new UsageError(
       `--end ${hex(end)} is past the last byte of ${file} (${hex(bytes.length - 1)})`,

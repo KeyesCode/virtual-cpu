@@ -52,6 +52,11 @@ Workspace packages are consumed straight from their TypeScript source through `e
 
 `packages/cpu-core` and `packages/shared` may not import Node built-ins or React. ESLint enforces this rule, and their `tsconfig` leaves out DOM and Node types.
 
+## Documentation
+
+- [docs/concepts.md](docs/concepts.md): a short course from transistors to fetch-decode-execute, tied to VCPU-8. Start here if you are new to hardware.
+- [docs/architecture.md](docs/architecture.md): the VCPU-8 programmer's model and block diagram, with links to the instruction set, memory model and execution documents.
+
 ## Deployment
 
 `vercel.json` builds `@vcpu/web` and serves `apps/web/dist` as a static site.

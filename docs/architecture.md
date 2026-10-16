@@ -8,6 +8,8 @@ VCPU-8 is an educational 8-bit CPU. This document gives its programmer's model a
 | [memory-model.md](memory-model.md)       | Memory map, address rules, the stack and its depth counter, program images                                     |
 | [cpu-execution.md](cpu-execution.md)     | The execution cycle, PC update, every fault, reset, statuses, metrics                                          |
 
+New to hardware? [concepts.md](concepts.md) explains the ideas behind these documents, from transistors and logic gates to fetch-decode-execute, using VCPU-8 as the running example.
+
 ## At a glance
 
 | Property         | Value                                                                      |

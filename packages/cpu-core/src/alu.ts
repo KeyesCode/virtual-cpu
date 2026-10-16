@@ -139,7 +139,19 @@ export type AluOperation = (a: number, b: number, flags: number) => AluResult;
 /** The opcode ids the ALU executes. */
 export type AluOpcodeId = Extract<
   OpcodeId,
-  'ADD' | 'SUB' | 'MUL' | 'DIV' | 'INC' | 'DEC' | 'AND' | 'OR' | 'XOR' | 'NOT' | 'SHL' | 'SHR' | 'CMP'
+  | 'ADD'
+  | 'SUB'
+  | 'MUL'
+  | 'DIV'
+  | 'INC'
+  | 'DEC'
+  | 'AND'
+  | 'OR'
+  | 'XOR'
+  | 'NOT'
+  | 'SHL'
+  | 'SHR'
+  | 'CMP'
 >;
 
 /** ALU operation by opcode id. */

@@ -7,7 +7,9 @@ import { MEMORY_SIZE, u8 } from '@vcpu/shared';
 export function byteAt(bytes: ArrayLike<number>, address: number): number {
   const value = bytes[u8(address)];
   if (value === undefined) {
-    throw new RangeError(`Address ${String(address)} is outside the ${String(bytes.length)}-byte memory`);
+    throw new RangeError(
+      `Address ${String(address)} is outside the ${String(bytes.length)}-byte memory`,
+    );
   }
   return value;
 }

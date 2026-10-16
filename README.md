@@ -19,6 +19,29 @@ pnpm --filter @vcpu/web dev     # web dashboard dev server
 pnpm --filter @vcpu/web build   # static build to apps/web/dist
 ```
 
+## Command line
+
+`pnpm cpu` assembles, runs, debugs and disassembles VCPU-8 programs. [apps/cli/README.md](apps/cli/README.md) is the full reference: every option, the debugger commands and the `--json` format.
+
+```sh
+pnpm cpu run examples/14-fibonacci.asm                    # final status, registers, memory, summary
+pnpm cpu run examples/14-fibonacci.asm --trace            # plus one line per executed instruction
+pnpm -s cpu run examples/14-fibonacci.asm --json          # one JSON document (-s drops pnpm's header)
+pnpm cpu assemble examples/14-fibonacci.asm -o fib.bin --listing --symbols
+pnpm cpu disassemble fib.bin
+pnpm cpu debug examples/14-fibonacci.asm                  # step, back, run, break, watch, regs, mem, …
+```
+
+| Command                                    | What it does                                                                                  |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `assemble <file.asm> [-o out.bin]`         | Writes raw machine code; `--symbols` and `--listing` print the symbol table and a listing     |
+| `run <file.asm\|file.bin>`                 | Runs to HLT, a fault or `--max-instructions N`; `--trace`, `--json`, `--memory all`           |
+| `debug <file.asm\|file.bin>`               | Interactive debugger: breakpoints, watchpoints, step back, registers, memory, stack and trace |
+| `disassemble <file.bin> [--start] [--end]` | Prints address, bytes and assembly for each instruction                                       |
+| `benchmark <file>`                         | Reserved for the benchmark suite                                                              |
+
+Exit codes: 0 ok (for `run`, halted), 1 assembly errors, 2 CPU fault, 3 instruction limit, 64 usage error.
+
 ## Scripts
 
 | Script               | What it does                                           |

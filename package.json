@@ -9,7 +9,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "cpu": "pnpm --filter @vcpu/cli start --",
+    "cpu": "pnpm --silent --filter @vcpu/cli start --",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -62,9 +62,21 @@ importers:
 
   apps/cli:
     dependencies:
+      '@vcpu/assembler':
+        specifier: workspace:*
+        version: link:../../packages/assembler
+      '@vcpu/cpu-core':
+        specifier: workspace:*
+        version: link:../../packages/cpu-core
+      '@vcpu/debugger':
+        specifier: workspace:*
+        version: link:../../packages/debugger
       '@vcpu/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

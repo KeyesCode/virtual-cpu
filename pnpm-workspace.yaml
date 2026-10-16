@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Versions shared by several workspaces; reference them as "catalog:".
+catalog:
+  '@types/node': ^22.0.0
+  '@vitest/coverage-v8': ^5.0.5
+  typescript: ~6.0.3
+  vite: ^8.3.4
+  vitest: ^5.0.5
+
+# pnpm 10 blocks dependency install scripts unless they are allow-listed.
+onlyBuiltDependencies:
+  - esbuild

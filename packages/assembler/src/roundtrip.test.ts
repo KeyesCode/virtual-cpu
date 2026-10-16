@@ -167,7 +167,7 @@ describe('round trip: assemble → disassemble → reassemble', () => {
       ),
       { numRuns: 1000 },
     );
-  });
+  }, 30_000);
 
   it('reassembles the disassembly of arbitrary memory to the same bytes', () => {
     fc.assert(

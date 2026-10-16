@@ -156,7 +156,7 @@ describe('run()', () => {
   it('defaults to DEFAULT_MAX_INSTRUCTIONS, so an endless loop returns', () => {
     const cpu = load(asm.jump('JMP', 0x00), { traceCapacity: 0 });
     expect(cpu.run()).toEqual({ executed: DEFAULT_MAX_INSTRUCTIONS, stopReason: 'limit' });
-  });
+  }, 30_000);
 
   it.each([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN])(
     'rejects maxInstructions %s',

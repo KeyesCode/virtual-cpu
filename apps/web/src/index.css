@@ -25,9 +25,10 @@
   --color-pink: #f472b6;
   --color-purple: #c084fc;
 
-  /* Layout breakpoints, as container queries on the page (see App). */
-  --container-desk: 80rem;
-  --container-wide: 96rem;
+  /* Layout breakpoints, as container queries on the page (see App). In px, not rem: a container
+     query resolves rem against the root font size, which is 13px here, not 16px. */
+  --container-desk: 1280px;
+  --container-wide: 1536px;
 
   --font-mono: 'SF Mono', Menlo, Consolas, monospace;
   --font-sans: -apple-system, 'Inter', system-ui, sans-serif;

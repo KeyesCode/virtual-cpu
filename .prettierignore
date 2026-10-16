@@ -4,3 +4,4 @@ coverage/
 .fredrin/
 .agents/
 .claude/
+fixtures/v1/

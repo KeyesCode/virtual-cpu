@@ -1,0 +1,1 @@
+{"step":0,"pc":0,"ir":[32,9],"status":"FAULTED","fault":"MALFORMED_OPERAND","regs":[0,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":0,"memWrites":[]}

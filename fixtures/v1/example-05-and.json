@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-05-and",
+  "kind": "example",
+  "description": "AND keeps only the bits set in both operands: use it to extract a field or, with an inverted mask from NOT, to clear chosen bits.",
+  "source": "; 05-and.asm — bitwise AND for masking (and NOT to build a clearing mask)\n;\n; Purpose:  AND keeps only the bits set in both operands: use it to extract a field\n;           or, with an inverted mask from NOT, to clear chosen bits.\n; Expected: mem[0x80] = 0xB6 AND 0x0F = 0x06 (low nibble).\n;           mem[0x81] = 0xB6 AND NOT 0x30 = 0xB6 AND 0xCF = 0x86 (bits 5 and 4 cleared).\n;           mem[0x82] = 0xF0 AND 0x0F = 0x00, which sets Z.\n;           R3 = NOT 0x30 = 0xCF. Final FLAGS (last AND): Z=1 C=0 N=0 V=0.\n; Overflow: not possible; logic instructions always clear C and V.\n\n        LDI R0, 0xB6        ; 1011 0110\n        LDI R1, 0x0F        ; 0000 1111\n        AND R0, R1          ; 0000 0110\n        STORE [0x80], R0\n\n        LDI R2, 0xB6\n        LDI R3, 0x30        ; 0011 0000: the bits to clear\n        NOT R3              ; 1100 1111\n        AND R2, R3          ; 1000 0110\n        STORE [0x81], R2\n\n        LDI R4, 0xF0\n        LDI R5, 0x0F\n        AND R4, R5          ; no common bits → 0, Z=1\n        STORE [0x82], R4\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 182, 17, 16, 15, 48, 1, 20, 0, 128, 17, 32, 182, 17, 48,
+      48, 51, 48, 48, 35, 20, 32, 129, 17, 64, 240, 17, 80, 15, 48, 69,
+      20, 64, 130, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 20,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 14,
+    "registers": [6, 15, 134, 207, 0, 15, 0, 0],
+    "pc": 35,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      17, 0, 182, 17, 16, 15, 48, 1, 20, 0, 128, 17, 32, 182, 17, 48,
+      48, 51, 48, 48, 35, 20, 32, 129, 17, 64, 240, 17, 80, 15, 48, 69,
+      20, 64, 130, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      6, 134, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

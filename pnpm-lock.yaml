@@ -32,6 +32,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      '@vcpu/assembler':
+        specifier: workspace:*
+        version: link:packages/assembler
+      '@vcpu/cpu-core':
+        specifier: workspace:*
+        version: link:packages/cpu-core
+      '@vcpu/shared':
+        specifier: workspace:*
+        version: link:packages/shared
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
@@ -50,6 +59,9 @@ importers:
       prettier:
         specifier: ^3.9.10
         version: 3.9.10
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

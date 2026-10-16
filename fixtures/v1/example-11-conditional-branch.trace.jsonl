@@ -1,0 +1,13 @@
+{"step":0,"pc":0,"ir":[17,0,231],"status":"READY","fault":null,"regs":[231,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":3,"memWrites":[]}
+{"step":1,"pc":3,"ir":[16,16],"status":"READY","fault":null,"regs":[231,231,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":5,"memWrites":[]}
+{"step":2,"pc":5,"ir":[52,16],"status":"READY","fault":null,"regs":[231,206,0,0,0,0,0,0],"flags":6,"sp":255,"sd":0,"nextPc":7,"memWrites":[]}
+{"step":3,"pc":7,"ir":[68,13],"status":"READY","fault":null,"regs":[231,206,0,0,0,0,0,0],"flags":6,"sp":255,"sd":0,"nextPc":9,"memWrites":[]}
+{"step":4,"pc":9,"ir":[51,0],"status":"READY","fault":null,"regs":[24,206,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":11,"memWrites":[]}
+{"step":5,"pc":11,"ir":[36,0],"status":"READY","fault":null,"regs":[25,206,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":13,"memWrites":[]}
+{"step":6,"pc":13,"ir":[20,0,128],"status":"READY","fault":null,"regs":[25,206,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":16,"memWrites":[{"address":128,"value":25}]}
+{"step":7,"pc":16,"ir":[17,32,0],"status":"READY","fault":null,"regs":[25,206,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":19,"memWrites":[]}
+{"step":8,"pc":19,"ir":[49,34],"status":"READY","fault":null,"regs":[25,206,0,0,0,0,0,0],"flags":8,"sp":255,"sd":0,"nextPc":21,"memWrites":[]}
+{"step":9,"pc":21,"ir":[65,28],"status":"READY","fault":null,"regs":[25,206,0,0,0,0,0,0],"flags":8,"sp":255,"sd":0,"nextPc":28,"memWrites":[]}
+{"step":10,"pc":28,"ir":[17,48,17],"status":"READY","fault":null,"regs":[25,206,0,17,0,0,0,0],"flags":8,"sp":255,"sd":0,"nextPc":31,"memWrites":[]}
+{"step":11,"pc":31,"ir":[20,48,129],"status":"READY","fault":null,"regs":[25,206,0,17,0,0,0,0],"flags":8,"sp":255,"sd":0,"nextPc":34,"memWrites":[{"address":129,"value":17}]}
+{"step":12,"pc":34,"ir":[1],"status":"HALTED","fault":null,"regs":[25,206,0,17,0,0,0,0],"flags":8,"sp":255,"sd":0,"nextPc":34,"memWrites":[]}

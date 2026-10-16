@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-04-division",
+  "kind": "example",
+  "description": "DIV gives the floor of the unsigned quotient. There is no remainder instruction, so the remainder is rebuilt as dividend − quotient × divisor.",
+  "source": "; 04-division.asm — unsigned division with a remainder\n;\n; Purpose:  DIV gives the floor of the unsigned quotient. There is no remainder instruction,\n;           so the remainder is rebuilt as dividend − quotient × divisor.\n; Expected: 200 ÷ 7: mem[0x80] = quotient 28 (0x1C), mem[0x81] = remainder 4.\n;           R0 = 28, R1 = 7, R2 = 4, R3 = 28 × 7 = 196 (0xC4).\n;           Final FLAGS (from SUB 200 − 196): Z=0 C=0 N=0 V=0.\n; Overflow: none; DIV can never overflow and always clears C and V. DIV by zero would\n;           fault with DIVIDE_BY_ZERO instead of producing a result.\n\n        .equ QUOTIENT, 0x80\n        .equ REMAINDER, 0x81\n\n        LDI R0, 200         ; dividend\n        LDI R1, 7           ; divisor\n        MOV R2, R0          ; keep a copy of the dividend\n        DIV R0, R1          ; R0 ← floor(200 / 7) = 28\n        MOV R3, R0\n        MUL R3, R1          ; R3 ← 28 × 7 = 196\n        SUB R2, R3          ; R2 ← 200 − 196 = 4\n        STORE [QUOTIENT], R0\n        STORE [REMAINDER], R2\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 200, 17, 16, 7, 16, 32, 35, 1, 16, 48, 34, 49, 33, 35,
+      20, 0, 128, 20, 32, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 20,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 10,
+    "registers": [28, 7, 4, 196, 0, 0, 0, 0],
+    "pc": 22,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 0, 200, 17, 16, 7, 16, 32, 35, 1, 16, 48, 34, 49, 33, 35,
+      20, 0, 128, 20, 32, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      28, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-09-shift-right",
+  "kind": "example",
+  "description": "A logical SHR divides an unsigned value by two (rounding down). Since bit 0 lands in C, eight SHRs with JNC count the 1 bits of a byte (its population count).",
+  "source": "; 09-shift-right.asm — SHR halves a value and exposes bit 0 in C\n;\n; Purpose:  A logical SHR divides an unsigned value by two (rounding down). Since bit 0\n;           lands in C, eight SHRs with JNC count the 1 bits of a byte (its population count).\n; Expected: mem[0x80] = 200 >> 1 = 100 (0x64).\n;           mem[0x81] = popcount(0xB5 = 1011 0101) = 5.\n;           R0 = 0 (all bits shifted out), R1 = 5, R2 = 0.\n;           Final FLAGS: Z=1 N=0 V=0 from the last DEC; C=1 is left by the last SHR\n;           (it shifted out bit 7 of 0xB5), because INC and DEC never change C.\n; Overflow: none; a right shift only loses bit 0, which goes to C.\n\n        .equ VALUE, 0xB5\n\n        LDI R3, 200\n        SHR R3              ; 100\n        STORE [0x80], R3\n\n        LDI R0, VALUE       ; byte whose 1 bits are counted\n        LDI R1, 0           ; count\n        LDI R2, 8           ; bits left\nloop:   SHR R0              ; C ← next bit\n        JNC zero_bit\n        INC R1\nzero_bit:\n        DEC R2\n        JNZ loop\n        STORE [0x81], R1\n        HLT\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      17, 48, 200, 53, 48, 20, 48, 128, 17, 0, 181, 17, 16, 0, 17, 32,
+      8, 53, 0, 68, 23, 36, 16, 37, 32, 66, 17, 20, 16, 129, 1, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 100,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 45,
+    "registers": [0, 5, 0, 100, 0, 0, 0, 0],
+    "pc": 30,
+    "sp": 255,
+    "sd": 0,
+    "flags": 12,
+    "memory": [
+      17, 48, 200, 53, 48, 20, 48, 128, 17, 0, 181, 17, 16, 0, 17, 32,
+      8, 53, 0, 68, 23, 36, 16, 37, 32, 66, 17, 20, 16, 129, 1, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      100, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

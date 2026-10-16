@@ -1,0 +1,2 @@
+{"step":0,"pc":0,"ir":[17,0,66],"status":"READY","fault":null,"regs":[66,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":3,"memWrites":[]}
+{"step":1,"pc":3,"ir":[81,0],"status":"FAULTED","fault":"STACK_UNDERFLOW","regs":[66,0,0,0,0,0,0,0],"flags":0,"sp":255,"sd":0,"nextPc":3,"memWrites":[]}

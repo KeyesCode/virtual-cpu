@@ -1,0 +1,62 @@
+{
+  "format": "vcpu8-fixture/1",
+  "isaVersion": "1.0.0",
+  "name": "example-17-array-max",
+  "kind": "example",
+  "description": "A linear search with CMP. CMP max, x borrows (C=1) exactly when x > max unsigned, so JNC skips the update otherwise.",
+  "source": "; 17-array-max.asm — the largest element of a byte array, and its index\n;\n; Purpose:  A linear search with CMP. CMP max, x borrows (C=1) exactly when x > max\n;           unsigned, so JNC skips the update otherwise.\n; Expected: data = 23, 77, 5, 140, 99, 201, 12, 64 (at 0xA0).\n;           mem[0x80] = max 201 (0xC9), mem[0x81] = its index 5.\n;           R0 = 0xC9, R1 = 5, R2 = 0xA8, R3 = 8, R4 = 64, R5 = 0.\n;           Final FLAGS: Z=1 N=0 V=0 from the last DEC; C=0 from the last CMP (201 vs 64).\n; Overflow: none. The comparison is unsigned; for signed bytes, test N XOR V instead of C.\n\n        .equ COUNT, 8\n\n        LOAD R0, [data]     ; max ← first element\n        LDI R1, 0           ; index of max\n        LDI R2, data        ; element pointer\n        LDI R3, 0           ; current index\n        LDI R5, COUNT       ; elements left\nloop:   LOAD R4, [R2]\n        CMP R0, R4          ; borrow when R4 > max\n        JNC not_bigger\n        MOV R0, R4\n        MOV R1, R3\nnot_bigger:\n        INC R2\n        INC R3\n        DEC R5\n        JNZ loop\n        STORE [0x80], R0\n        STORE [0x81], R1\n        HLT\n\n        .org 0xA0\ndata:   .byte 23, 77, 5, 140, 99, 201, 12, 64\n",
+  "initial": {
+    "registers": [0, 0, 0, 0, 0, 0, 0, 0],
+    "pc": 0,
+    "sp": 255,
+    "sd": 0,
+    "flags": 0,
+    "memory": [
+      18, 0, 160, 17, 16, 0, 17, 32, 160, 17, 48, 0, 17, 80, 8, 19,
+      66, 54, 4, 68, 25, 16, 4, 16, 19, 36, 32, 36, 48, 37, 80, 66,
+      15, 20, 0, 128, 20, 16, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      23, 77, 5, 140, 99, 201, 12, 64, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  },
+  "maxInstructions": 100,
+  "expected": {
+    "status": "HALTED",
+    "fault": null,
+    "instructions": 70,
+    "registers": [201, 5, 168, 8, 64, 0, 0, 0],
+    "pc": 39,
+    "sp": 255,
+    "sd": 0,
+    "flags": 8,
+    "memory": [
+      18, 0, 160, 17, 16, 0, 17, 32, 160, 17, 48, 0, 17, 80, 8, 19,
+      66, 54, 4, 68, 25, 16, 4, 16, 19, 36, 32, 36, 48, 37, 80, 66,
+      15, 20, 0, 128, 20, 16, 129, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      201, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      23, 77, 5, 140, 99, 201, 12, 64, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+  }
+}

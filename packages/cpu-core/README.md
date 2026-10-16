@@ -39,6 +39,7 @@ cpu.getExecutionTrace(); // one TraceEntry per step, oldest first
 | `getExecutionTrace()`                      | The kept `TraceEntry` objects, oldest first.                                                                                                                                                                    |
 | `getMetrics()`                             | Retired instructions, per-opcode counts, data reads and writes, fetched bytes, conditional branches taken and not taken, and estimated cycles.                                                                  |
 | `setObserver(observer \| null)`            | Attaches or removes a `CpuObserver`.                                                                                                                                                                            |
+| `undoStep({ entry, ir, status })`          | Reverses the most recent step from its `TraceEntry`, given the IR and status before it (debugger step-back). See below.                                                                                         |
 
 `stopReason` is one of `halted`, `faulted`, `limit`, `paused`, `breakpoint` or `watchpoint`.
 
@@ -66,6 +67,10 @@ cpu.setObserver({
 ```
 
 `step()` also calls `beforeExecute` but always executes the instruction, so a debugger continues from a breakpoint with `step()` followed by `run()`. Callbacks may read state and call `pause()`. Calling `step()`, `run()`, `reset()` or `loadProgram()` from a callback throws `CpuBusyError`.
+
+## Undoing a step
+
+`undoStep()` is the hook behind the debugger's step-back. It takes the most recent step's trace entry plus the IR and status (READY or PAUSED) the CPU had before that step, and puts back everything the step changed: the bytes it wrote, R0–R7, SP, SD, FLAGS, PC, IR, status, fault, metrics and the step counter. The entry also leaves the trace. It throws a RangeError for an entry that is not the most recent step's, and `CpuBusyError` from an observer callback. The core keeps no history itself: the caller holds the entries, so the caller also sets the memory bound.
 
 ## Building blocks
 

@@ -91,6 +91,18 @@ export class TraceBuffer {
     }
   }
 
+  /** Removes `entry` if it is the newest kept entry (a step being undone); otherwise does nothing. */
+  dropNewest(entry: TraceEntry): void {
+    if (this.#start !== 0) {
+      // Wrapped: lay the ring out oldest first so the newest entry is last.
+      this.#entries = this.toArray();
+      this.#start = 0;
+    }
+    if (this.#entries.at(-1) === entry) {
+      this.#entries.pop();
+    }
+  }
+
   clear(): void {
     this.#entries = [];
     this.#start = 0;

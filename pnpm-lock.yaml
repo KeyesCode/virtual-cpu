@@ -153,6 +153,9 @@ importers:
         specifier: workspace:*
         version: link:../shared
     devDependencies:
+      '@vcpu/assembler':
+        specifier: workspace:*
+        version: link:../assembler
       fast-check:
         specifier: ^4.10.2
         version: 4.10.2

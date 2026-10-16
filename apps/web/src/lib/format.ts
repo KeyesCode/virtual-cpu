@@ -33,3 +33,25 @@ export function parseHexAddress(text: string): number | null {
   if (!/^[0-9a-f]{1,2}$/i.test(digits)) return null;
   return Number.parseInt(digits, 16);
 }
+
+/**
+ * Parses a watchpoint target: one address (`85`, `0x85`, `$85`) or an inclusive range written
+ * `80-8F` or `0x80..0x8F`, in hex like `parseHexAddress`. `null` when it is not one, or when the
+ * range runs backwards.
+ */
+export function parseHexRange(text: string): { start: number; end: number } | null {
+  const parts = text.split(/\.\.|-/);
+  if (parts.length > 2) return null;
+  const start = parseHexAddress(parts[0] ?? '');
+  const end = parts.length === 2 ? parseHexAddress(parts[1] ?? '') : start;
+  if (start === null || end === null || start > end) return null;
+  return { start, end };
+}
+
+/** Instructions per second for a throughput tile: `4.0`, `850`, `12.5k`, `3.2M`. */
+export function rate(perSecond: number): string {
+  if (perSecond >= 1e6) return `${(perSecond / 1e6).toFixed(1)}M`;
+  if (perSecond >= 1e4) return `${(perSecond / 1e3).toFixed(1)}k`;
+  if (perSecond >= 100) return Math.round(perSecond).toString();
+  return perSecond.toFixed(1);
+}

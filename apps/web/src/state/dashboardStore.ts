@@ -1,5 +1,5 @@
 import { assemble, type AssembleResult } from '@vcpu/assembler';
-import type { CpuState, TraceEntry } from '@vcpu/cpu-core';
+import type { CpuMetrics, CpuState, TraceEntry } from '@vcpu/cpu-core';
 import {
   BreakpointError,
   createDebugSession,
@@ -7,6 +7,10 @@ import {
   type DebugSession,
   type DebugStop,
   type HistoryStats,
+  type StackView,
+  type Watchpoint,
+  type WatchpointHit,
+  type WatchpointTarget,
 } from '@vcpu/debugger';
 import { CpuStatus } from '@vcpu/shared';
 import { DEFAULT_EXAMPLE, findExample } from '../lib/examples';
@@ -19,6 +23,10 @@ export const DEFAULT_SPEED: Speed = 4;
 export const ANIMATED_SPEED_LIMIT = 10;
 /** Steps `Step back` can undo. */
 export const HISTORY_CAPACITY = 1024;
+/** Watchpoint hits the Watchpoints tab keeps; the oldest is dropped beyond it. */
+export const HIT_LOG_CAPACITY = 100;
+/** Host throughput is measured over this sliding window. */
+export const THROUGHPUT_WINDOW_MS = 1000;
 
 /** In `max` mode: instructions per `run()` call, and how long one frame may keep calling it. */
 const MAX_BATCH = 4096;
@@ -37,6 +45,17 @@ export interface CpuView {
   /** Addresses of enabled breakpoints. */
   readonly breakpointAddresses: readonly number[];
   readonly history: HistoryStats;
+  /** Every trace entry the CPU still keeps (bounded), oldest first. */
+  readonly trace: readonly TraceEntry[];
+  readonly stack: StackView;
+  readonly metrics: CpuMetrics;
+  readonly watchpoints: readonly Watchpoint[];
+}
+
+/** A watchpoint hit and the step (trace sequence) that made it. */
+export interface WatchHitRecord {
+  readonly step: number;
+  readonly hit: WatchpointHit;
 }
 
 export interface DashboardSnapshot {
@@ -56,6 +75,19 @@ export interface DashboardSnapshot {
   readonly lastStop: DebugStop | null;
   /** A short note for the status line (e.g. no more history). */
   readonly notice: string | null;
+  /** Watchpoint hits since load or reset, oldest first (at most `HIT_LOG_CAPACITY`). */
+  readonly watchHits: readonly WatchHitRecord[];
+  /**
+   * Host throughput in instructions per second, measured here in the browser over a
+   * `THROUGHPUT_WINDOW_MS` sliding window. While running it is `null` until a full window has
+   * passed; once stopped it holds the last run's figure, or `null` when that run was too short.
+   */
+  readonly throughput: number | null;
+}
+
+interface ThroughputSample {
+  readonly time: number;
+  readonly count: number;
 }
 
 /** Animation-frame hooks, injectable so tests can drive the scheduler by hand. */
@@ -91,6 +123,11 @@ export class DashboardStore {
   #assembly: AssembleResult;
   #loaded: Loaded;
   #breakpointLines = new Set<number>();
+  /** Watchpoints, re-applied to every new session; kept in the session's list order. */
+  #watchTargets: WatchpointTarget[] = [];
+  #watchHits: WatchHitRecord[] = [];
+  #samples: ThroughputSample[] = [];
+  #throughput: number | null = null;
   #speed: Speed = DEFAULT_SPEED;
   #running = false;
   #frameId: number | null = null;
@@ -157,6 +194,8 @@ export class DashboardStore {
     this.#loaded = this.#createSession();
     this.#lastStop = null;
     this.#notice = null;
+    this.#watchHits = [];
+    this.#throughput = null;
     this.#publish();
   }
 
@@ -176,6 +215,8 @@ export class DashboardStore {
     }
     this.#running = true;
     this.#lastFrameTime = null;
+    this.#samples = [];
+    this.#throughput = null;
     this.#scheduleFrame();
     this.#publish();
   }
@@ -183,6 +224,7 @@ export class DashboardStore {
   pause(): void {
     if (!this.#running) return;
     this.#stopScheduler();
+    this.#finishThroughput();
     this.#publish();
   }
 
@@ -196,6 +238,10 @@ export class DashboardStore {
   stepBack(): void {
     if (this.#running) return;
     const result = this.#loaded.session.stepBack();
+    if (result.ok) {
+      const undone = result.undone.sequence;
+      this.#watchHits = this.#watchHits.filter((record) => record.step < undone);
+    }
     this.#lastStop = null;
     this.#notice = result.ok ? null : result.message;
     this.#publish();
@@ -206,6 +252,8 @@ export class DashboardStore {
     this.#loaded.session.reset();
     this.#lastStop = null;
     this.#notice = null;
+    this.#watchHits = [];
+    this.#throughput = null;
     this.#publish();
   }
 
@@ -213,6 +261,9 @@ export class DashboardStore {
     if (speed === this.#speed) return;
     this.#speed = speed;
     this.#budget = Math.min(this.#budget, 1);
+    // A new pace starts a new measurement.
+    this.#samples = [];
+    this.#throughput = null;
     this.#publish();
   }
 
@@ -237,6 +288,22 @@ export class DashboardStore {
     this.#publish();
   }
 
+  /** Adds a watchpoint to the CPU; it stays across Load and Reset. Throws `WatchpointError`. */
+  addWatchpoint(target: WatchpointTarget): Watchpoint {
+    const watchpoint = this.#loaded.session.addWatchpoint(target);
+    this.#watchTargets = [...this.#watchTargets, target];
+    this.#publish();
+    return watchpoint;
+  }
+
+  removeWatchpoint(id: number): void {
+    const session = this.#loaded.session;
+    const index = session.listWatchpoints().findIndex((w) => w.id === id);
+    if (index < 0 || !session.removeWatchpoint(id)) return;
+    this.#watchTargets = this.#watchTargets.filter((_, i) => i !== index);
+    this.#publish();
+  }
+
   /** The assembled program as a raw `.bin`: bytes 0x00 through the last emitted byte. */
   programBinary(): Uint8Array<ArrayBuffer> | null {
     if (!this.#assembly.ok) return null;
@@ -256,6 +323,14 @@ export class DashboardStore {
       historyCapacity: HISTORY_CAPACITY,
     });
     this.#applyBreakpoints(session);
+    for (const target of this.#watchTargets) {
+      session.addWatchpoint(target);
+    }
+    session.onStep((entry, hits) => {
+      if (hits.length === 0) return;
+      const records = hits.map((hit) => Object.freeze({ step: entry.sequence, hit }));
+      this.#watchHits = [...this.#watchHits, ...records].slice(-HIT_LOG_CAPACITY);
+    });
     return { source: this.#source, session };
   }
 
@@ -295,6 +370,10 @@ export class DashboardStore {
     this.#frameId = null;
     if (!this.#running) return;
     const session = this.#loaded.session;
+    if (this.#speed === 'max' && this.#samples.length === 0) {
+      // Unthrottled work starts now; a paced run's first sample is its first instruction.
+      this.#samples.push({ time: this.#scheduler.now(), count: session.getInstructionCount() });
+    }
     let stop: DebugStop | null = null;
     if (this.#speed === 'max') {
       const deadline = this.#scheduler.now() + MAX_FRAME_MS;
@@ -316,9 +395,52 @@ export class DashboardStore {
       this.#lastStop = stop;
       if (stop.stopReason !== 'limit') this.#running = false;
     }
+    this.#sampleThroughput(session.getInstructionCount());
+    if (this.#running) {
+      this.#throughput = this.#windowRate(THROUGHPUT_WINDOW_MS);
+    } else {
+      this.#finishThroughput();
+    }
     if (this.#running) this.#scheduleFrame();
     if (stop !== null || !this.#running) this.#publish();
   };
+
+  /**
+   * Records the instruction count now, when it changed, and drops samples older than one window.
+   * Sampling only frames that executed something measures between instructions, so a paced run
+   * at N/s reads N rather than flickering to N+1 when a window happens to hold both ends.
+   */
+  #sampleThroughput(count: number): void {
+    const now = this.#scheduler.now();
+    if (this.#samples.at(-1)?.count === count) return;
+    this.#samples.push({ time: now, count });
+    // Keep the newest sample at or before the window start, so a full window spans the window.
+    while (
+      this.#samples.length > 2 &&
+      (this.#samples[1]?.time ?? now) <= now - THROUGHPUT_WINDOW_MS
+    ) {
+      this.#samples.shift();
+    }
+  }
+
+  /** Instructions per second over the kept samples, or `null` when they span less than `minSpan` ms. */
+  #windowRate(minSpan: number): number | null {
+    const first = this.#samples[0];
+    const last = this.#samples.at(-1);
+    if (first === undefined || last === undefined) return null;
+    const span = last.time - first.time;
+    if (span <= 0 || span < minSpan) return null;
+    return ((last.count - first.count) * 1000) / span;
+  }
+
+  /**
+   * Fixes the stopped run's throughput. A paced run needs a full window (its first instruction
+   * runs at once, so a shorter span overstates the pace); an unthrottled one counts at any length.
+   */
+  #finishThroughput(): void {
+    this.#throughput = this.#windowRate(this.#speed === 'max' ? 0 : THROUGHPUT_WINDOW_MS);
+    this.#samples = [];
+  }
 
   #publish(): void {
     this.#snapshot = this.#buildSnapshot();
@@ -327,6 +449,7 @@ export class DashboardStore {
 
   #buildSnapshot(): DashboardSnapshot {
     const session = this.#loaded.session;
+    const trace = session.getExecutionTrace();
     return Object.freeze({
       exampleName: this.#exampleName,
       source: this.#source,
@@ -339,16 +462,22 @@ export class DashboardStore {
         status: this.#running ? CpuStatus.RUNNING : session.getStatus(),
         state: session.getState(),
         current: session.getCurrentInstruction(),
-        lastEntry: session.getTimeline(1)[0] ?? null,
+        lastEntry: trace.at(-1) ?? null,
         instructionCount: session.getInstructionCount(),
         breakpointAddresses: session
           .listBreakpoints()
           .filter((b) => b.enabled)
           .map((b) => b.address),
         history: session.getHistoryStats(),
+        trace,
+        stack: session.getStackView(),
+        metrics: session.getMetrics(),
+        watchpoints: session.listWatchpoints(),
       }),
       lastStop: this.#lastStop,
       notice: this.#notice,
+      watchHits: this.#watchHits,
+      throughput: this.#throughput,
     });
   }
 }

@@ -1,8 +1,9 @@
 import { AsmEditor } from './components/editor/AsmEditor';
 import { CpuPanel } from './components/cpu/CpuPanel';
 import { MemoryGrid } from './components/memory/MemoryGrid';
+import { PerformancePanel } from './components/perf/PerformancePanel';
+import { TimelinePanel } from './components/timeline/TimelinePanel';
 import { TopBar } from './components/TopBar';
-import { Panel } from './components/ui';
 import type { DashboardStore } from './state/dashboardStore';
 import { useDebugSession } from './state/useDebugSession';
 
@@ -20,19 +21,10 @@ export function App({ createStore }: { createStore?: () => DashboardStore }) {
           <AsmEditor snapshot={snapshot} store={store} />
           <CpuPanel snapshot={snapshot} />
           <MemoryGrid snapshot={snapshot} />
-          {/* Filled by the follow-up ticket: timeline, stack, watchpoints, trace and performance. */}
-          <Panel title="Execution timeline" className="min-h-40">
-            <PendingPanel />
-          </Panel>
-          <Panel title="Performance" className="min-h-40">
-            <PendingPanel />
-          </Panel>
+          <TimelinePanel snapshot={snapshot} store={store} />
+          <PerformancePanel snapshot={snapshot} />
         </main>
       </div>
     </div>
   );
-}
-
-function PendingPanel() {
-  return <p className="p-3 text-xs text-faint">Not part of this build yet.</p>;
 }

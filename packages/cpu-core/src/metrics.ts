@@ -64,6 +64,27 @@ export class MetricsCounter {
     return cycles;
   }
 
+  /** Exactly reverses one `retire()` with the same arguments (the debugger's step-back). */
+  unretire(
+    info: OpcodeInfo,
+    transferred: boolean,
+    branchTaken: boolean | null,
+    reads: number,
+    writes: number,
+  ): void {
+    this.#instructions -= 1;
+    this.#cycles -= estimatedCycles(info, transferred);
+    this.#reads -= reads;
+    this.#writes -= writes;
+    this.#fetchedBytes -= info.length;
+    this.#byOpcode[info.id] -= 1;
+    if (branchTaken === true) {
+      this.#taken -= 1;
+    } else if (branchTaken === false) {
+      this.#notTaken -= 1;
+    }
+  }
+
   reset(): void {
     this.#instructions = 0;
     this.#cycles = 0;

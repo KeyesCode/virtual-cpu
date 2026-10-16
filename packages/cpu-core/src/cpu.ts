@@ -101,6 +101,16 @@ export interface RunResult {
   readonly stopReason: StopReason;
 }
 
+/**
+ * What `undoStep()` needs to reverse one step: its trace entry plus the IR and status the CPU had
+ * before it. A step only starts from READY or PAUSED, so the fault before it was always `null`.
+ */
+export interface StepUndo {
+  readonly entry: TraceEntry;
+  readonly ir: DecodedInstruction | null;
+  readonly status: CpuStatus;
+}
+
 /** A program as raw bytes loaded at 0x00, or a `ProgramImage` with an origin. */
 export type ProgramInput = ProgramImage | readonly number[] | Uint8Array;
 
@@ -120,6 +130,13 @@ export interface Cpu {
   getExecutionTrace(): readonly TraceEntry[];
   getMetrics(): CpuMetrics;
   setObserver(observer: CpuObserver | null): void;
+  /**
+   * Reverses the most recent step from its trace entry, for the debugger's step-back: memory
+   * writes, registers, SP, SD, FLAGS, PC, IR, status, fault, metrics and the step counter return to
+   * what they were before it, and the entry leaves the trace. Throws a RangeError for any entry but
+   * the most recent step's.
+   */
+  undoStep(undo: StepUndo): void;
 }
 
 /** Default `maxInstructions` for `run()`, so an endless loop always returns. */
@@ -291,6 +308,49 @@ class VirtualCpu implements Cpu {
 
   setObserver(observer: CpuObserver | null): void {
     this.#observer = observer;
+  }
+
+  undoStep(undo: StepUndo): void {
+    this.#assertIdle('undoStep');
+    const { entry, ir, status } = undo;
+    if (entry.sequence !== this.#sequence - 1) {
+      throw new RangeError(
+        `undoStep() takes the most recent step (sequence ${String(this.#sequence - 1)}), got sequence ${String(entry.sequence)}`,
+      );
+    }
+    if (status !== CpuStatus.READY && status !== CpuStatus.PAUSED) {
+      throw new RangeError(`A step starts from READY or PAUSED, not ${status}`);
+    }
+    const regs = this.#regs;
+    for (const write of entry.memoryWrites.toReversed()) {
+      this.#memory.write(write.address, write.before);
+    }
+    for (const change of entry.registerChanges) {
+      if (change.register === 'SP') {
+        regs.sp = change.before;
+      } else if (change.register === 'SD') {
+        regs.sd = change.before;
+      } else {
+        regs.r[REGISTER_NAMES.indexOf(change.register)] = change.before;
+      }
+    }
+    regs.flags = entry.flagsBefore;
+    regs.pc = entry.pc;
+    // A precisely faulting step costs 0 cycles and retired nothing; every retired step costs > 0.
+    if (entry.instruction !== null && entry.cycles > 0) {
+      this.#metrics.unretire(
+        opcodeById[entry.instruction.id],
+        entry.controlTransferred,
+        entry.branchTaken,
+        entry.memoryReads.length,
+        entry.memoryWrites.length,
+      );
+    }
+    this.#ir = ir;
+    this.#status = status;
+    this.#fault = null;
+    this.#sequence -= 1;
+    this.#trace.dropNewest(entry);
   }
 
   #assertIdle(method: string): void {

@@ -1,23 +1,37 @@
-# virtual-cpu
+# VCPU-8
 
-VCPU-8 is an educational 8-bit virtual CPU. It includes an emulator core, an assembler and disassembler, a debugger, a React dashboard, a CLI and benchmarks. Its architecture is documented precisely enough to rebuild the CPU in SystemVerilog.
+VCPU-8 is an educational 8-bit CPU, built from scratch in TypeScript. You write assembly, assemble it into real machine code, and watch the emulator fetch, decode and execute it one instruction at a time. You can do this from a web dashboard, a debugger or the command line.
 
-> Status: scaffold only. The CPU, ISA, assembler and UI arrive in later tickets.
+It is Project 1 of a semiconductor learning path. The architecture is specified precisely enough to rebuild in SystemVerilog, and it ships the test vectors that a hardware version must pass. Project 2 is that rebuild.
 
-## Requirements
+![The VCPU-8 dashboard running 14-fibonacci.asm](docs/images/dashboard-1600x1000.png)
 
-- Node.js 22.12 or newer (see `.nvmrc`)
-- pnpm 10, pinned by the `packageManager` field (enable it with `corepack enable`, or let pnpm manage its own version)
+## What's in it
 
-## Getting started
+- **The CPU (`@vcpu/cpu-core`).** Eight 8-bit registers, Z/C/N/V flags, 256 bytes of memory, a bounded stack and 30 opcodes in 1–3 bytes. It is deterministic, its faults are precise, and it has no React, Node or browser dependency.
+- **One ISA definition (`@vcpu/shared`).** The emulator, assembler, debugger and fixtures all read the same frozen opcode table, so they cannot disagree.
+- **An assembler and disassembler.** Two passes, with labels, `.org`, `.byte`, `.equ`, and errors that give line and column.
+- **A debugger.** Breakpoints, memory watchpoints, and step back through a bounded history.
+- **A web dashboard.** An editor, CPU state, a memory map, a conceptual instruction-cycle view, an execution timeline, and performance figures.
+- **A CLI.** `pnpm cpu assemble | run | debug | disassemble | benchmark`.
+- **A benchmark suite.** Host time and simulated metrics, kept separate, compared against a committed baseline.
+- **Twenty example programs**, each checked by a test.
+- **98 hardware fixtures** for RTL verification.
+
+The [Project 1 report](docs/project-1-report.md) has the test counts, coverage, benchmark baseline, known limitations, and the readiness assessment for the SystemVerilog CPU.
+
+## Quick start
+
+You need Node.js 22.12 or newer (see `.nvmrc`) and pnpm 10. pnpm's version is pinned by `packageManager`, so `corepack enable` is enough.
 
 ```sh
 pnpm install
-pnpm check          # typecheck + lint + format check + tests, across every workspace
-pnpm cpu --help     # CLI
-pnpm --filter @vcpu/web dev     # web dashboard dev server
-pnpm --filter @vcpu/web build   # static build to apps/web/dist
+pnpm check                                  # typecheck + lint + format check + all tests
+pnpm cpu run examples/01-addition.asm       # LDI R0, 10 / LDI R1, 20 / ADD R0, R1 / HLT → R0 = 30
+pnpm --filter @vcpu/web dev                 # open the dashboard
 ```
+
+Everything runs locally. There is no backend, database or network service.
 
 ## Command line
 
@@ -30,6 +44,7 @@ pnpm -s cpu run examples/14-fibonacci.asm --json          # one JSON document (-
 pnpm cpu assemble examples/14-fibonacci.asm -o fib.bin --listing --symbols
 pnpm cpu disassemble fib.bin
 pnpm cpu debug examples/14-fibonacci.asm                  # step, back, run, break, watch, regs, mem, …
+pnpm cpu benchmark examples/14-fibonacci.asm              # host timing + simulated metrics
 ```
 
 | Command                                    | What it does                                                                                  |
@@ -44,18 +59,20 @@ Exit codes: 0 ok (for `run`, halted), 1 assembly errors, 2 CPU fault, 3 instruct
 
 ## Scripts
 
-| Script               | What it does                                               |
-| -------------------- | ---------------------------------------------------------- |
-| `pnpm typecheck`     | `tsc` for the root config files and every workspace        |
-| `pnpm lint`          | ESLint (typescript-eslint strict, type-checked)            |
-| `pnpm format`        | Prettier, write                                            |
-| `pnpm format:check`  | Prettier, check only                                       |
-| `pnpm test`          | Vitest across all workspaces                               |
-| `pnpm test:coverage` | Vitest with V8 coverage (`coverage/`)                      |
-| `pnpm check`         | typecheck, lint, format check and tests, in that order     |
-| `pnpm cpu <command>` | Runs the `@vcpu/cli` command-line interface                |
-| `pnpm bench`         | Benchmarks every example into `benchmarks/results/`        |
-| `pnpm bench:compare` | Compares the newest result with `benchmarks/baseline.json` |
+| Script                          | What it does                                               |
+| ------------------------------- | ---------------------------------------------------------- |
+| `pnpm check`                    | typecheck, lint, format check and tests, in that order     |
+| `pnpm typecheck`                | `tsc` for the root config files and every workspace        |
+| `pnpm lint`                     | ESLint (typescript-eslint strict, type-checked)            |
+| `pnpm format` / `format:check`  | Prettier, write or check only                              |
+| `pnpm test`                     | Vitest across all workspaces                               |
+| `pnpm test:coverage`            | Vitest with V8 coverage (`coverage/`)                      |
+| `pnpm cpu <command>`            | The `@vcpu/cli` command-line interface                     |
+| `pnpm bench`                    | Benchmarks every example into `benchmarks/results/`        |
+| `pnpm bench:compare`            | Compares the newest result with `benchmarks/baseline.json` |
+| `pnpm fixtures:export`          | Regenerates the hardware fixtures in `fixtures/v1/`        |
+| `pnpm --filter @vcpu/web dev`   | Dashboard dev server                                       |
+| `pnpm --filter @vcpu/web build` | Static dashboard build to `apps/web/dist`                  |
 
 ## Layout
 
@@ -64,14 +81,16 @@ apps/
   web/          @vcpu/web        Vite + React + Tailwind dashboard (static, deployed to Vercel)
   cli/          @vcpu/cli        `pnpm cpu` command-line interface
 packages/
+  shared/       @vcpu/shared     the single authoritative ISA definition and fixture schema
   cpu-core/     @vcpu/cpu-core   CPU emulator; no React, Node or browser APIs
   assembler/    @vcpu/assembler  two-pass assembler and disassembler
   debugger/     @vcpu/debugger   breakpoints, watchpoints, step-back history
   benchmarks/   @vcpu/benchmarks benchmark suite
-  shared/       @vcpu/shared     the single authoritative ISA definition
-examples/       example assembly programs
+examples/       20 example programs, each with a .expect.json checked by the tests
+fixtures/v1/    hardware test fixtures (vcpu8-fixture/1)
 benchmarks/     committed baseline.json; results/ holds local runs (git-ignored)
-docs/           architecture and hardware-porting documentation
+scripts/        fixture exporter
+docs/           architecture, ISA, hardware porting, concepts, the Project 1 report
 ```
 
 Workspace packages are consumed straight from their TypeScript source through `exports`. Tests and the dev tools need no build step.
@@ -80,9 +99,21 @@ Workspace packages are consumed straight from their TypeScript source through `e
 
 ## Documentation
 
-- [docs/concepts.md](docs/concepts.md): a short course from transistors to fetch-decode-execute, tied to VCPU-8. Start here if you are new to hardware.
-- [docs/architecture.md](docs/architecture.md): the VCPU-8 programmer's model and block diagram, with links to the instruction set, memory model and execution documents.
-- [docs/benchmarks.md](docs/benchmarks.md): how the benchmark suite measures host time, how simulated cycles are estimated, and how to compare runs against the committed baseline.
+New to hardware? Start with the concepts guide. Porting to RTL? Start with hardware porting.
+
+| Document                                             | What it covers                                                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [docs/concepts.md](docs/concepts.md)                 | A short course from transistors and logic gates to fetch-decode-execute, tied to VCPU-8     |
+| [docs/architecture.md](docs/architecture.md)         | Programmer's model, block diagram, design principles, versioning, v1.0 limitations          |
+| [docs/instruction-set.md](docs/instruction-set.md)   | ISA 1.0.0: formats, encodings, opcode map, per-instruction semantics and flags, timing      |
+| [docs/memory-model.md](docs/memory-model.md)         | Memory map, address rules, the stack and its depth counter, program images                  |
+| [docs/cpu-execution.md](docs/cpu-execution.md)       | The execution cycle, faults and their priority, reset, statuses, metrics                    |
+| [docs/benchmarks.md](docs/benchmarks.md)             | How host time is measured, how simulated cycles are estimated, comparing against a baseline |
+| [docs/hardware-porting.md](docs/hardware-porting.md) | Mapping VCPU-8 to SystemVerilog modules, and using the fixtures in a testbench              |
+| [docs/project-1-report.md](docs/project-1-report.md) | Project 1 completion report: evidence, results, limitations, Project 2 readiness            |
+| [examples/README.md](examples/README.md)             | The 20 example programs, their expected results and overflow notes                          |
+| [fixtures/README.md](fixtures/README.md)             | The `vcpu8-fixture/1` format and what `fixtures/v1/` contains                               |
+| [apps/cli/README.md](apps/cli/README.md)             | Full CLI reference                                                                          |
 
 ## Deployment
 

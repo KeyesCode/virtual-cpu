@@ -1,0 +1,7 @@
+{
+  "maxInstructions": 30,
+  "status": "HALTED",
+  "registers": { "R0": "0x19", "R1": "0xCE", "R2": 0, "R3": "0x11" },
+  "flags": { "Z": 1, "C": 0, "N": 0, "V": 0 },
+  "memory": [{ "address": "0x80", "bytes": ["0x19", "0x11"] }]
+}

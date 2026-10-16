@@ -1,0 +1,6 @@
+{
+  "maxInstructions": 10,
+  "status": "HALTED",
+  "registers": { "R0": 30, "R1": 20, "PC": "0x08", "SP": "0xFF" },
+  "flags": { "Z": 0, "C": 0, "N": 0, "V": 0 }
+}

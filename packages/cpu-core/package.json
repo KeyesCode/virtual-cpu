@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage --coverage.include='src/**' --coverage.exclude='src/__tests__/**' --coverage.exclude='src/**/*.test.ts' --coverage.thresholds.branches=95"
   },
   "devDependencies": {
+    "@vcpu/assembler": "workspace:*",
     "fast-check": "^4.10.2",
     "typescript": "catalog:",
     "vitest": "catalog:"

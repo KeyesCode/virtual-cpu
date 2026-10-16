@@ -1,0 +1,10 @@
+{
+  "maxInstructions": 50,
+  "status": "HALTED",
+  "registers": { "R0": 3, "R1": 4, "R2": 25, "R3": 16, "PC": "0x0B", "SP": "0xFF" },
+  "flags": { "Z": 0, "C": 0, "N": 0, "V": 0 },
+  "memory": [
+    { "address": "0x80", "bytes": ["0x19"] },
+    { "address": "0xFE", "bytes": ["0x19", "0x08"] }
+  ]
+}

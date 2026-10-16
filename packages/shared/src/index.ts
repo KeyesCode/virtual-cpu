@@ -17,6 +17,7 @@ import { OPCODES } from './isa/opcodes.js';
 export const PACKAGE_NAME = '@vcpu/shared';
 
 export * from './bits.js';
+export * from './fixtures/expectation.js';
 export * from './isa/constants.js';
 export * from './isa/flags.js';
 export * from './isa/formats.js';

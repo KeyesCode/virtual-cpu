@@ -8,10 +8,15 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.include='src/**' --coverage.exclude='src/__tests__/**' --coverage.exclude='src/**/*.test.ts' --coverage.thresholds.branches=95"
   },
   "devDependencies": {
+    "fast-check": "^4.10.2",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@vcpu/shared": "workspace:*"
   }
 }

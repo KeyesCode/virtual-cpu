@@ -34,11 +34,7 @@ function hex(value: number): string {
   return `0x${value.toString(16).toUpperCase().padStart(2, '0')}`;
 }
 
-function alu(
-  name: string,
-  description: string,
-  source: string,
-): Vector {
+function alu(name: string, description: string, source: string): Vector {
   return { name, kind: 'instruction', description, source };
 }
 
@@ -64,7 +60,12 @@ const CMP_LESS = 'LDI R5, 2\nLDI R6, 3\nCMP R5, R6   ; Z=0 C=1\n';
 
 const INSTRUCTION_VECTORS: readonly Vector[] = [
   // System
-  { name: 'op-nop', kind: 'instruction', description: 'NOP changes nothing but PC.', source: 'NOP\nNOP\nHLT\n' },
+  {
+    name: 'op-nop',
+    kind: 'instruction',
+    description: 'NOP changes nothing but PC.',
+    source: 'NOP\nNOP\nHLT\n',
+  },
   {
     name: 'op-hlt',
     kind: 'instruction',
@@ -106,8 +107,10 @@ const INSTRUCTION_VECTORS: readonly Vector[] = [
   {
     name: 'op-load-ind',
     kind: 'instruction',
-    description: 'LOAD Rd, [Rp], including LOAD R2, [R2] (the pointer is read before it is overwritten).',
-    source: 'LDI R2, 0x90\nLOAD R1, [R2]\nLDI R3, 0x91\nLOAD R3, [R3]\nHLT\n.org 0x90\n.byte 0x5E, 0xC3\n',
+    description:
+      'LOAD Rd, [Rp], including LOAD R3, [R3] (the pointer is read before it is overwritten).',
+    source:
+      'LDI R2, 0x90\nLOAD R1, [R2]\nLDI R3, 0x91\nLOAD R3, [R3]\nHLT\n.org 0x90\n.byte 0x5E, 0xC3\n',
   },
   {
     name: 'op-store-abs',
@@ -123,9 +126,21 @@ const INSTRUCTION_VECTORS: readonly Vector[] = [
   },
   // Arithmetic
   alu('op-add', 'ADD 10 + 20 = 30: every flag 0.', binary('ADD', 10, 20)),
-  alu('op-add-carry-zero', 'ADD 0xFF + 0x01 = 0x00: Z=1 C=1, no signed overflow (−1 + 1).', binary('ADD', 0xff, 0x01)),
-  alu('op-add-signed-overflow', 'ADD 0x7F + 0x01 = 0x80: N=1 V=1 (127 + 1).', binary('ADD', 0x7f, 0x01)),
-  alu('op-add-both-overflow', 'ADD 0x80 + 0x80 = 0x00: Z=1 C=1 V=1 (−128 + −128).', binary('ADD', 0x80, 0x80)),
+  alu(
+    'op-add-carry-zero',
+    'ADD 0xFF + 0x01 = 0x00: Z=1 C=1, no signed overflow (−1 + 1).',
+    binary('ADD', 0xff, 0x01),
+  ),
+  alu(
+    'op-add-signed-overflow',
+    'ADD 0x7F + 0x01 = 0x80: N=1 V=1 (127 + 1).',
+    binary('ADD', 0x7f, 0x01),
+  ),
+  alu(
+    'op-add-both-overflow',
+    'ADD 0x80 + 0x80 = 0x00: Z=1 C=1 V=1 (−128 + −128).',
+    binary('ADD', 0x80, 0x80),
+  ),
   alu(
     'op-add-same-register',
     'ADD R0, R0 with 0x41: both operands are read before the write; 0x82, N=1 V=1.',
@@ -134,15 +149,27 @@ const INSTRUCTION_VECTORS: readonly Vector[] = [
   alu('op-sub', 'SUB 50 − 20 = 30: every flag 0.', binary('SUB', 50, 20)),
   alu('op-sub-zero', 'SUB 5 − 5 = 0: Z=1, no borrow.', binary('SUB', 5, 5)),
   alu('op-sub-borrow', 'SUB 0x00 − 0x01 = 0xFF: C=1 (borrow) N=1.', binary('SUB', 0x00, 0x01)),
-  alu('op-sub-signed-overflow', 'SUB 0x80 − 0x01 = 0x7F: V=1 (−128 − 1).', binary('SUB', 0x80, 0x01)),
+  alu(
+    'op-sub-signed-overflow',
+    'SUB 0x80 − 0x01 = 0x7F: V=1 (−128 − 1).',
+    binary('SUB', 0x80, 0x01),
+  ),
   alu(
     'op-sub-positive-overflow',
     'SUB 0x7F − 0xFF = 0x80: C=1 (127 < 255 unsigned) N=1 V=1 (127 − (−1) = 128).',
     binary('SUB', 0x7f, 0xff),
   ),
   alu('op-mul', 'MUL 12 × 10 = 120: fits, C=0 V=0.', binary('MUL', 12, 10)),
-  alu('op-mul-overflow', 'MUL 20 × 13 = 260 → 0x04: the product exceeds 0xFF, C=1 V=1.', binary('MUL', 20, 13)),
-  alu('op-mul-zero-low-byte', 'MUL 0x10 × 0x10 = 0x100 → 0x00: Z=1 C=1 V=1.', binary('MUL', 0x10, 0x10)),
+  alu(
+    'op-mul-overflow',
+    'MUL 20 × 13 = 260 → 0x04: the product exceeds 0xFF, C=1 V=1.',
+    binary('MUL', 20, 13),
+  ),
+  alu(
+    'op-mul-zero-low-byte',
+    'MUL 0x10 × 0x10 = 0x100 → 0x00: Z=1 C=1 V=1.',
+    binary('MUL', 0x10, 0x10),
+  ),
   alu('op-mul-negative', 'MUL 0x40 × 0x02 = 0x80: N=1, C=0 V=0.', binary('MUL', 0x40, 0x02)),
   alu('op-div', 'DIV 200 ÷ 7 = 28 (unsigned, rounded down).', binary('DIV', 200, 7)),
   alu('op-div-zero-quotient', 'DIV 3 ÷ 7 = 0: Z=1.', binary('DIV', 3, 7)),
@@ -153,25 +180,57 @@ const INSTRUCTION_VECTORS: readonly Vector[] = [
   ),
   alu('op-inc', 'INC 0x41 = 0x42.', unary('INC', 0x41)),
   alu('op-inc-7f', 'INC 0x7F = 0x80: N=1 V=1.', unary('INC', 0x7f)),
-  alu('op-inc-ff-keeps-carry', 'INC 0xFF = 0x00 after C=1: Z=1, C unchanged (still 1).', unary('INC', 0xff, SET_CN)),
+  alu(
+    'op-inc-ff-keeps-carry',
+    'INC 0xFF = 0x00 after C=1: Z=1, C unchanged (still 1).',
+    unary('INC', 0xff, SET_CN),
+  ),
   alu('op-dec', 'DEC 0x42 = 0x41.', unary('DEC', 0x42)),
   alu('op-dec-80', 'DEC 0x80 = 0x7F: V=1.', unary('DEC', 0x80)),
   alu('op-dec-01', 'DEC 0x01 = 0x00: Z=1.', unary('DEC', 0x01)),
-  alu('op-dec-00-keeps-carry', 'DEC 0x00 = 0xFF after C=1: N=1, C unchanged (still 1).', unary('DEC', 0x00, SET_CN)),
+  alu(
+    'op-dec-00-keeps-carry',
+    'DEC 0x00 = 0xFF after C=1: N=1, C unchanged (still 1).',
+    unary('DEC', 0x00, SET_CN),
+  ),
   // Logic
-  alu('op-and', 'AND 0xF0 & 0x3C = 0x30 after Z=1 C=1 V=1: C and V cleared.', binary('AND', 0xf0, 0x3c, SET_ZCV)),
+  alu(
+    'op-and',
+    'AND 0xF0 & 0x3C = 0x30 after Z=1 C=1 V=1: C and V cleared.',
+    binary('AND', 0xf0, 0x3c, SET_ZCV),
+  ),
   alu('op-and-zero', 'AND 0xF0 & 0x0F = 0x00: Z=1.', binary('AND', 0xf0, 0x0f)),
-  alu('op-or', 'OR 0x80 | 0x01 = 0x81 after Z=1 C=1 V=1: N=1, C and V cleared.', binary('OR', 0x80, 0x01, SET_ZCV)),
+  alu(
+    'op-or',
+    'OR 0x80 | 0x01 = 0x81 after Z=1 C=1 V=1: N=1, C and V cleared.',
+    binary('OR', 0x80, 0x01, SET_ZCV),
+  ),
   alu('op-xor', 'XOR 0xFF ^ 0x5A = 0xA5: N=1.', binary('XOR', 0xff, 0x5a)),
-  alu('op-xor-self', 'XOR R0, R0 = 0x00 after C=1 N=1: Z=1, C cleared.', `${SET_CN}LDI R0, 0x77\nXOR R0, R0\nHLT\n`),
-  alu('op-not', 'NOT 0x0F = 0xF0 after Z=1 C=1 V=1: N=1, C and V cleared.', unary('NOT', 0x0f, SET_ZCV)),
+  alu(
+    'op-xor-self',
+    'XOR R0, R0 = 0x00 after C=1 N=1: Z=1, C cleared.',
+    `${SET_CN}LDI R0, 0x77\nXOR R0, R0\nHLT\n`,
+  ),
+  alu(
+    'op-not',
+    'NOT 0x0F = 0xF0 after Z=1 C=1 V=1: N=1, C and V cleared.',
+    unary('NOT', 0x0f, SET_ZCV),
+  ),
   alu('op-not-ff', 'NOT 0xFF = 0x00: Z=1.', unary('NOT', 0xff)),
   alu('op-shl', 'SHL 0x81 = 0x02: bit 7 shifts into C.', unary('SHL', 0x81)),
   alu('op-shl-80', 'SHL 0x80 = 0x00: Z=1 C=1.', unary('SHL', 0x80)),
-  alu('op-shl-no-carry', 'SHL 0x41 = 0x82 after C=1: N=1, C=0 (bit 7 was 0), V cleared.', unary('SHL', 0x41, SET_ZCV)),
+  alu(
+    'op-shl-no-carry',
+    'SHL 0x41 = 0x82 after C=1: N=1, C=0 (bit 7 was 0), V cleared.',
+    unary('SHL', 0x41, SET_ZCV),
+  ),
   alu('op-shr', 'SHR 0x81 = 0x40: bit 0 shifts into C.', unary('SHR', 0x81)),
   alu('op-shr-01', 'SHR 0x01 = 0x00: Z=1 C=1.', unary('SHR', 0x01)),
-  alu('op-shr-no-carry', 'SHR 0x80 = 0x40 after C=1 N=1: C=0, N=0 (always 0 after SHR).', unary('SHR', 0x80, SET_CN)),
+  alu(
+    'op-shr-no-carry',
+    'SHR 0x80 = 0x40 after C=1 N=1: C=0, N=0 (always 0 after SHR).',
+    unary('SHR', 0x80, SET_CN),
+  ),
   alu('op-cmp-equal', 'CMP 5, 5: Z=1; R0 is not written.', binary('CMP', 5, 5)),
   alu('op-cmp-less', 'CMP 2, 3: C=1 (borrow, unsigned less) N=1.', binary('CMP', 2, 3)),
   alu('op-cmp-greater', 'CMP 3, 2: every flag 0 (unsigned greater).', binary('CMP', 3, 2)),
@@ -299,13 +358,15 @@ const FAULT_VECTORS: readonly Vector[] = [
   {
     name: 'fault-pc-overflow-nop',
     kind: 'fault',
-    description: 'Post-commit PC_OVERFLOW: NOP at 0xFF retires, then PC would be 0x100; PC stays 0xFF.',
+    description:
+      'Post-commit PC_OVERFLOW: NOP at 0xFF retires, then PC would be 0x100; PC stays 0xFF.',
     source: 'JMP last\n.org 0xFF\nlast: NOP\n',
   },
   {
     name: 'fault-pc-overflow-inc',
     kind: 'fault',
-    description: 'Post-commit PC_OVERFLOW: INC R0 at 0xFE commits R0 = 1 and its flags before faulting.',
+    description:
+      'Post-commit PC_OVERFLOW: INC R0 at 0xFE commits R0 = 1 and its flags before faulting.',
     source: 'JMP edge\n.org 0xFE\nedge: INC R0\n',
   },
   {
@@ -317,7 +378,8 @@ const FAULT_VECTORS: readonly Vector[] = [
   {
     name: 'fault-pc-overflow-call',
     kind: 'fault',
-    description: 'Precise PC_OVERFLOW: CALL at 0xFE cannot push the return address 0x100; nothing is pushed.',
+    description:
+      'Precise PC_OVERFLOW: CALL at 0xFE cannot push the return address 0x100; nothing is pushed.',
     source: 'JMP edge\n.org 0xFE\nedge: CALL 0x00\n',
   },
   {
@@ -358,7 +420,8 @@ loop:   PUSH R1
   {
     name: 'fault-stack-underflow-ret',
     kind: 'fault',
-    description: 'STACK_UNDERFLOW: RET with SD = 0 (a PUSH/POP pair first leaves the stack empty again).',
+    description:
+      'STACK_UNDERFLOW: RET with SD = 0 (a PUSH/POP pair first leaves the stack empty again).',
     source: 'PUSH R0\nPOP R1\nRET\nHLT\n',
   },
 ];

@@ -87,7 +87,8 @@ function expectationMismatches(execution: FixtureExecution, expectation: Expecta
   const { expected } = execution;
   const problems: string[] = [];
   if (expected.status !== expectation.status) {
-    const fault = expected.fault === null ? '' : ` (${expected.fault.code} at ${hex(expected.fault.pc)})`;
+    const fault =
+      expected.fault === null ? '' : ` (${expected.fault.code} at ${hex(expected.fault.pc)})`;
     problems.push(`status ${expected.status}${fault}, expected ${expectation.status}`);
   }
   const registers: Record<string, number | undefined> = {
@@ -111,7 +112,9 @@ function expectationMismatches(execution: FixtureExecution, expectation: Expecta
     range.bytes.forEach((want, offset) => {
       const address = range.address + offset;
       if (expected.memory[address] !== want) {
-        problems.push(`mem[${hex(address)}] = ${hex(expected.memory[address] ?? 0)}, expected ${hex(want)}`);
+        problems.push(
+          `mem[${hex(address)}] = ${hex(expected.memory[address] ?? 0)}, expected ${hex(want)}`,
+        );
       }
     });
   }
@@ -174,7 +177,9 @@ function toJson(value: unknown, indent = ''): string {
   if (value !== null && typeof value === 'object') {
     const entries = Object.entries(value).filter(([, item]) => item !== undefined);
     if (entries.length === 0) return '{}';
-    const body = entries.map(([key, item]) => `${inner}${JSON.stringify(key)}: ${toJson(item, inner)}`);
+    const body = entries.map(
+      ([key, item]) => `${inner}${JSON.stringify(key)}: ${toJson(item, inner)}`,
+    );
     return `{\n${body.join(',\n')}\n${indent}}`;
   }
   return JSON.stringify(value);

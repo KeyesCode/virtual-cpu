@@ -10,6 +10,8 @@
   },
   "scripts": {
     "cpu": "pnpm --silent --filter @vcpu/cli start --",
+    "bench": "pnpm --silent cpu benchmark --suite",
+    "bench:compare": "pnpm --silent cpu benchmark --compare",
     "fixtures:export": "tsx scripts/export-fixtures.ts",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",

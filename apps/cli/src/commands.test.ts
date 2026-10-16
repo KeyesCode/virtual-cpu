@@ -187,11 +187,7 @@ describe('usage errors exit 64', () => {
     ['an unknown flag', ['run', 'examples/01-addition.asm', '--fast'], "Unknown option '--fast'"],
     ['a bad --memory', ['run', 'examples/01-addition.asm', '--memory', 'some'], '--memory must be'],
     ['a bad --end', ['disassemble', 'x.bin', '--end', '0x100'], '--end must be an address'],
-    [
-      'the reserved benchmark command',
-      ['benchmark', 'examples/01-addition.asm'],
-      'not available yet',
-    ],
+    ['a bad --samples', ['benchmark', 'examples/01-addition.asm', '--samples', '0'], 'samples'],
   ])('for %s', async (_, args, message) => {
     const result = await cli(args);
     expect(result.exitCode).toBe(64);

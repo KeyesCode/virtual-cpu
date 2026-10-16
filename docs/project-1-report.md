@@ -240,7 +240,6 @@ $ pnpm cpu disassemble add.bin
 - `apps/cli` has 50.7% branch coverage. The `benchmark` command and its formatter (`commands/benchmark.ts`, `format/benchmark.ts`) are mostly exercised by running them, not by unit tests.
 - `apps/web` has 65.5% branch coverage. `StackView`, `TraceLog` and `WatchpointsTab` have almost no component tests.
 - The dashboard has no automated browser end-to-end test. The screenshots in this report came from a one-off Playwright script against `vite preview`, which is not part of the repo.
-- Two CPU-heavy tests sit close to Vitest's default 5 s timeout: the assembler's 1,000-program round trip and cpu-core's `DEFAULT_MAX_INSTRUCTIONS` endless-loop test. The fresh-clone `pnpm check` at `dc5263f` passed (whole suite 5.7 s). Later, other applications loaded the audit machine to a load average of about 8–10 on 12 cores. Both post-edit `pnpm check` runs then exited 1 because these two tests timed out. One run was in the worktree, the other in a fresh clone of the final commit. Typecheck, lint and format still passed, and the other 956 tests passed. Rerun in isolation, the two files passed (46 tests, 3.1 s). They are load-sensitive rather than broken, and giving them explicit timeouts is a follow-up. Until then, `pnpm check` on a busy machine can fail on them.
 
 **Platform and layout.**
 
@@ -280,9 +279,14 @@ Both screenshots show `pnpm --filter @vcpu/web build` served by `vite preview`, 
 
 ## Audit fixes
 
-The audit found two small defects and fixed both:
+The audit found three small defects and fixed all of them:
 
 1. **The dashboard's layout breakpoints fired at the wrong widths.** `apps/web/src/index.css` declared them as `80rem` and `96rem`. A container query resolves `rem` against the root font size, and the dashboard sets that to 13px. So the breakpoints fell at 1040 px and 1248 px instead of the 1280 px and 1536 px that `App.tsx` documents. At 1280 px the dashboard therefore used its widest column template. That left the middle column 311 px wide, which clipped the register cards' binary row, the IR card and the timeline's CHANGES column. The breakpoints are now `1280px` and `1536px`, and the middle column at 1280 px is 411 px wide, as the screenshot shows.
 2. **Every page load logged a 404 for `/favicon.ico`.** `apps/web/index.html` now has an inline SVG icon, and the browser console is clean on load.
+3. **CPU-heavy tests timed out under load.** Vitest allows 5 s per test by default. On an idle machine the whole suite took 5.7 s. With 47 test files in parallel on 12 cores and other applications running (load average 4–10), two tests ran past the limit and `pnpm check` exited 1:
+   - the assembler's 1,000-program round trip (8.7 s);
+   - cpu-core's `DEFAULT_MAX_INSTRUCTIONS` endless-loop test (6.8 s).
+
+   A third, the debugger's step-back property test, took 3.0 s for one program. These three now have an explicit `30_000` ms timeout, the same one `apps/cli/src/bin.test.ts` already used for its 4.8 s process test. After the change, `pnpm check` passed 958 of 958 tests at a load average of 10.5.
 
 Nothing else turned up that needed fixing. Everything in [Known limitations](#known-limitations) is documented there rather than changed in this ticket.

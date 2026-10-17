@@ -36,13 +36,22 @@ ECP5_SPEED     := 6
 NEXTPNR_ICE40 ?= $(TOOL_BIN)nextpnr-ice40
 NEXTPNR_ECP5  ?= $(TOOL_BIN)nextpnr-ecp5
 
+# A design variant (research/cpu/experiments/README.md): `rtl-tools experiment` sets
+# SYNTH_DIR=build/variants/<hash>/synth, SYNTH_DEFINES to `-DNAME[=value]` flags for read_verilog
+# and SYNTH_PARAMS to `NAME=value` top-level parameters, set with chparam on each top. Both are
+# empty for the committed design.
+SYNTH_DEFINES ?=
+SYNTH_PARAMS  ?=
+# `$(call synth_chparam,<top>)`: `; chparam -set NAME value <top>` for each SYNTH_PARAMS entry.
+synth_chparam = $(foreach p,$(SYNTH_PARAMS),; chparam -set $(subst =, ,$(p)) $(1))
+
 # `$(call synth_read,<sources>)`: the Yosys commands that read the sources, packages first.
-synth_read = read_verilog -sv -D SYNTHESIS $(1)
+synth_read = read_verilog -sv -D SYNTHESIS $(SYNTH_DEFINES) $(1)
 # `$(call synth_fpga_read,<core sources>)`: the same plus the FPGA wrapper and its program.
 synth_fpga_read = $(call synth_read,$(1) $(FPGA_WRAPPER)); \
-  chparam -set INIT_FILE "$(FPGA_INIT_FILE)" vcpu8_fpga_wrapper
+  chparam -set INIT_FILE "$(FPGA_INIT_FILE)" vcpu8_fpga_wrapper$(call synth_chparam,vcpu8_fpga_wrapper)
 # `$(call synth_generic,<sources>,<dir>)`: the generic flow, with its outputs and log in <dir>.
-synth_generic = cd $(2) && $(YOSYS) -q -l generic.log -p '$(call synth_read,$(1)); script $(SYNTH_SCRIPTS)/generic.ys'
+synth_generic = cd $(2) && $(YOSYS) -q -l generic.log -p '$(call synth_read,$(1))$(call synth_chparam,vcpu8_top); script $(SYNTH_SCRIPTS)/generic.ys'
 
 NEXTPNR_COMMON = --json $(1).json --freq $(SYNTH_FREQ_MHZ) --seed $(SYNTH_SEED) --timing-allow-fail \
   --report nextpnr-$(1).report.json -l nextpnr-$(1).log -q

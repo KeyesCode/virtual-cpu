@@ -23,6 +23,7 @@
     "hardware:synth": "make -C hardware/rtl/vcpu8 synth",
     "hardware:verify": "make -C hardware/rtl/vcpu8 verify",
     "hardware:verify:long": "make -C hardware/rtl/vcpu8 verify-long",
+    "hardware:benchmark": "make -C hardware/rtl/vcpu8 benchmark",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "description": "Smoke test of the experiment framework: the committed design as its only variant, so every stage (runner build, verify, benchmark, synth, comparison) runs once and its numbers must equal the committed baseline's.",
+  "verify": { "seed": 1, "count": 200 },
+  "variants": [
+    {
+      "name": "default",
+      "description": "The design as committed: combinational multiplier and divider.",
+      "defines": {},
+      "parameters": {}
+    }
+  ]
+}

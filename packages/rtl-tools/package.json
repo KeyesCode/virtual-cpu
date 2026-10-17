@@ -10,6 +10,7 @@
     "cli": "tsx src/cli.ts",
     "gen:isa": "tsx src/cli.ts gen-isa",
     "gen:alu-vectors": "tsx src/cli.ts gen-alu-vectors",
+    "gen:decoder-vectors": "tsx src/cli.ts gen-decoder-vectors",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

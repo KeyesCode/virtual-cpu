@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "kind": "vcpu8-experiment",
+  "experiment": "smoke",
+  "description": "Smoke test of the experiment framework: the committed design as its only variant, so every stage (runner build, verify, benchmark, synth, comparison) runs once and its numbers must equal the committed baseline's.",
+  "createdAt": "2026-10-17T02:14:17.475Z",
+  "revision": "vcpu8-mc-r1",
+  "isaVersion": "1.0.0",
+  "git": {
+    "sha": "462082293956bd3c347943b58a55965ceea374d9",
+    "shortSha": "4620822",
+    "dirty": false
+  },
+  "toolchain": "OSS CAD Suite 2026-10-16",
+  "tools": {
+    "verilator": "Verilator 5.053 devel rev v5.052-448-g1272f7355 (mod)",
+    "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0, Release, Clang /usr/local/osxcross/target/bin/aarch64-apple-darwin25.5-clang++ 21.1.8)",
+    "sby": "SBY v0.70-9-g79fc9ed",
+    "yices-smt2": "Yices 2.7.0",
+    "boolector": "3.2.4",
+    "z3": "Z3 version 4.15.5 - 64 bit",
+    "bitwuzla": "0.9.1",
+    "nextpnr-ice40": "\"nextpnr-ice40\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+    "gtkwave": "GTKWave Analyzer v4.0.0-prealpha (f6d60e0) (w)1999-2022 BSI"
+  },
+  "config": {
+    "verify": {
+      "corpora": ["fixtures", "examples", "programs", "regressions", "random"],
+      "seed": 1,
+      "count": 200
+    },
+    "benchmark": {
+      "programDir": "examples",
+      "programs": 20
+    },
+    "baseline": "default"
+  },
+  "passed": true,
+  "variants": [
+    {
+      "name": "default",
+      "description": "The design as committed: combinational multiplier and divider.",
+      "hash": "976f6ae22b15",
+      "defines": {},
+      "parameters": {},
+      "status": "passed",
+      "failedStage": null,
+      "reason": null,
+      "verify": {
+        "passed": true,
+        "cases": 331,
+        "failedCases": 0,
+        "coverageGaps": [],
+        "firstFailures": []
+      },
+      "benchmark": {
+        "cycles": 3245,
+        "instructions": 635,
+        "cpi": 5.110236220472441,
+        "divHeavy": {
+          "program": "04-division",
+          "divInstructions": 1,
+          "cycles": 53
+        },
+        "programs": [
+          {
+            "name": "01-addition",
+            "cycles": 21,
+            "instructions": 4,
+            "cpi": 5.25
+          },
+          {
+            "name": "02-subtraction",
+            "cycles": 50,
+            "instructions": 9,
+            "cpi": 5.555555555555555
+          },
+          {
+            "name": "03-multiplication",
+            "cycles": 50,
+            "instructions": 9,
+            "cpi": 5.555555555555555
+          },
+          {
+            "name": "04-division",
+            "cycles": 53,
+            "instructions": 10,
+            "cpi": 5.3
+          },
+          {
+            "name": "05-and",
+            "cycles": 78,
+            "instructions": 14,
+            "cpi": 5.571428571428571
+          },
+          {
+            "name": "06-or",
+            "cycles": 50,
+            "instructions": 9,
+            "cpi": 5.555555555555555
+          },
+          {
+            "name": "07-xor",
+            "cycles": 71,
+            "instructions": 13,
+            "cpi": 5.461538461538462
+          },
+          {
+            "name": "08-shift-left",
+            "cycles": 48,
+            "instructions": 9,
+            "cpi": 5.333333333333333
+          },
+          {
+            "name": "09-shift-right",
+            "cycles": 230,
+            "instructions": 45,
+            "cpi": 5.111111111111111
+          },
+          {
+            "name": "10-compare",
+            "cycles": 94,
+            "instructions": 17,
+            "cpi": 5.529411764705882
+          },
+          {
+            "name": "11-conditional-branch",
+            "cycles": 69,
+            "instructions": 13,
+            "cpi": 5.3076923076923075
+          },
+          {
+            "name": "12-countdown",
+            "cycles": 261,
+            "instructions": 54,
+            "cpi": 4.833333333333333
+          },
+          {
+            "name": "13-sum-integers",
+            "cycles": 288,
+            "instructions": 57,
+            "cpi": 5.052631578947368
+          },
+          {
+            "name": "14-fibonacci",
+            "cycles": 428,
+            "instructions": 85,
+            "cpi": 5.035294117647059
+          },
+          {
+            "name": "15-factorial-overflow",
+            "cycles": 244,
+            "instructions": 48,
+            "cpi": 5.083333333333333
+          },
+          {
+            "name": "16-array-sum",
+            "cycles": 295,
+            "instructions": 58,
+            "cpi": 5.086206896551724
+          },
+          {
+            "name": "17-array-max",
+            "cycles": 356,
+            "instructions": 70,
+            "cpi": 5.085714285714285
+          },
+          {
+            "name": "18-memory-copy",
+            "cycles": 202,
+            "instructions": 40,
+            "cpi": 5.05
+          },
+          {
+            "name": "19-subroutines",
+            "cycles": 79,
+            "instructions": 16,
+            "cpi": 4.9375
+          },
+          {
+            "name": "20-stack",
+            "cycles": 278,
+            "instructions": 55,
+            "cpi": 5.054545454545455
+          }
+        ]
+      },
+      "synth": {
+        "cells": 7480,
+        "flipFlops": 2238,
+        "fpga": [
+          {
+            "family": "ice40",
+            "device": "iCE40UP5K SG48",
+            "luts": 719,
+            "flipFlops": 150,
+            "fmaxMHz": 10.63,
+            "suiteMicroseconds": 305.2681091251176
+          },
+          {
+            "family": "ecp5",
+            "device": "LFE5U-25F CABGA256",
+            "luts": 511,
+            "flipFlops": 124,
+            "fmaxMHz": 27.11,
+            "suiteMicroseconds": 119.69752858723719
+          }
+        ]
+      },
+      "reports": {
+        "benchmark": "hardware/rtl/vcpu8/build/experiments/smoke/default/benchmark.json",
+        "synth": "hardware/rtl/vcpu8/build/variants/976f6ae22b15/synth/summary.json"
+      },
+      "cached": {
+        "runner": true,
+        "synth": true
+      }
+    }
+  ]
+}

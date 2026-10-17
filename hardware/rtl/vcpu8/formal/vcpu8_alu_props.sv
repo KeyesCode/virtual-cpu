@@ -15,16 +15,18 @@ module vcpu8_alu_props (
   logic [7:0] r;
   logic       z, c, n, v;
 
+  // The default ALU (DIV_ITER = 0), with its combinational divider; it ignores div_q.
   vcpu8_alu u_alu (
-    .a    (a),
-    .b    (b),
-    .op   (vcpu8_types_pkg::alu_op_t'(op)),
-    .c_in (c_in),
-    .r    (r),
-    .z    (z),
-    .c    (c),
-    .n    (n),
-    .v    (v)
+    .a     (a),
+    .b     (b),
+    .op    (vcpu8_types_pkg::alu_op_t'(op)),
+    .c_in  (c_in),
+    .div_q (8'h00),
+    .r     (r),
+    .z     (z),
+    .c     (c),
+    .n     (n),
+    .v     (v)
   );
 
   // The definitions: unsigned 9-bit results, and signed results wide enough never to wrap.

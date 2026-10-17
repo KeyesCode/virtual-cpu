@@ -9,8 +9,10 @@
 # PROGRAM is a .asm file, assembled by @vcpu/rtl-tools with the TypeScript assembler, or a
 # $readmemh image. A relative path is looked up from the repository root first, then from here.
 # The outputs go to build/simulate/<name>.{mem.hex,state.json,trace.jsonl}.
+#
+# DIV_IMPL=ITER builds the iterative-divider runner into build/sim-div-iter/ instead.
 
-SIM_DIR  := $(BUILD_DIR)/sim
+SIM_DIR  := $(BUILD_DIR)/sim$(VARIANT_SUFFIX)
 SIM_BIN  := $(SIM_DIR)/vcpu8_sim
 SIM_TOP  := $(HW_DIR)/tb/sim/vcpu8_sim_top.sv
 SIM_CPP  := $(HW_DIR)/tb/sim/vcpu8_sim.cpp
@@ -19,7 +21,7 @@ SIM_SRCS := $(RTL_SRCS) $(SIM_TOP)
 $(SIM_BIN): $(SIM_SRCS) $(SIM_CPP)
 	$(call need,$(VERILATOR))
 	@mkdir -p $(SIM_DIR)
-	$(VERILATOR) --cc --exe --build -O3 -Wall --quiet --top-module vcpu8_sim_top \
+	$(VERILATOR) --cc --exe --build -O3 -Wall --quiet --top-module vcpu8_sim_top $(VARIANT_GFLAGS) \
 	  -CFLAGS -Wno-unknown-warning-option -Mdir $(SIM_DIR)/obj -o $(SIM_BIN) \
 	  $(SIM_SRCS) $(SIM_CPP) > $(SIM_DIR)/build.log
 	@echo "built $(SIM_BIN)"

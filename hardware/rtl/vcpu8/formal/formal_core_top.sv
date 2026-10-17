@@ -4,14 +4,21 @@
 // core therefore sees every possible program and every possible data read, and a property proven
 // here holds for any memory contents. vcpu8_core_props (instantiated in vcpu8_core) assumes rst in the
 // first cycle; after that rst is a free input, so a reset may come at any time.
-module formal_core_top (
+//
+// DIV_ITER is passed to the core: `make formal DIV_IMPL=ITER` sets it to 1 with chparam
+// (mk/formal.mk), so the same properties are proven for the iterative divider.
+module formal_core_top #(
+  parameter int DIV_ITER = 0
+) (
   input logic clk,
   input logic rst
 );
   (* anyseq *) logic [7:0] mem_rdata;
 
   // Every output is left open: the properties read them inside the core (vcpu8_core_props).
-  vcpu8_core u_core (
+  vcpu8_core #(
+    .DIV_ITER (DIV_ITER)
+  ) u_core (
     .clk        (clk),
     .rst        (rst),
     .mem_addr   (),

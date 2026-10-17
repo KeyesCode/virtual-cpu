@@ -5,10 +5,14 @@
 // the RAM's power-on contents in simulation and on an FPGA. A testbench can instead load
 // u_mem.mem hierarchically before it releases reset, as the RTL runner does.
 //
+// DIV_ITER selects the divider (vcpu8_core): 0, the default, is the combinational one and 1 the
+// iterative vcpu8_divider.
+//
 // Every output except clk/rst is for observation: status and fault, the retirement pulse and the
 // debug taps (see vcpu8_core), and the memory bus. An FPGA build can leave them unconnected.
 module vcpu8_top #(
-  parameter INIT_FILE = ""
+  parameter     INIT_FILE = "",
+  parameter int DIV_ITER  = 0
 ) (
   input  logic        clk,
   input  logic        rst,
@@ -37,7 +41,9 @@ module vcpu8_top #(
   output logic [7:0]  mem_wdata,
   output logic [7:0]  mem_rdata
 );
-  vcpu8_core u_core (
+  vcpu8_core #(
+    .DIV_ITER (DIV_ITER)
+  ) u_core (
     .clk        (clk),
     .rst        (rst),
     .mem_addr   (mem_addr),

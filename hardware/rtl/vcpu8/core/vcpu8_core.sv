@@ -11,7 +11,14 @@
 //
 // Everything below "Retirement and debug" is a plain output for testbenches, the RTL runner and
 // formal properties. Left unconnected, synthesis removes the logic only they use.
-module vcpu8_core (
+//
+// DIV_ITER picks the divider. 0 (the default, the v1 design): DIV is combinational inside the ALU
+// and takes one EXECUTE cycle. 1: vcpu8_divider computes it, one quotient bit per clock, and DIV
+// waits in EXECUTE for it, 8 cycles longer; the result and flags are the same. An integer, not a
+// string, because the experiment framework passes parameters as integers (`-G`, `chparam`).
+module vcpu8_core #(
+  parameter int DIV_ITER = 0
+) (
   input  logic        clk,
   input  logic        rst,
 
@@ -70,6 +77,8 @@ module vcpu8_core (
   logic [7:0]                      ra_data, rb_data, rf_wd;
   logic [7:0]                      alu_r;
   logic                            alu_z, alu_c, alu_n, alu_v;
+  logic                            div_start, div_busy, div_done;
+  logic [7:0]                      div_q;
   logic [3:0]                      flags, alu_flags;
   logic [7:0]                      flags_byte;
 
@@ -104,7 +113,9 @@ module vcpu8_core (
   logic unused_dec;
   assign unused_dec = &{1'b0, dec_fields, dec_is_ret};
 
-  vcpu8_control u_control (
+  vcpu8_control #(
+    .DIV_ITER (DIV_ITER)
+  ) u_control (
     .clk               (clk),
     .rst               (rst),
     .mem_rdata         (mem_rdata),
@@ -126,6 +137,9 @@ module vcpu8_core (
     .dec_is_div        (dec_is_div),
     .rb_data           (rb_data),
     .flags             (flags),
+    .div_busy          (div_busy),
+    .div_done          (div_done),
+    .div_start         (div_start),
     .bus_addr_sel      (bus_addr_sel),
     .mem_we            (mem_we),
     .rf_we             (rf_we),
@@ -161,17 +175,51 @@ module vcpu8_core (
   );
 
   // Port A is the first operand and port B the second; INC, DEC, NOT, SHL and SHR ignore b.
-  vcpu8_alu u_alu (
-    .a    (ra_data),
-    .b    (rb_data),
-    .op   (dec_alu_op),
-    .c_in (flags[vcpu8_isa_pkg::FLAG_C]),
-    .r    (alu_r),
-    .z    (alu_z),
-    .c    (alu_c),
-    .n    (alu_n),
-    .v    (alu_v)
+  vcpu8_alu #(
+    .DIV_ITER (DIV_ITER)
+  ) u_alu (
+    .a     (ra_data),
+    .b     (rb_data),
+    .op    (dec_alu_op),
+    .c_in  (flags[vcpu8_isa_pkg::FLAG_C]),
+    .div_q (div_q),
+    .r     (alu_r),
+    .z     (alu_z),
+    .c     (alu_c),
+    .n     (alu_n),
+    .v     (alu_v)
   );
+
+  // The iterative divider reads the same operands as the ALU and holds its quotient from the last
+  // EXECUTE cycle through WRITEBACK, where the ALU passes it on as DIV's result (vcpu8_alu).
+  generate
+    if (DIV_ITER != 0) begin : g_div_iter
+      logic [7:0] div_rem;
+
+      vcpu8_divider u_divider (
+        .clk   (clk),
+        .rst   (rst),
+        .start (div_start),
+        .a     (ra_data),
+        .b     (rb_data),
+        .busy  (div_busy),
+        .done  (div_done),
+        .q     (div_q),
+        .rem   (div_rem)
+      );
+
+      logic unused_div;
+      assign unused_div = &{1'b0, div_rem};
+    end else begin : g_div_comb
+      // No divider: the control unit and the ALU ignore these (their DIV_ITER is 0 too).
+      assign div_busy = 1'b0;
+      assign div_done = 1'b1;
+      assign div_q    = 8'h00;
+
+      logic unused_div;
+      assign unused_div = &{1'b0, div_start};
+    end
+  endgenerate
 
   always_comb begin
     alu_flags         = 4'h0;
@@ -236,7 +284,9 @@ module vcpu8_core (
 `ifdef FORMAL
   // The formal properties (formal/vcpu8_core_props.sv), attached here because the pinned Yosys
   // has no `bind`. Only `make formal` defines FORMAL; lint, simulation and synthesis skip this.
-  vcpu8_core_props u_props (
+  vcpu8_core_props #(
+    .DIV_ITER (DIV_ITER)
+  ) u_props (
     .clk          (clk),
     .rst          (rst),
     .state        (state),
@@ -252,6 +302,9 @@ module vcpu8_core (
     .dec_len      (dec_len),
     .dec_valid    (dec_valid),
     .dec_stack_op (dec_stack_op),
+    .dec_is_div   (dec_is_div),
+    .div_busy     (div_busy),
+    .div_done     (div_done),
     .flags        (flags),
     .dbg_regs     (dbg_regs),
     .status       (status),

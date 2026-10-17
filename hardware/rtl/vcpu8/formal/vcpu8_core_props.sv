@@ -12,7 +12,12 @@
 // statement, scope and proof. A label names each assertion in a counterexample report. Helper
 // invariants (labelled h_*) are true statements about reachable states that k-induction needs:
 // they are proven like every other assertion, so they add no assumption.
-module vcpu8_core_props (
+//
+// DIV_ITER is the core's: with the iterative divider, DIV stays in EXECUTE until div_done, so
+// fsm_t_execute allows EXECUTE → EXECUTE exactly then, and div_wait_bounded limits the wait.
+module vcpu8_core_props #(
+  parameter int DIV_ITER = 0
+) (
   input logic        clk,
   input logic        rst,
   input logic [2:0]  state,
@@ -28,6 +33,9 @@ module vcpu8_core_props (
   input logic [1:0]  dec_len,
   input logic        dec_valid,
   input logic [1:0]  dec_stack_op,
+  input logic        dec_is_div,
+  input logic        div_busy,
+  input logic        div_done,
   input logic [3:0]  flags,
   input logic [63:0] dbg_regs,
   input logic [2:0]  status,
@@ -101,12 +109,34 @@ module vcpu8_core_props (
         OPERAND1:  fsm_t_operand1:  assert (state == OPERAND2 || state == EXECUTE
                                             || state == FAULTED);
         OPERAND2:  fsm_t_operand2:  assert (state == EXECUTE || state == FAULTED);
-        EXECUTE:   fsm_t_execute:   assert (state == WRITEBACK || state == FAULTED);
+        // EXECUTE repeats only for a DIV still waiting for the iterative divider; with the
+        // combinational one div_done is tied high, so EXECUTE always lasts one cycle.
+        EXECUTE:   fsm_t_execute:   assert (state == WRITEBACK || state == FAULTED
+                                            || (state == EXECUTE && $past(dec_is_div && !div_done)));
         WRITEBACK: fsm_t_writeback: assert (state == FETCH || state == HALTED || state == FAULTED);
         HALTED:    fsm_t_halted:    assert (state == HALTED);
         FAULTED:   fsm_t_faulted:   assert (state == FAULTED);
         default:   fsm_t_other:     assert (1'b0);
       endcase
+    end
+  end
+
+  // The DIV wait is bounded: the first EXECUTE cycle starts the divider and done comes 8 cycles
+  // later, so EXECUTE lasts at most 9 consecutive cycles (1 without the iterative divider).
+  // f_exec counts the EXECUTE cycles before this one, saturating so a violation stays visible.
+  localparam logic [3:0] EXEC_MAX = (DIV_ITER != 0) ? 4'd8 : 4'd0;
+  logic [3:0] f_exec;
+  always @(posedge clk) begin
+    if (rst || state != EXECUTE) f_exec <= 4'd0;
+    else if (f_exec != 4'hF)     f_exec <= f_exec + 4'd1;
+  end
+  always @(*) begin
+    if (f_run) begin
+      div_wait_bounded: assert (state != EXECUTE || f_exec <= EXEC_MAX);
+      // The divider is busy, or reports done, only during a DIV's EXECUTE. So a DIV that faults in
+      // EXECUTE (divide by zero) never started it: it would still be busy in FAULTED.
+      div_busy_execute: assert (!div_busy || (state == EXECUTE && dec_is_div));
+      div_done_execute: assert (DIV_ITER == 0 || !div_done || (state == EXECUTE && dec_is_div));
     end
   end
 

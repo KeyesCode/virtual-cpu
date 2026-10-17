@@ -39,7 +39,25 @@ need = @command -v $(1) > /dev/null 2>&1 || { \
 RTL_PKGS := $(sort $(wildcard $(HW_DIR)/core/*_pkg.sv))
 RTL_SRCS := $(RTL_PKGS) $(sort $(filter-out $(RTL_PKGS),$(wildcard $(HW_DIR)/core/*.sv)))
 
-LINT_FLAGS := --lint-only -Wall --top-module vcpu8_top
+# Divider implementation: DIV_IMPL=COMB (the default, the v1 design) or DIV_IMPL=ITER, the
+# iterative vcpu8_divider (research/cpu/experiments/div-impl/). It becomes the integer parameter
+# DIV_ITER of the tops (-G for Verilator, chparam for Yosys). sim, simulate, fixtures, verify,
+# benchmark, wave, lint, synth and formal accept it; a non-default build gets its own directory
+# (build/sim-div-iter/, build/synth-div-iter/, …), so the two never overwrite each other.
+DIV_IMPL ?= COMB
+ifeq ($(DIV_IMPL),COMB)
+  DIV_ITER := 0
+else ifeq ($(DIV_IMPL),ITER)
+  DIV_ITER := 1
+else
+  $(error DIV_IMPL must be COMB or ITER, not '$(DIV_IMPL)')
+endif
+# Build-directory suffix and Verilator flag: empty for the default, so its paths and commands are
+# exactly as before.
+VARIANT_SUFFIX := $(if $(filter 1,$(DIV_ITER)),-div-iter)
+VARIANT_GFLAGS := $(if $(filter 1,$(DIV_ITER)),-GDIV_ITER=1)
+
+LINT_FLAGS := --lint-only -Wall --top-module vcpu8_top $(VARIANT_GFLAGS)
 
 UNIT_TESTS   :=
 SYSTEM_TESTS :=

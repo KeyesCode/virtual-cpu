@@ -1,6 +1,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { assembleToHex } from './assemble.js';
+import { BENCHMARK_DEFAULTS, runBenchmark } from './bench/benchmark.js';
+import { runExperiment } from './bench/experiment.js';
+import { compareModelled, RtlBenchmarkReportSchema } from './bench/report.js';
+import { buildRunner, DEFAULT_VARIANT, VariantSchema } from './bench/variant.js';
 import { FIXTURES_DEFAULTS, type FixturesOptions, runFixtures } from './commands/fixtures.js';
 import { MUTANTS_DEFAULTS, runMutants } from './commands/mutants.js';
 import { parseTarget, runSynthCompare, runSynthSummary } from './commands/synth.js';
@@ -16,6 +20,7 @@ import {
 import { type WaveCheckOptions, waveCheck, waveTable } from './commands/wave.js';
 import { ALU_VECTORS_PATH, renderAluVectors } from './gen/alu-vectors.js';
 import { writeDecoderVectors } from './gen/decoder-vectors.js';
+import { DIV_VECTORS_PATH, renderDivVectors } from './gen/div-vectors.js';
 import { ISA_PKG_PATH, renderIsaPackage } from './gen/isa-pkg.js';
 import { CORPORA } from './verify/corpora.js';
 import { renderWaveFilters, WAVE_FILTERS_DIR } from './wave/filters.js';
@@ -31,6 +36,9 @@ Commands:
   gen-alu-vectors [--out <file>]         Write the exhaustive ALU vectors and, beside them, a .meta file
                                          holding the record count (default: ${ALU_VECTORS_PATH})
   gen-decoder-vectors --out-dir <dir>    Write decoder-ops.hex and decoder-rb.hex for the decoder testbench
+  gen-div-vectors [--out <file>]         Write the exhaustive divider vectors (every a, b != 0, from
+                                         cpu-core div) and their .meta record count (default:
+                                         ${DIV_VECTORS_PATH})
   assemble <file.asm> --out <file.hex>   Assemble a program into the 256-line image the RTL runner loads
   fixtures [--dir <dir>] [--filter <glob>] [--sim <bin>] [--work <dir>] [--report <file>]
                                          Run the fixtures on the RTL runner and compare the end state
@@ -66,6 +74,19 @@ Commands:
                                          and summary.md there, and exit 1 on a warning not in <file>
   synth-compare --baseline <file> --summary <file>
                                          Print the deltas between a synthesis summary and the baseline
+  benchmark [--sim <bin> | --variant <file.json|json> --verilator <bin>] [--synth <file>|none]
+            [--examples <dir>] [--tool-versions <file>] [--work <dir>] [--out <file.json>]
+            [--publish <dir>]
+                                         Run the benchmark programs on the RTL, gate each on the
+                                         differential comparison, and write the cycle, CPI and
+                                         branch report (default: ${BENCHMARK_DEFAULTS.out})
+  benchmark-compare --baseline <file> --report <file>
+                                         Validate two benchmark reports and exit 1 unless their
+                                         modelled sections (all but provenance and host) are identical
+  experiment <name|dir> --verilator <bin> [--make <bin>]
+                                         Verify, benchmark and synthesise every variant of
+                                         research/cpu/experiments/<name>/experiment.json and write
+                                         the comparison to its results/
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -108,6 +129,20 @@ function genAluVectors(args: readonly string[]): number {
   writeFileSync(out, hex);
   writeFileSync(meta, `${String(count)}\n`);
   process.stdout.write(`wrote ${String(count)} ALU vectors to ${out}\n`);
+  return 0;
+}
+
+function genDivVectors(args: readonly string[]): number {
+  const out = parseOut('gen-div-vectors', args, DIV_VECTORS_PATH);
+  if (out === undefined) {
+    return 2;
+  }
+  const meta = out.replace(/(\.hex)?$/, '.meta');
+  const { hex, count } = renderDivVectors();
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, hex);
+  writeFileSync(meta, `${String(count)}\n`);
+  process.stdout.write(`wrote ${String(count)} divider vectors to ${out}\n`);
   return 0;
 }
 
@@ -442,10 +477,138 @@ function synthCompare(args: readonly string[]): number {
   );
 }
 
+function readJsonArgument(value: string): unknown {
+  const text = value.trimStart().startsWith('{')
+    ? value
+    : readFileSync(resolve(cwd, value), 'utf8');
+  return JSON.parse(text);
+}
+
+async function benchmark(args: readonly string[]): Promise<number> {
+  const flags = parseOptionFlags(
+    'benchmark',
+    args,
+    [
+      '--sim',
+      '--variant',
+      '--verilator',
+      '--synth',
+      '--examples',
+      '--tool-versions',
+      '--work',
+      '--out',
+      '--publish',
+    ],
+    [],
+  );
+  if (flags === undefined) return 2;
+  const path = (flag: string, fallback: string) => {
+    const value = flags.get(flag);
+    return value === undefined ? fallback : resolve(cwd, value);
+  };
+  const variantText = flags.get('--variant');
+  const variant =
+    variantText === undefined
+      ? DEFAULT_VARIANT
+      : VariantSchema.parse(readJsonArgument(variantText));
+  let sim = path('--sim', BENCHMARK_DEFAULTS.sim);
+  if (variantText !== undefined && !flags.has('--sim')) {
+    const verilator = flags.get('--verilator');
+    if (verilator === undefined) {
+      process.stderr.write(`benchmark: --variant needs --verilator <bin> (or --sim)\n${USAGE}`);
+      return 2;
+    }
+    const build = buildRunner(variant, verilator);
+    if (!build.ok) {
+      process.stderr.write(`benchmark: ${build.error}\n`);
+      return 2;
+    }
+    sim = build.sim;
+  }
+  const synth = flags.get('--synth');
+  const publish = flags.get('--publish');
+  return (
+    await runBenchmark(
+      {
+        sim,
+        variant,
+        examples: path('--examples', BENCHMARK_DEFAULTS.examples),
+        synth: synth === 'none' ? null : path('--synth', BENCHMARK_DEFAULTS.synth),
+        toolVersions: path('--tool-versions', BENCHMARK_DEFAULTS.toolVersions),
+        revision: BENCHMARK_DEFAULTS.revision,
+        work: path('--work', BENCHMARK_DEFAULTS.work),
+        out: path('--out', BENCHMARK_DEFAULTS.out),
+        publish: publish === undefined ? undefined : resolve(cwd, publish),
+      },
+      (text) => process.stdout.write(text),
+    )
+  ).exitCode;
+}
+
+function benchmarkCompare(args: readonly string[]): number {
+  const v = parseFlags('benchmark-compare', args, ['--baseline', '--report']);
+  if (v === undefined) {
+    return 2;
+  }
+  const read = (flag: string) => {
+    const file = resolve(cwd, v[flag] ?? '');
+    const parsed = RtlBenchmarkReportSchema.safeParse(JSON.parse(readFileSync(file, 'utf8')));
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      throw new Error(
+        `${file} does not match the benchmark report schema: ${issue?.path.join('.') ?? ''}: ${issue?.message ?? 'invalid'}`,
+      );
+    }
+    process.stdout.write(`${file}: valid benchmark report (schemaVersion 1)\n`);
+    return parsed.data;
+  };
+  const baseline = read('--baseline');
+  const report = read('--report');
+  const { identical, deltas } = compareModelled(baseline, report);
+  if (identical) {
+    process.stdout.write(
+      'benchmark-compare: the modelled sections are byte-identical (provenance and host removed)\n',
+    );
+    return 0;
+  }
+  const show = (leaf: unknown) => (leaf === undefined ? '(absent)' : JSON.stringify(leaf));
+  process.stdout.write(
+    `benchmark-compare: the modelled sections differ${deltas.length === 0 ? ' in key order only' : ` in ${String(deltas.length)} fields`}:\n`,
+  );
+  for (const d of deltas.slice(0, 50)) {
+    process.stdout.write(`  ${d.path}: ${show(d.baseline)} → ${show(d.fresh)}\n`);
+  }
+  return 1;
+}
+
+async function experiment(args: readonly string[]): Promise<number> {
+  const [dir, ...rest] = args;
+  const flags =
+    dir === undefined
+      ? undefined
+      : parseOptionFlags('experiment', rest, ['--verilator', '--make'], []);
+  const verilator = flags?.get('--verilator');
+  if (dir === undefined || dir.startsWith('--') || flags === undefined || verilator === undefined) {
+    process.stderr.write(
+      `experiment: expected <name|dir> --verilator <bin> [--make <bin>]\n${USAGE}`,
+    );
+    return 2;
+  }
+  return runExperiment(
+    {
+      dir: dir.includes('/') ? resolve(cwd, dir) : dir,
+      verilator,
+      make: flags.get('--make') ?? 'make',
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-isa': genIsa,
   'gen-alu-vectors': genAluVectors,
   'gen-decoder-vectors': genDecoderVectors,
+  'gen-div-vectors': genDivVectors,
   assemble: assembleCommand,
   fixtures,
   'tamper-fixtures': tamperFixtures,
@@ -456,6 +619,9 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'wave-table': waveTableCommand,
   'synth-summary': synthSummary,
   'synth-compare': synthCompare,
+  benchmark,
+  'benchmark-compare': benchmarkCompare,
+  experiment,
 };
 
 const [name, ...rest] = process.argv.slice(2);

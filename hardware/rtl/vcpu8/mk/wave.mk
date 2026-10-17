@@ -17,7 +17,7 @@ ifeq ($(filter fst vcd,$(WAVE_FORMAT)),)
   $(error WAVE_FORMAT must be fst or vcd, not '$(WAVE_FORMAT)')
 endif
 
-SIM_TRACE_DIR := $(BUILD_DIR)/sim-trace
+SIM_TRACE_DIR := $(BUILD_DIR)/sim-trace$(VARIANT_SUFFIX)
 SIM_TRACE_BIN := $(SIM_TRACE_DIR)/vcpu8_sim
 
 WAVE_DIR      := $(HW_DIR)/tb/wave
@@ -35,7 +35,7 @@ FST2VCD ?= $(TOOL_BIN)fst2vcd
 $(SIM_TRACE_BIN): $(SIM_SRCS) $(SIM_CPP)
 	$(call need,$(VERILATOR))
 	@mkdir -p $(SIM_TRACE_DIR)
-	$(VERILATOR) --cc --exe --build -O3 -Wall --quiet --top-module vcpu8_sim_top \
+	$(VERILATOR) --cc --exe --build -O3 -Wall --quiet --top-module vcpu8_sim_top $(VARIANT_GFLAGS) \
 	  --trace --trace-structs --trace-max-array 256 --timescale 1ns/1ns \
 	  -CFLAGS -Wno-unknown-warning-option -Mdir $(SIM_TRACE_DIR)/obj -o $(SIM_TRACE_BIN) \
 	  $(SIM_SRCS) $(SIM_CPP) > $(SIM_TRACE_DIR)/build.log

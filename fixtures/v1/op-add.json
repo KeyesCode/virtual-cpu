@@ -35,7 +35,7 @@
     "status": "HALTED",
     "fault": null,
     "instructions": 4,
-    "registers": [30, 20, 0, 0, 0, 0, 0, 0],
+    "registers": [31, 20, 0, 0, 0, 0, 0, 0],
     "pc": 8,
     "sp": 255,
     "sd": 0,

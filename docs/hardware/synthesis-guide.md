@@ -101,6 +101,14 @@ Area needs the physical size of every cell, which only a cell library or an FPGA
 
 A gate takes time only when it is a real circuit: a cell in a library characterised for a process, voltage and temperature, or a LUT on a specific FPGA. The generic netlist has no delays, so its logic depth is a count of gates on the longest path, not a time. It is a useful proxy for comparing two versions of the RTL, but a gate count says nothing about nanoseconds. An ASIC clock frequency would need a liberty (`.lib`) file and static timing analysis. This project has neither, so it claims no ASIC Fmax. The Fmax figures come only from nextpnr, for the named FPGA, and each one is an estimate from its timing model, not a measurement on hardware.
 
+### Why timing constraints matter
+
+Every path from one flip-flop to the next must settle within one clock period. At a rising edge each flip-flop loads whatever its input logic shows at that moment, and the input must be stable for a short setup time before the edge. If the slowest path, the critical path, has not settled by then, the flip-flop captures a half-computed value. The CPU then computes a wrong result, and nothing signals an error.
+
+Simulation cannot show this. Verilator evaluates combinational logic in zero time, so the RTL passes every test at any clock speed. Only timing analysis on a real target tells you whether the design works at a given clock. The timing constraint is the clock the board will give, here `--freq 12` for the iCEBreaker's 12 MHz oscillator, an 83.33 ns period. nextpnr uses it to decide which logic to place close together, and then reports for every path whether it fits in the period (positive slack) or not.
+
+The default design shows why this matters. On the iCE40UP5K its critical path is 95.43 ns, longer than the 83.33 ns period. At 12 MHz that build would compute wrong results on the board, even though every simulation of the same RTL passes. [fpga-readiness.md](fpga-readiness.md#timing-at-a-12-mhz-board-clock) has the margins of each build and what to do about it.
+
 ## Results
 
 These are the figures in the committed baseline, [`research/cpu/synth/baseline.md`](../../research/cpu/synth/baseline.md), which `make synth-compare` checks against a fresh run. Tools: Yosys 0.70+145 and nextpnr 0.11.1-63, OSS CAD Suite 2026-10-16.

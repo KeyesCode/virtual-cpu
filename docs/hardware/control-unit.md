@@ -46,7 +46,7 @@ A synthesis tool can build such a function in two ways:
 - **As a ROM.** Use the opcode as an address into a 256-entry memory whose words are the control signals. This is simple and regular. It is wasteful here, though, because 226 of the 256 entries are the same all-zero invalid row.
 - **As sum-of-products logic.** For each output bit, OR together the opcodes that set it, and simplify. For example, `stack_op == STACK_PUSH` is 1 for exactly two opcodes (CALL `0x45` and PUSH `0x50`), so it needs only a few gates. Opcodes that share bits share logic. The opcode's high nibble is its category, so "is this an ALU instruction" is mostly a test of `opcode[7:4]`.
 
-Yosys takes the second route: it synthesizes the case statements to gates and then minimizes them. The decoder is small. With the pinned Yosys 0.70, `synth -top vcpu8_decoder` gives 129 generic gates and no flip-flops, and `synth_ice40` maps it to 78 `SB_LUT4` cells. That is 16 input bits and 41 output bits. These figures come from running the two commands on the files in this commit. The synthesis ticket reports the whole design.
+Yosys takes the second route: it synthesizes the case statements to gates and then minimizes them. The decoder is small. With the pinned Yosys 0.70, `synth -top vcpu8_decoder` gives 129 generic gates and no flip-flops, and `synth_ice40` maps it to 78 `SB_LUT4` cells. That is 16 input bits and 41 output bits. These figures come from running the two commands on the files in this commit. [synthesis-guide.md](synthesis-guide.md#results) reports the whole design.
 
 ```mermaid
 flowchart LR

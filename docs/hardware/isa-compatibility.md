@@ -150,6 +150,13 @@ The Project 2 brief (`project-2-brief.md`) was written for a generic "Silicon La
 | 14  | MUL and DIV may be combinational or multicycle (§7). hardware-porting.md suggests an iterative divider             | —                                                                                                                      | Orchestrator decision: v1 MUL and DIV are combinational, the simplest correct design. The iterative divider is the first microarchitecture experiment (VIRT-IROK3C). Only cycle counts change, never results.                                                                                                                                       |
 | 15  | Directories `hardware/accelerators`, `hardware/fpga`, `hardware/asic`, `research/cpu`, `docs/hardware/*` (§2, §20) | Only `hardware/rtl/vcpu8/` and `docs/hardware/` exist after this ticket                                                | Each directory is created by the ticket that first puts something in it. Empty placeholders are not committed. `docs/hardware/README.md` lists the planned documents.                                                                                                                                                                               |
 
+The table records the repository as this audit found it at the start of Project 2. By the end of Project 2 ([project-2-report.md](project-2-report.md)):
+
+- **Row 7:** CI exists. `.github/workflows/ci.yml` runs Project 1 and `.github/workflows/hardware.yml` runs the RTL gates on the pinned toolchain ([README.md](README.md#ci)).
+- **Row 8:** `make fixtures` runs all 98 fixtures unmodified, end state and lock-step trace. The format needed no change, and `fixtures/v1/` is untouched.
+- **Row 14:** the iterative divider exists as `DIV_IMPL=ITER`, and the [divider experiment](performance-analysis.md#the-divider-experiment) compares it with the default.
+- **Row 15:** `hardware/fpga/` and `research/cpu/` exist. Project 2 put nothing in `hardware/accelerators` or `hardware/asic`, so neither exists.
+
 ## Gaps
 
 **None.** Every Project 1 feature can be built in synthesizable RTL as specified:

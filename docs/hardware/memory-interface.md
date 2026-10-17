@@ -85,7 +85,7 @@ The ISA makes sure nothing wraps around to reach `0x00` from `0xFF` either. An i
 
 ## No reset
 
-The memory has no `rst` input, and the core reset does not clear it. This matches the emulator, whose `reset()` leaves memory alone and reloads the program image itself, and it matches the hardware: FPGA block RAM has no reset of its contents. A testbench loads the program before it releases reset ([hardware-porting.md](../hardware-porting.md#reset)).
+The memory has no `rst` input, and the core reset does not clear it. This matches the hardware: FPGA block RAM has no reset of its contents. It is not quite the emulator's `reset()`, which restores the image of the last `loadProgram()` and so undoes every byte the program wrote. On the RTL, the image is whatever was loaded before reset was released, so a testbench loads the program first ([hardware-porting.md](../hardware-porting.md#reset)), and every fixture, verify case and benchmark does exactly that. Asserting `rst` again after a run restarts the program on the memory that run left behind. [fpga-readiness.md](fpga-readiness.md#clocking-and-reset-on-a-board) covers what that means for a reset button.
 
 `rdata` is not reset either. It is defined by the memory's contents: after the first clock edge it holds `mem[addr]`.
 
@@ -105,7 +105,7 @@ This is `vcpu8_memory`'s `always_ff` block, an array of 256 bytes with one synch
 
 A plain `synth -top vcpu8_memory` with no target ends with `memory_map`, which turns every memory into flip-flops because a generic netlist has no RAM cell. That run reports 2,048 `$_DFFE_PP_`. The stage before `memory_map` (`-run :fine` above) shows that the RAM was inferred as one memory.
 
-On iCE40 the extra 26 flip-flops and 17 LUTs are not storage. The iCE40 block RAM does not define what a read returns when it hits the address being written in the same cycle, so Yosys adds logic around it to produce the read-first behaviour this module promises. With `-no-rw-check`, which declares that behaviour don't-care, the RAM is used alone. The CPU never uses `rdata` in a write cycle, so a later synthesis ticket can mark the memory `no_rw_check` to save that logic. It must then also relax the read-during-write unit test.
+On iCE40 the extra 26 flip-flops and 17 LUTs are not storage. The iCE40 block RAM does not define what a read returns when it hits the address being written in the same cycle, so Yosys adds logic around it to produce the read-first behaviour this module promises. With `-no-rw-check`, which declares that behaviour don't-care, the RAM is used alone. The CPU never uses `rdata` in a write cycle, so a later revision can mark the memory `no_rw_check` to save that logic ([fpga-readiness.md](fpga-readiness.md#recommended-changes-before-bring-up)). It must then also relax the read-during-write unit test.
 
 ### 2. Simulation initialisation
 
@@ -129,7 +129,7 @@ On an FPGA the array becomes a block RAM, as the `synth_ice40` run above shows. 
 - the read latency, because block RAM has a registered read, which is why the RTL uses one from the start;
 - `INIT_FILE`, because FPGA tools turn `$readmemh` in an `initial` block into the RAM's power-on contents, so a program can be built into the bitstream.
 
-What changes on an FPGA is how a new program gets in without rebuilding the bitstream, which needs the loader from the previous section. The FPGA readiness ticket covers this.
+What changes on an FPGA is how a new program gets in without rebuilding the bitstream, which needs the loader from the previous section. [fpga-readiness.md](fpga-readiness.md#debug-interface-plan-for-project-5) plans it for Project 5.
 
 ## Tests
 

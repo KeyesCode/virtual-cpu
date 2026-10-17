@@ -52,7 +52,7 @@ The packages come first: `vcpu8_isa_pkg` (generated from `@vcpu/shared`, every o
 | `mem_addr`, `mem_we`, `mem_wdata`     | out       | 8, 1, 8 | The memory bus, as the core drives it                              |
 | `mem_rdata`                           | out       | 8       | The RAM's registered read data                                     |
 
-Everything except `clk` and `rst` is an output for observation. They are plain ports, cheap to leave unconnected on an FPGA, and nothing in `core/` prints, reads files or uses a delay. The RTL runner and the fixture check read them; the formal and differential-verification tickets build on them.
+Everything except `clk` and `rst` is an output for observation. They are plain ports, cheap to leave unconnected on an FPGA, and nothing in `core/` prints, reads files or uses a delay. The RTL runner and the fixture check read them, and so do the [formal properties](formal-verification.md) and the [differential verification](verification-strategy.md). [fpga-readiness.md](fpga-readiness.md#debug-interface-plan-for-project-5) plans how a board reads them.
 
 ## How the RTL becomes logic
 
@@ -66,7 +66,7 @@ An RTL description is not a program that runs step by step. Each construct descr
 | `vcpu8_registers` | 64         | R0–R7                                                                                                             |
 | `vcpu8_flags`     | 4          | Z, C, N, V                                                                                                        |
 
-The 256 × 8 memory is not built from flip-flops. It is inferred as a RAM block (see [memory-interface.md](memory-interface.md)). The synthesis ticket reports the whole design's resources and timing.
+The 256 × 8 memory is not built from flip-flops. It is inferred as a RAM block (see [memory-interface.md](memory-interface.md)). [synthesis-guide.md](synthesis-guide.md#results) reports the whole design's resources and timing.
 
 **Combinational logic computes.** Every `always_comb` block and `assign` becomes gates whose outputs follow their inputs after a propagation delay. They have no memory. The decoder, the ALU, the fault checks, the next-state and next-PC logic, and the muxes are all combinational. Each `always_comb` block assigns a default first, so every output has a value on every path: no latch is inferred, and Verilator's `-Wall` lint and Yosys both confirm it.
 
@@ -83,7 +83,7 @@ There are no combinational loops. Every path from a flip-flop's output through c
 
 There is one clock, `clk`, and every piece of state changes only on its rising edge. Within a cycle the combinational logic settles to the values the flip-flops will load at the next edge. The FSM state says which part of an instruction this cycle is doing.
 
-`rst` is **synchronous and active-high**. While it is 1 at a rising edge, every flip-flop in the core loads its reset value: R0–R7 = 0, PC = `RESET_PC`, SP = `RESET_SP`, SD = 0, FLAGS = 0, IR = 0, status = `STATUS_READY`, no fault, `instret` = 0, and the FSM state = FETCH. The RAM has no reset, so its contents survive, exactly as the emulator's `reset()` keeps the loaded program. The first rising edge after `rst` falls is the FETCH of the instruction at address 0.
+`rst` is **synchronous and active-high**. While it is 1 at a rising edge, every flip-flop in the core loads its reset value: R0–R7 = 0, PC = `RESET_PC`, SP = `RESET_SP`, SD = 0, FLAGS = 0, IR = 0, status = `STATUS_READY`, no fault, `instret` = 0, and the FSM state = FETCH. The RAM has no reset, so its contents survive. Unlike the emulator's `reset()`, which restores the loaded image, `rst` does not undo the bytes a previous run wrote ([memory-interface.md](memory-interface.md#no-reset)). The first rising edge after `rst` falls is the FETCH of the instruction at address 0.
 
 A program gets into the RAM before reset is released: through `INIT_FILE`, or, in the runner, by writing `u_top.u_mem.mem` through DPI while `rst` is held.
 
@@ -103,7 +103,7 @@ A taken branch costs the same as one not taken, because nothing is fetched ahead
 
 This microarchitecture is revision `vcpu8-mc-r1` (`hardware/rtl/vcpu8/REVISION`). Any change to the counts above bumps it ([research/cpu/README.md](../../research/cpu/README.md#the-architecture-revision)). [performance-analysis.md](performance-analysis.md) has the cycles and CPI of the benchmark programs.
 
-[hardware-porting.md](../hardware-porting.md#per-instruction-state-sequence) predicted 12 clocks for DIV with an 8-iteration divider. This design divides combinationally, so DIV costs 5. The iterative divider is a later experiment.
+[hardware-porting.md](../hardware-porting.md#per-instruction-state-sequence) predicted 12 clocks for DIV with an 8-iteration divider. This design divides combinationally, so DIV costs 5. The iterative-divider variant (`DIV_IMPL=ITER`, [alu.md](alu.md#iterative-divider)) takes 13, and the [divider experiment](performance-analysis.md#the-divider-experiment) compares the two.
 
 ## How this differs from the emulator
 

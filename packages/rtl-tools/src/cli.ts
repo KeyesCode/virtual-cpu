@@ -3,9 +3,11 @@ import { dirname, resolve } from 'node:path';
 import { assembleToHex } from './assemble.js';
 import { FIXTURES_DEFAULTS, type FixturesOptions, runFixtures } from './commands/fixtures.js';
 import { writeTamperedFixtures } from './commands/tamper-fixtures.js';
+import { type WaveCheckOptions, waveCheck, waveTable } from './commands/wave.js';
 import { ALU_VECTORS_PATH, renderAluVectors } from './gen/alu-vectors.js';
 import { writeDecoderVectors } from './gen/decoder-vectors.js';
 import { ISA_PKG_PATH, renderIsaPackage } from './gen/isa-pkg.js';
+import { renderWaveFilters, WAVE_FILTERS_DIR } from './wave/filters.js';
 
 // `pnpm --filter @vcpu/rtl-tools …` runs this from packages/rtl-tools; INIT_CWD is the directory
 // pnpm was started in, so a relative --out resolves where the user typed it.
@@ -26,6 +28,14 @@ Commands:
   tamper-fixtures --dir <dir> --out <dir>
                                          Write tampered copies of op-add and op-push-full-stack for
                                          \`make fixtures-tamper\`
+  gen-wave-filters [--out-dir <dir>]     Write the GTKWave translate filter files (FSM state, ALU op,
+                                         status, fault code) from the RTL packages (default:
+                                         ${WAVE_FILTERS_DIR})
+  wave-check --vcd <file> --image <file.hex> --gtkw <file> --filters <dir>
+                                         Check a waveform for \`make wave-check\`: required and saved
+                                         signals present, filters current, retire count = emulator's
+  wave-table --vcd <file> --cycles <first>-<last>
+                                         Print a Markdown table of those clock cycles of a waveform
 `;
 
 type Command = (args: readonly string[]) => number;
@@ -143,6 +153,67 @@ function tamperFixtures(args: readonly string[]): number {
   return 0;
 }
 
+function genWaveFilters(args: readonly string[]): number {
+  let dir = WAVE_FILTERS_DIR;
+  const [flag, value, ...extra] = args;
+  if (flag !== undefined) {
+    if (flag !== '--out-dir' || value === undefined || extra.length > 0) {
+      process.stderr.write(`gen-wave-filters: expected [--out-dir <dir>]\n${USAGE}`);
+      return 2;
+    }
+    dir = resolve(cwd, value);
+  }
+  mkdirSync(dir, { recursive: true });
+  for (const { file, text } of renderWaveFilters()) {
+    writeFileSync(resolve(dir, file), text);
+    process.stdout.write(`wrote ${resolve(dir, file)}\n`);
+  }
+  return 0;
+}
+
+const WAVE_CHECK_FLAGS = {
+  '--vcd': 'vcd',
+  '--image': 'image',
+  '--gtkw': 'gtkw',
+  '--filters': 'filters',
+} as const satisfies Record<string, keyof WaveCheckOptions>;
+
+function waveCheckCommand(args: readonly string[]): number {
+  const options: Partial<Record<keyof WaveCheckOptions, string>> = {};
+  for (let i = 0; i < args.length; i += 2) {
+    const flag = args[i] ?? '';
+    const value = args[i + 1];
+    if (!(flag in WAVE_CHECK_FLAGS) || value === undefined) {
+      process.stderr.write(`wave-check: unexpected argument ${flag}\n${USAGE}`);
+      return 2;
+    }
+    options[WAVE_CHECK_FLAGS[flag as keyof typeof WAVE_CHECK_FLAGS]] = resolve(cwd, value);
+  }
+  const { vcd, image, gtkw, filters } = options;
+  if (vcd === undefined || image === undefined || gtkw === undefined || filters === undefined) {
+    process.stderr.write(`wave-check: --vcd, --image, --gtkw and --filters are required\n${USAGE}`);
+    return 2;
+  }
+  return waveCheck({ vcd, image, gtkw, filters }, (text) => process.stdout.write(text));
+}
+
+function waveTableCommand(args: readonly string[]): number {
+  const [vcdFlag, vcd, cyclesFlag, cycles, ...extra] = args;
+  const range = /^(\d+)-(\d+)$/.exec(cycles ?? '');
+  if (
+    vcdFlag !== '--vcd' ||
+    vcd === undefined ||
+    cyclesFlag !== '--cycles' ||
+    range === null ||
+    extra.length > 0
+  ) {
+    process.stderr.write(`wave-table: expected --vcd <file> --cycles <first>-<last>\n${USAGE}`);
+    return 2;
+  }
+  process.stdout.write(waveTable(resolve(cwd, vcd), Number(range[1]), Number(range[2])));
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-isa': genIsa,
   'gen-alu-vectors': genAluVectors,
@@ -150,6 +221,9 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   assemble: assembleCommand,
   fixtures,
   'tamper-fixtures': tamperFixtures,
+  'gen-wave-filters': genWaveFilters,
+  'wave-check': waveCheckCommand,
+  'wave-table': waveTableCommand,
 };
 
 const [name, ...rest] = process.argv.slice(2);

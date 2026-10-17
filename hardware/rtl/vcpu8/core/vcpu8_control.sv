@@ -13,11 +13,18 @@
 //   that ends at 0xFF: its writes still commit, it retires, and PC stays at the instruction.
 // - retire pulses for one cycle after each WRITEBACK edge, when every debug tap already shows the
 //   state after the instruction. A precise fault does not retire.
+// - With the iterative divider (DIV_ITER = 1, set by vcpu8_core), DIV stays in EXECUTE until the
+//   divider is done: div_start pulses in the first EXECUTE cycle, once the divide-by-zero check
+//   has passed, and the FSM leaves for WRITEBACK in the cycle div_done is high. With the default
+//   combinational divider (DIV_ITER = 0) the handshake is ignored and EXECUTE lasts one cycle; the
+//   parameter removes the wait logic outright, so the default synthesises exactly as before.
 //
 // The decoder sits beside the FSM in vcpu8_core. The FSM picks its inputs: the opcode comes
 // straight from the RAM in DECODE (before IR.op is latched) and from IR.op afterwards, and the
 // register byte comes from the RAM in OPERAND1 and from IR.rb afterwards.
-module vcpu8_control (
+module vcpu8_control #(
+  parameter int DIV_ITER = 0
+) (
   input  logic                              clk,
   input  logic                              rst,
 
@@ -45,6 +52,11 @@ module vcpu8_control (
   // Datapath values the FSM tests.
   input  logic [7:0]                        rb_data,      // the DIV divisor
   input  logic [3:0]                        flags,        // branch conditions
+
+  // Iterative divider handshake (vcpu8_divider); unused when DIV_ITER = 0.
+  input  logic                              div_busy,
+  input  logic                              div_done,
+  output logic                              div_start,
 
   // Datapath controls.
   output vcpu8_types_pkg::bus_addr_sel_t    bus_addr_sel,
@@ -129,6 +141,14 @@ module vcpu8_control (
     endcase
   end
 
+  // Start the iterative divider in DIV's first EXECUTE cycle, and only if EXECUTE did not fault, so
+  // a DIV by zero never starts it. Later EXECUTE cycles see it busy, and the last one sees done;
+  // until then div_wait holds the FSM in EXECUTE.
+  logic div_wait;
+  assign div_wait  = DIV_ITER != 0 && dec_is_div && !div_done;
+  assign div_start = DIV_ITER != 0 && state == vcpu8_types_pkg::FSM_EXECUTE && dec_is_div
+                  && fault_now == vcpu8_isa_pkg::FAULT_NONE && !div_busy && !div_done;
+
   // WRITEBACK outcomes.
   logic halt_now, pc_overflow_now;
   assign halt_now        = state == vcpu8_types_pkg::FSM_WRITEBACK && dec_is_halt;
@@ -165,7 +185,7 @@ module vcpu8_control (
         vcpu8_types_pkg::FSM_OPERAND2:
           state_next = vcpu8_types_pkg::FSM_EXECUTE;
         vcpu8_types_pkg::FSM_EXECUTE:
-          state_next = vcpu8_types_pkg::FSM_WRITEBACK;
+          state_next = div_wait ? vcpu8_types_pkg::FSM_EXECUTE : vcpu8_types_pkg::FSM_WRITEBACK;
         vcpu8_types_pkg::FSM_WRITEBACK:
           state_next = halt_now        ? vcpu8_types_pkg::FSM_HALTED
                      : pc_overflow_now ? vcpu8_types_pkg::FSM_FAULTED

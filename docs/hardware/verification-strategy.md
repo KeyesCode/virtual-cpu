@@ -71,7 +71,7 @@ The default `make verify` runs all five corpora. The counts below are from the r
 | ------------- | -------------------------------------- | --------------: | ------------------------------------ |
 | `fixtures`    | `fixtures/v1/*.json`                   |              98 | the fixture's `maxInstructions`      |
 | `examples`    | `examples/*.asm`, assembled fresh      |              20 | the `.expect.json` `maxInstructions` |
-| `programs`    | `hardware/rtl/vcpu8/tb/programs/*.asm` |              11 | `; max-steps: N` header, else 10,000 |
+| `programs`    | `hardware/rtl/vcpu8/tb/programs/*.asm` |              12 | `; max-steps: N` header, else 10,000 |
 | `regressions` | `hardware/rtl/vcpu8/tb/regressions/*/` |               2 | `case.json` `maxSteps`               |
 | `random`      | `generateProgram(seed)`, seeds `SEED`… | `COUNT` (1,000) | 2,000                                |
 
@@ -138,15 +138,15 @@ V and N have no branch in ISA 1.0, so `overflow.asm` cannot branch on them. The 
 
 The default run (`--all`) fails if any of the 30 opcodes was never retired or any of the 7 fault codes was never hit.
 
-Coverage of the default run (`make verify`, random seeds 1–1000, 1,131 cases):
+Coverage of the default run (`make verify`, random seeds 1–1000, 1,132 cases):
 
 | Opcode   | Retired | Opcode    | Retired | Opcode    | Retired | Opcode | Retired | Opcode   | Retired |
 | -------- | ------: | --------- | ------: | --------- | ------: | ------ | ------: | -------- | ------: |
-| NOP      |   2,652 | HLT       |     892 | MOV       |   3,109 | LDI    |  15,023 | LOAD_ABS |   2,201 |
-| LOAD_IND |   1,762 | STORE_ABS |   1,498 | STORE_IND |   2,150 | ADD    |   1,670 | SUB      |   1,301 |
-| MUL      |   2,297 | DIV       |   1,454 | INC       |   5,993 | DEC    |   8,649 | AND      |   2,262 |
+| NOP      |   2,652 | HLT       |     892 | MOV       |   3,109 | LDI    |  15,026 | LOAD_ABS |   2,201 |
+| LOAD_IND |   1,762 | STORE_ABS |   1,498 | STORE_IND |   2,150 | ADD    |   1,671 | SUB      |   1,301 |
+| MUL      |   2,297 | DIV       |   1,455 | INC       |   5,993 | DEC    |   8,649 | AND      |   2,262 |
 | OR       |   3,963 | XOR       |   2,057 | NOT       |     902 | SHL    |     933 | SHR      |   1,601 |
-| CMP      |   1,967 | JMP       |  10,021 | JZ        |   2,274 | JNZ    |   7,881 | JC       |   2,526 |
+| CMP      |   1,967 | JMP       |  10,022 | JZ        |   2,274 | JNZ    |   7,881 | JC       |   2,526 |
 | JNC      |   1,296 | CALL      |   1,238 | RET       |     470 | PUSH   |   3,477 | POP      |   2,644 |
 
 | Fault               | Runs ending in it |
@@ -154,7 +154,7 @@ Coverage of the default run (`make verify`, random seeds 1–1000, 1,131 cases):
 | INVALID_OPCODE      |                51 |
 | MALFORMED_OPERAND   |                23 |
 | INSTRUCTION_OVERRUN |                19 |
-| PC_OVERFLOW         |                33 |
+| PC_OVERFLOW         |                34 |
 | DIVIDE_BY_ZERO      |                56 |
 | STACK_OVERFLOW      |                24 |
 | STACK_UNDERFLOW     |                19 |
@@ -166,7 +166,7 @@ Coverage of the default run (`make verify`, random seeds 1–1000, 1,131 cases):
 | JC     | 1,381 |     1,145 |
 | JNC    | 1,111 |       185 |
 
-All 30 opcodes retired and all 7 fault codes hit. The 1,131 runs ended 892 halted, 225 faulted and 14 at the step limit (the endless-loop share), over 96,368 steps (96,163 retired). The maximum stack depth was 64, a full stack.
+All 30 opcodes retired and all 7 fault codes hit. The 1,132 runs ended 892 halted, 226 faulted and 14 at the step limit (the endless-loop share), over 96,374 steps (96,169 retired). The maximum stack depth was 64, a full stack.
 
 ## Mutation testing
 
@@ -271,11 +271,11 @@ Recorded on the development machine (macOS, Apple Silicon, 12 parallel jobs), on
 
 | Run                                      | Random seeds |      Cases |    Passed | Steps compared |       Time |
 | ---------------------------------------- | ------------ | ---------: | --------: | -------------: | ---------: |
-| `make verify`                            | 1–1000       |      1,131 |     1,131 |         96,368 |      2.4 s |
-| `make verify-long` (`LONG_COUNT=100000`) | 1–100000     |    100,131 |   100,131 |      9,761,769 |    206.1 s |
-| `make verify-mutants`                    | 1–1000       | 12 mutants | 12 caught |              — | 1 min 29 s |
+| `make verify`                            | 1–1000       |      1,132 |     1,132 |         96,374 |      2.2 s |
+| `make verify-long` (`LONG_COUNT=100000`) | 1–100000     |    100,132 |   100,132 |      9,761,775 |    209.4 s |
+| `make verify-mutants`                    | 1–1000       | 12 mutants | 12 caught |              — | 1 min 48 s |
 
-The long run's 100,131 cases ended 76,331 halted, 22,253 faulted and 1,547 at the step limit. Every fault code was hit at least 1,830 times (INSTRUCTION_OVERRUN). Every opcode was retired at least 41,396 times (RET). Every branch condition was both taken and not taken at least 18,327 times (JNC not taken). No mismatch was found, so verification found no RTL bug, and the RTL was not changed by this work.
+The long run's 100,132 cases ended 76,331 halted, 22,254 faulted and 1,547 at the step limit. Every fault code was hit at least 1,830 times (INSTRUCTION_OVERRUN). Every opcode was retired at least 41,396 times (RET). Every branch condition was both taken and not taken at least 18,327 times (JNC not taken). No mismatch was found. The same corpora pass on the iterative-divider variant (`make verify DIV_IMPL=ITER`, 1,132 cases, and a 20,000-program `verify-long`, 20,132 cases; see [the div-impl experiment](../../research/cpu/experiments/div-impl/README.md)).
 
 ## Commands
 
@@ -283,6 +283,7 @@ The long run's 100,131 cases ended 76,331 halted, 22,253 faulted and 1,547 at th
 pnpm hardware:verify                       # make -C hardware/rtl/vcpu8 verify
 pnpm hardware:verify:long                  # make -C hardware/rtl/vcpu8 verify-long
 make -C hardware/rtl/vcpu8 verify SEED=5000 COUNT=200
+make -C hardware/rtl/vcpu8 verify DIV_IMPL=ITER          # the iterative-divider variant, same corpora
 make -C hardware/rtl/vcpu8 verify-mutants [MUTANT=<id>]
 make -C hardware/rtl/vcpu8 replay CASE=build/failures/<name> [SIM=<runner>]
 make -C hardware/rtl/vcpu8 promote CASE=build/failures/<name>

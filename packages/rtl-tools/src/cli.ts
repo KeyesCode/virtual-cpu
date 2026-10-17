@@ -20,6 +20,7 @@ import {
 import { type WaveCheckOptions, waveCheck, waveTable } from './commands/wave.js';
 import { ALU_VECTORS_PATH, renderAluVectors } from './gen/alu-vectors.js';
 import { writeDecoderVectors } from './gen/decoder-vectors.js';
+import { DIV_VECTORS_PATH, renderDivVectors } from './gen/div-vectors.js';
 import { ISA_PKG_PATH, renderIsaPackage } from './gen/isa-pkg.js';
 import { CORPORA } from './verify/corpora.js';
 import { renderWaveFilters, WAVE_FILTERS_DIR } from './wave/filters.js';
@@ -35,6 +36,9 @@ Commands:
   gen-alu-vectors [--out <file>]         Write the exhaustive ALU vectors and, beside them, a .meta file
                                          holding the record count (default: ${ALU_VECTORS_PATH})
   gen-decoder-vectors --out-dir <dir>    Write decoder-ops.hex and decoder-rb.hex for the decoder testbench
+  gen-div-vectors [--out <file>]         Write the exhaustive divider vectors (every a, b != 0, from
+                                         cpu-core div) and their .meta record count (default:
+                                         ${DIV_VECTORS_PATH})
   assemble <file.asm> --out <file.hex>   Assemble a program into the 256-line image the RTL runner loads
   fixtures [--dir <dir>] [--filter <glob>] [--sim <bin>] [--work <dir>] [--report <file>]
                                          Run the fixtures on the RTL runner and compare the end state
@@ -125,6 +129,20 @@ function genAluVectors(args: readonly string[]): number {
   writeFileSync(out, hex);
   writeFileSync(meta, `${String(count)}\n`);
   process.stdout.write(`wrote ${String(count)} ALU vectors to ${out}\n`);
+  return 0;
+}
+
+function genDivVectors(args: readonly string[]): number {
+  const out = parseOut('gen-div-vectors', args, DIV_VECTORS_PATH);
+  if (out === undefined) {
+    return 2;
+  }
+  const meta = out.replace(/(\.hex)?$/, '.meta');
+  const { hex, count } = renderDivVectors();
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, hex);
+  writeFileSync(meta, `${String(count)}\n`);
+  process.stdout.write(`wrote ${String(count)} divider vectors to ${out}\n`);
   return 0;
 }
 
@@ -590,6 +608,7 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-isa': genIsa,
   'gen-alu-vectors': genAluVectors,
   'gen-decoder-vectors': genDecoderVectors,
+  'gen-div-vectors': genDivVectors,
   assemble: assembleCommand,
   fixtures,
   'tamper-fixtures': tamperFixtures,

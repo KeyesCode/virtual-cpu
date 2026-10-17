@@ -1,0 +1,2986 @@
+{
+  "schemaVersion": 1,
+  "kind": "vcpu8-rtl-benchmark",
+  "revision": "vcpu8-mc-r1",
+  "isaVersion": "1.0.0",
+  "variant": {
+    "name": "default",
+    "description": "The design as committed, with no defines or parameters.",
+    "hash": "976f6ae22b15",
+    "defines": {},
+    "parameters": {}
+  },
+  "labels": {
+    "rtl": "RTL: clock cycles counted at real clock edges of the Verilated vcpu8_top, from reset release to the stop.",
+    "instructionalModel": "Instructional model: the emulator’s teaching estimate (@vcpu/cpu-core estimatedCycles, the ISA timing model). It is not a circuit and was not measured.",
+    "estimatedTime": "Estimated time: RTL cycles / nextpnr Fmax for the named device and timing model, at the place-and-route seed in the synthesis summary. A static timing estimate, not a measurement on hardware."
+  },
+  "config": {
+    "suite": "examples (the @vcpu/benchmarks program set)",
+    "programDir": "examples",
+    "programs": [
+      "01-addition",
+      "02-subtraction",
+      "03-multiplication",
+      "04-division",
+      "05-and",
+      "06-or",
+      "07-xor",
+      "08-shift-left",
+      "09-shift-right",
+      "10-compare",
+      "11-conditional-branch",
+      "12-countdown",
+      "13-sum-integers",
+      "14-fibonacci",
+      "15-factorial-overflow",
+      "16-array-sum",
+      "17-array-max",
+      "18-memory-copy",
+      "19-subroutines",
+      "20-stack"
+    ],
+    "stepLimit": "each program’s .expect.json maxInstructions, for both CPUs",
+    "correctnessGate": "Each program runs on @vcpu/cpu-core (live) and on the RTL runner; every trace step and the full end state (registers, flags, PC, SP, SD, status, fault, all 256 memory bytes) must match, and the program must halt. A program that fails gets no numbers."
+  },
+  "verification": {
+    "gate": "passed",
+    "programs": 20,
+    "passed": 20,
+    "failed": 0,
+    "failedPrograms": []
+  },
+  "synthesis": {
+    "available": true,
+    "source": "research/cpu/synth/baseline.json",
+    "gitSha": "cb05946064e3b1df921c58ced049b8d4cc70829b",
+    "gitDirty": false,
+    "generic": {
+      "top": "vcpu8_top",
+      "cells": 7480,
+      "flipFlops": 2238,
+      "combinational": 5242
+    },
+    "fpga": [
+      {
+        "family": "ice40",
+        "status": "ran",
+        "device": "iCE40UP5K SG48",
+        "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+        "luts": 727,
+        "flipFlops": 150,
+        "blockRam": 1,
+        "fmaxMHz": 10.48,
+        "constraintMHz": 12
+      },
+      {
+        "family": "ecp5",
+        "status": "ran",
+        "device": "LFE5U-25F CABGA256",
+        "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+        "luts": 507,
+        "flipFlops": 124,
+        "blockRam": 1,
+        "fmaxMHz": 28.21,
+        "constraintMHz": 12
+      }
+    ]
+  },
+  "totals": {
+    "programs": 20,
+    "cycles": 3245,
+    "instructions": 635,
+    "cpi": 5.110236220472441,
+    "byClass": {
+      "system": {
+        "instructions": 30,
+        "cycles": 120,
+        "cpi": 4,
+        "minClocks": 4,
+        "maxClocks": 4
+      },
+      "data": {
+        "instructions": 210,
+        "cycles": 1153,
+        "cpi": 5.4904761904761905,
+        "minClocks": 5,
+        "maxClocks": 6
+      },
+      "arithmetic": {
+        "instructions": 208,
+        "cycles": 1040,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "logic": {
+        "instructions": 49,
+        "cycles": 245,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "control": {
+        "instructions": 128,
+        "cycles": 637,
+        "cpi": 4.9765625,
+        "minClocks": 4,
+        "maxClocks": 5
+      },
+      "stack": {
+        "instructions": 10,
+        "cycles": 50,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      }
+    },
+    "byOpcode": {
+      "NOP": {
+        "instructions": 10,
+        "cycles": 40,
+        "cpi": 4,
+        "minClocks": 4,
+        "maxClocks": 4
+      },
+      "HLT": {
+        "instructions": 20,
+        "cycles": 80,
+        "cpi": 4,
+        "minClocks": 4,
+        "maxClocks": 4
+      },
+      "MOV": {
+        "instructions": 42,
+        "cycles": 210,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "LDI": {
+        "instructions": 72,
+        "cycles": 432,
+        "cpi": 6,
+        "minClocks": 6,
+        "maxClocks": 6
+      },
+      "LOAD_ABS": {
+        "instructions": 1,
+        "cycles": 6,
+        "cpi": 6,
+        "minClocks": 6,
+        "maxClocks": 6
+      },
+      "LOAD_IND": {
+        "instructions": 27,
+        "cycles": 135,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "STORE_ABS": {
+        "instructions": 30,
+        "cycles": 180,
+        "cpi": 6,
+        "minClocks": 6,
+        "maxClocks": 6
+      },
+      "STORE_IND": {
+        "instructions": 38,
+        "cycles": 190,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "ADD": {
+        "instructions": 30,
+        "cycles": 150,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "SUB": {
+        "instructions": 3,
+        "cycles": 15,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "MUL": {
+        "instructions": 11,
+        "cycles": 55,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "DIV": {
+        "instructions": 1,
+        "cycles": 5,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "INC": {
+        "instructions": 87,
+        "cycles": 435,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "DEC": {
+        "instructions": 76,
+        "cycles": 380,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "AND": {
+        "instructions": 3,
+        "cycles": 15,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "OR": {
+        "instructions": 3,
+        "cycles": 15,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "XOR": {
+        "instructions": 5,
+        "cycles": 25,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "NOT": {
+        "instructions": 2,
+        "cycles": 10,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "SHL": {
+        "instructions": 5,
+        "cycles": 25,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "SHR": {
+        "instructions": 9,
+        "cycles": 45,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "CMP": {
+        "instructions": 22,
+        "cycles": 110,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "JMP": {
+        "instructions": 10,
+        "cycles": 50,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "JZ": {
+        "instructions": 12,
+        "cycles": 60,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "JNZ": {
+        "instructions": 67,
+        "cycles": 335,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "JC": {
+        "instructions": 1,
+        "cycles": 5,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "JNC": {
+        "instructions": 32,
+        "cycles": 160,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "CALL": {
+        "instructions": 3,
+        "cycles": 15,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "RET": {
+        "instructions": 3,
+        "cycles": 12,
+        "cpi": 4,
+        "minClocks": 4,
+        "maxClocks": 4
+      },
+      "PUSH": {
+        "instructions": 5,
+        "cycles": 25,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      },
+      "POP": {
+        "instructions": 5,
+        "cycles": 25,
+        "cpi": 5,
+        "minClocks": 5,
+        "maxClocks": 5
+      }
+    },
+    "branchesTaken": 77,
+    "branchesNotTaken": 35,
+    "jumps": 10,
+    "calls": 3,
+    "returns": 3,
+    "dataReads": 36,
+    "dataWrites": 76,
+    "instructionalModelCycles": 2220
+  },
+  "programs": [
+    {
+      "name": "01-addition",
+      "source": "examples/01-addition.asm",
+      "maxSteps": 10,
+      "status": "ok",
+      "rtl": {
+        "cycles": 21,
+        "instructions": 4,
+        "cpi": 5.25,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "ADD": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 0,
+        "fetchedBytes": 9
+      },
+      "instructionalModel": {
+        "estimatedCycles": 13,
+        "estimatedCpi": 3.25
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 2.0038167938931295
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 0.7444168734491315
+        }
+      ]
+    },
+    {
+      "name": "02-subtraction",
+      "source": "examples/02-subtraction.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 50,
+        "instructions": 9,
+        "cpi": 5.555555555555555,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 36,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "SUB": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 23
+      },
+      "instructionalModel": {
+        "estimatedCycles": 34,
+        "estimatedCpi": 3.7777777777777777
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 4.770992366412213
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 1.772421127259837
+        }
+      ]
+    },
+    {
+      "name": "03-multiplication",
+      "source": "examples/03-multiplication.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 50,
+        "instructions": 9,
+        "cpi": 5.555555555555555,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 36,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "MUL": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 23
+      },
+      "instructionalModel": {
+        "estimatedCycles": 40,
+        "estimatedCpi": 4.444444444444445
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 4.770992366412213
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 1.772421127259837
+        }
+      ]
+    },
+    {
+      "name": "04-division",
+      "source": "examples/04-division.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 53,
+        "instructions": 10,
+        "cpi": 5.3,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 34,
+            "cpi": 5.666666666666667,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "MOV": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "LDI": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "SUB": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "MUL": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DIV": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 23
+      },
+      "instructionalModel": {
+        "estimatedCycles": 45,
+        "estimatedCpi": 4.5
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 5.057251908396946
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 1.8787663948954272
+        }
+      ]
+    },
+    {
+      "name": "05-and",
+      "source": "examples/05-and.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 78,
+        "instructions": 14,
+        "cpi": 5.571428571428571,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 9,
+            "cycles": 54,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "logic": {
+            "instructions": 4,
+            "cycles": 20,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 6,
+            "cycles": 36,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 3,
+            "cycles": 18,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "AND": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "NOT": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 3,
+        "fetchedBytes": 36
+      },
+      "instructionalModel": {
+        "estimatedCycles": 53,
+        "estimatedCpi": 3.7857142857142856
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 7.442748091603053
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 2.7649769585253456
+        }
+      ]
+    },
+    {
+      "name": "06-or",
+      "source": "examples/06-or.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 50,
+        "instructions": 9,
+        "cpi": 5.555555555555555,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 36,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "logic": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "OR": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 23
+      },
+      "instructionalModel": {
+        "estimatedCycles": 34,
+        "estimatedCpi": 3.7777777777777777
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 4.770992366412213
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 1.772421127259837
+        }
+      ]
+    },
+    {
+      "name": "07-xor",
+      "source": "examples/07-xor.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 71,
+        "instructions": 13,
+        "cpi": 5.461538461538462,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 7,
+            "cycles": 42,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "logic": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 3,
+            "cycles": 18,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "XOR": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 3,
+        "fetchedBytes": 32
+      },
+      "instructionalModel": {
+        "estimatedCycles": 48,
+        "estimatedCpi": 3.6923076923076925
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 6.7748091603053435
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 2.5168380007089683
+        }
+      ]
+    },
+    {
+      "name": "08-shift-left",
+      "source": "examples/08-shift-left.asm",
+      "maxSteps": 20,
+      "status": "ok",
+      "rtl": {
+        "cycles": 48,
+        "instructions": 9,
+        "cpi": 5.333333333333333,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "logic": {
+            "instructions": 4,
+            "cycles": 20,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "SHL": {
+            "instructions": 4,
+            "cycles": 20,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 21
+      },
+      "instructionalModel": {
+        "estimatedCycles": 32,
+        "estimatedCpi": 3.5555555555555554
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 4.580152671755725
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 1.7015242821694434
+        }
+      ]
+    },
+    {
+      "name": "09-shift-right",
+      "source": "examples/09-shift-right.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 230,
+        "instructions": 45,
+        "cpi": 5.111111111111111,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 36,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 13,
+            "cycles": 65,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "logic": {
+            "instructions": 9,
+            "cycles": 45,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 16,
+            "cycles": 80,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "INC": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "SHR": {
+            "instructions": 9,
+            "cycles": 45,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNC": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 10,
+          "notTaken": 6,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 7,
+              "notTaken": 1
+            },
+            "JNC": {
+              "taken": 3,
+              "notTaken": 5
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 95
+      },
+      "instructionalModel": {
+        "estimatedCycles": 152,
+        "estimatedCpi": 3.3777777777777778
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 21.946564885496183
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 8.15313718539525
+        }
+      ]
+    },
+    {
+      "name": "10-compare",
+      "source": "examples/10-compare.asm",
+      "maxSteps": 30,
+      "status": "ok",
+      "rtl": {
+        "cycles": 94,
+        "instructions": 17,
+        "cpi": 5.529411764705882,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 10,
+            "cycles": 60,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "logic": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 7,
+            "cycles": 42,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 3,
+            "cycles": 18,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "CMP": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JC": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNC": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 3,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 0,
+              "notTaken": 1
+            },
+            "JC": {
+              "taken": 0,
+              "notTaken": 1
+            },
+            "JNC": {
+              "taken": 0,
+              "notTaken": 1
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 3,
+        "fetchedBytes": 43
+      },
+      "instructionalModel": {
+        "estimatedCycles": 63,
+        "estimatedCpi": 3.7058823529411766
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 8.969465648854962
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 3.3321517192484933
+        }
+      ]
+    },
+    {
+      "name": "11-conditional-branch",
+      "source": "examples/11-conditional-branch.asm",
+      "maxSteps": 30,
+      "status": "ok",
+      "rtl": {
+        "cycles": 69,
+        "instructions": 13,
+        "cpi": 5.3076923076923075,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 35,
+            "cpi": 5.833333333333333,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "logic": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "MOV": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "LDI": {
+            "instructions": 3,
+            "cycles": 18,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "INC": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "OR": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "NOT": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "SHL": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JZ": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNC": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 1,
+          "notTaken": 1,
+          "byOpcode": {
+            "JZ": {
+              "taken": 1,
+              "notTaken": 0
+            },
+            "JNC": {
+              "taken": 0,
+              "notTaken": 1
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 2,
+        "fetchedBytes": 30
+      },
+      "instructionalModel": {
+        "estimatedCycles": 46,
+        "estimatedCpi": 3.5384615384615383
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 6.583969465648854
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 2.445941155618575
+        }
+      ]
+    },
+    {
+      "name": "12-countdown",
+      "source": "examples/12-countdown.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 261,
+        "instructions": 54,
+        "cpi": 4.833333333333333,
+        "byClass": {
+          "system": {
+            "instructions": 11,
+            "cycles": 44,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 13,
+            "cycles": 67,
+            "cpi": 5.153846153846154,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 20,
+            "cycles": 100,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "NOP": {
+            "instructions": 10,
+            "cycles": 40,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_IND": {
+            "instructions": 11,
+            "cycles": 55,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "INC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 9,
+          "notTaken": 1,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 9,
+              "notTaken": 1
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 11,
+        "fetchedBytes": 99
+      },
+      "instructionalModel": {
+        "estimatedCycles": 173,
+        "estimatedCpi": 3.2037037037037037
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 24.904580152671755
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 9.252038284296349
+        }
+      ]
+    },
+    {
+      "name": "13-sum-integers",
+      "source": "examples/13-sum-integers.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 288,
+        "instructions": 57,
+        "cpi": 5.052631578947368,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 20,
+            "cycles": 100,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "logic": {
+            "instructions": 11,
+            "cycles": 55,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 21,
+            "cycles": 105,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 3,
+            "cycles": 18,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 1,
+            "cycles": 6,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "ADD": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "CMP": {
+            "instructions": 11,
+            "cycles": 55,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JMP": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JZ": {
+            "instructions": 11,
+            "cycles": 55,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 1,
+          "notTaken": 10,
+          "byOpcode": {
+            "JZ": {
+              "taken": 1,
+              "notTaken": 10
+            }
+          }
+        },
+        "jumps": 10,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 1,
+        "fetchedBytes": 117
+      },
+      "instructionalModel": {
+        "estimatedCycles": 186,
+        "estimatedCpi": 3.263157894736842
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 27.48091603053435
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 10.20914569301666
+        }
+      ]
+    },
+    {
+      "name": "14-fibonacci",
+      "source": "examples/14-fibonacci.asm",
+      "maxSteps": 200,
+      "status": "ok",
+      "rtl": {
+        "cycles": 428,
+        "instructions": 85,
+        "cpi": 5.035294117647059,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 44,
+            "cycles": 224,
+            "cpi": 5.090909090909091,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 30,
+            "cycles": 150,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "MOV": {
+            "instructions": 30,
+            "cycles": 150,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_IND": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "ADD": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "INC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 9,
+          "notTaken": 1,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 9,
+              "notTaken": 1
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 10,
+        "fetchedBytes": 173
+      },
+      "instructionalModel": {
+        "estimatedCycles": 277,
+        "estimatedCpi": 3.2588235294117647
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 40.83969465648855
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 15.171924849344204
+        }
+      ]
+    },
+    {
+      "name": "15-factorial-overflow",
+      "source": "examples/15-factorial-overflow.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 244,
+        "instructions": 48,
+        "cpi": 5.083333333333333,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 11,
+            "cycles": 60,
+            "cpi": 5.454545454545454,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 24,
+            "cycles": 120,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 12,
+            "cycles": 60,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 1,
+            "cycles": 6,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_IND": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "MUL": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "INC": {
+            "instructions": 12,
+            "cycles": 60,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNC": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 10,
+          "notTaken": 2,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 5,
+              "notTaken": 1
+            },
+            "JNC": {
+              "taken": 5,
+              "notTaken": 1
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 0,
+        "dataWrites": 7,
+        "fetchedBytes": 100
+      },
+      "instructionalModel": {
+        "estimatedCycles": 183,
+        "estimatedCpi": 3.8125
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 23.2824427480916
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 8.649415101028003
+        }
+      ]
+    },
+    {
+      "name": "16-array-sum",
+      "source": "examples/16-array-sum.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 295,
+        "instructions": 58,
+        "cpi": 5.086206896551724,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 14,
+            "cycles": 76,
+            "cpi": 5.428571428571429,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 27,
+            "cycles": 135,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 16,
+            "cycles": 80,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "LOAD_IND": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "ADD": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "INC": {
+            "instructions": 11,
+            "cycles": 55,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNC": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 12,
+          "notTaken": 4,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 7,
+              "notTaken": 1
+            },
+            "JNC": {
+              "taken": 5,
+              "notTaken": 3
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 8,
+        "dataWrites": 2,
+        "fetchedBytes": 121
+      },
+      "instructionalModel": {
+        "estimatedCycles": 201,
+        "estimatedCpi": 3.4655172413793105
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 28.14885496183206
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 10.457284650833037
+        }
+      ]
+    },
+    {
+      "name": "17-array-max",
+      "source": "examples/17-array-max.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 356,
+        "instructions": 70,
+        "cpi": 5.085714285714285,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 21,
+            "cycles": 112,
+            "cpi": 5.333333333333333,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 24,
+            "cycles": 120,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "logic": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 16,
+            "cycles": 80,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "MOV": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "LOAD_ABS": {
+            "instructions": 1,
+            "cycles": 6,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "LOAD_IND": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "STORE_ABS": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "INC": {
+            "instructions": 16,
+            "cycles": 80,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "CMP": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNC": {
+            "instructions": 8,
+            "cycles": 40,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 12,
+          "notTaken": 4,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 7,
+              "notTaken": 1
+            },
+            "JNC": {
+              "taken": 5,
+              "notTaken": 3
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 9,
+        "dataWrites": 2,
+        "fetchedBytes": 146
+      },
+      "instructionalModel": {
+        "estimatedCycles": 239,
+        "estimatedCpi": 3.414285714285714
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 33.969465648854964
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 12.619638426090038
+        }
+      ]
+    },
+    {
+      "name": "18-memory-copy",
+      "source": "examples/18-memory-copy.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 202,
+        "instructions": 40,
+        "cpi": 5.05,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 15,
+            "cycles": 78,
+            "cpi": 5.2,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 18,
+            "cycles": 90,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 3,
+            "cycles": 18,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "LOAD_IND": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "STORE_IND": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "INC": {
+            "instructions": 12,
+            "cycles": 60,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 6,
+            "cycles": 30,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 5,
+          "notTaken": 1,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 5,
+              "notTaken": 1
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 6,
+        "dataWrites": 6,
+        "fetchedBytes": 82
+      },
+      "instructionalModel": {
+        "estimatedCycles": 139,
+        "estimatedCpi": 3.475
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 19.27480916030534
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 7.160581354129741
+        }
+      ]
+    },
+    {
+      "name": "19-subroutines",
+      "source": "examples/19-subroutines.asm",
+      "maxSteps": 50,
+      "status": "ok",
+      "rtl": {
+        "cycles": 79,
+        "instructions": 16,
+        "cpi": 4.9375,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 6,
+            "cycles": 33,
+            "cpi": 5.5,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 6,
+            "cycles": 27,
+            "cpi": 4.5,
+            "minClocks": 4,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "MOV": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "LDI": {
+            "instructions": 2,
+            "cycles": 12,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "STORE_ABS": {
+            "instructions": 1,
+            "cycles": 6,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "ADD": {
+            "instructions": 1,
+            "cycles": 5,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "MUL": {
+            "instructions": 2,
+            "cycles": 10,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "CALL": {
+            "instructions": 3,
+            "cycles": 15,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "RET": {
+            "instructions": 3,
+            "cycles": 12,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          }
+        },
+        "branches": {
+          "taken": 0,
+          "notTaken": 0,
+          "byOpcode": {}
+        },
+        "jumps": 0,
+        "calls": 3,
+        "returns": 3,
+        "dataReads": 3,
+        "dataWrites": 4,
+        "fetchedBytes": 31
+      },
+      "instructionalModel": {
+        "estimatedCycles": 66,
+        "estimatedCpi": 4.125
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 7.538167938931298
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 2.8004253810705424
+        }
+      ]
+    },
+    {
+      "name": "20-stack",
+      "source": "examples/20-stack.asm",
+      "maxSteps": 100,
+      "status": "ok",
+      "rtl": {
+        "cycles": 278,
+        "instructions": 55,
+        "cpi": 5.054545454545455,
+        "byClass": {
+          "system": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "data": {
+            "instructions": 14,
+            "cycles": 74,
+            "cpi": 5.285714285714286,
+            "minClocks": 5,
+            "maxClocks": 6
+          },
+          "arithmetic": {
+            "instructions": 20,
+            "cycles": 100,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "control": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "stack": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "byOpcode": {
+          "HLT": {
+            "instructions": 1,
+            "cycles": 4,
+            "cpi": 4,
+            "minClocks": 4,
+            "maxClocks": 4
+          },
+          "LDI": {
+            "instructions": 4,
+            "cycles": 24,
+            "cpi": 6,
+            "minClocks": 6,
+            "maxClocks": 6
+          },
+          "LOAD_IND": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "STORE_IND": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "INC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "DEC": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "JNZ": {
+            "instructions": 10,
+            "cycles": 50,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "PUSH": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          },
+          "POP": {
+            "instructions": 5,
+            "cycles": 25,
+            "cpi": 5,
+            "minClocks": 5,
+            "maxClocks": 5
+          }
+        },
+        "branches": {
+          "taken": 8,
+          "notTaken": 2,
+          "byOpcode": {
+            "JNZ": {
+              "taken": 8,
+              "notTaken": 2
+            }
+          }
+        },
+        "jumps": 0,
+        "calls": 0,
+        "returns": 0,
+        "dataReads": 10,
+        "dataWrites": 10,
+        "fetchedBytes": 113
+      },
+      "instructionalModel": {
+        "estimatedCycles": 196,
+        "estimatedCpi": 3.5636363636363635
+      },
+      "estimatedTime": [
+        {
+          "family": "ice40",
+          "device": "iCE40UP5K SG48",
+          "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+          "fmaxMHz": 10.48,
+          "microseconds": 26.526717557251906
+        },
+        {
+          "family": "ecp5",
+          "device": "LFE5U-25F CABGA256",
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "fmaxMHz": 28.21,
+          "microseconds": 9.854661467564693
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "createdAt": "2026-10-17T02:48:00.415Z",
+    "git": {
+      "sha": "937d447bdbb3e286ad7a7345a676554936a2dae3",
+      "shortSha": "937d447",
+      "dirty": false
+    },
+    "runner": "hardware/rtl/vcpu8/build/sim/vcpu8_sim",
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "verilator": "Verilator 5.053 devel rev v5.052-448-g1272f7355 (mod)",
+      "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0, Release, Clang /usr/local/osxcross/target/bin/aarch64-apple-darwin25.5-clang++ 21.1.8)",
+      "sby": "SBY v0.70-9-g79fc9ed",
+      "yices-smt2": "Yices 2.7.0",
+      "boolector": "3.2.4",
+      "z3": "Z3 version 4.15.5 - 64 bit",
+      "bitwuzla": "0.9.1",
+      "nextpnr-ice40": "\"nextpnr-ice40\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "gtkwave": "GTKWave Analyzer v4.0.0-prealpha (f6d60e0) (w)1999-2022 BSI"
+    }
+  },
+  "host": {
+    "label": "Host: wall-clock time this machine took to simulate. It measures the simulator, not the processor, and varies from run to run.",
+    "runtime": "node v24.15.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpuModel": "Apple M2 Pro",
+    "totalWallMs": 132.97575,
+    "programs": [
+      {
+        "name": "01-addition",
+        "referenceMs": 1.710999999999956,
+        "rtlMs": 11.354874999999993
+      },
+      {
+        "name": "02-subtraction",
+        "referenceMs": 0.9293329999999855,
+        "rtlMs": 5.273707999999999
+      },
+      {
+        "name": "03-multiplication",
+        "referenceMs": 0.4722499999999741,
+        "rtlMs": 4.145375000000001
+      },
+      {
+        "name": "04-division",
+        "referenceMs": 0.4571250000000191,
+        "rtlMs": 5.090417000000002
+      },
+      {
+        "name": "05-and",
+        "referenceMs": 0.5240830000000187,
+        "rtlMs": 4.616540999999984
+      },
+      {
+        "name": "06-or",
+        "referenceMs": 0.40554099999997106,
+        "rtlMs": 5.325290999999993
+      },
+      {
+        "name": "07-xor",
+        "referenceMs": 0.30341699999996763,
+        "rtlMs": 3.8722499999999513
+      },
+      {
+        "name": "08-shift-left",
+        "referenceMs": 0.25670800000000327,
+        "rtlMs": 3.9920420000000263
+      },
+      {
+        "name": "09-shift-right",
+        "referenceMs": 0.77212499999996,
+        "rtlMs": 4.687791000000004
+      },
+      {
+        "name": "10-compare",
+        "referenceMs": 0.33587499999998727,
+        "rtlMs": 4.085041999999987
+      },
+      {
+        "name": "11-conditional-branch",
+        "referenceMs": 0.28204200000004676,
+        "rtlMs": 4.457665999999961
+      },
+      {
+        "name": "12-countdown",
+        "referenceMs": 0.6439159999999902,
+        "rtlMs": 4.8576249999999845
+      },
+      {
+        "name": "13-sum-integers",
+        "referenceMs": 0.6714579999999728,
+        "rtlMs": 4.284958000000017
+      },
+      {
+        "name": "14-fibonacci",
+        "referenceMs": 0.8721669999999904,
+        "rtlMs": 5.046667000000014
+      },
+      {
+        "name": "15-factorial-overflow",
+        "referenceMs": 0.5760420000000295,
+        "rtlMs": 4.590791000000024
+      },
+      {
+        "name": "16-array-sum",
+        "referenceMs": 0.6977089999999748,
+        "rtlMs": 4.855582999999967
+      },
+      {
+        "name": "17-array-max",
+        "referenceMs": 0.7717499999999973,
+        "rtlMs": 4.68058400000001
+      },
+      {
+        "name": "18-memory-copy",
+        "referenceMs": 0.5535419999999931,
+        "rtlMs": 5.445750000000032
+      },
+      {
+        "name": "19-subroutines",
+        "referenceMs": 0.39554199999997763,
+        "rtlMs": 4.606249999999989
+      },
+      {
+        "name": "20-stack",
+        "referenceMs": 0.5405410000000188,
+        "rtlMs": 4.895375000000001
+      }
+    ]
+  }
+}

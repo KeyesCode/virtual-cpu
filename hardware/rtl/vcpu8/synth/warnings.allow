@@ -14,6 +14,16 @@
 
 # nextpnr-ice40's timing estimate misses the 12 MHz target on the iCE40UP5K: the longest path runs
 # through the single-cycle combinational divider. The ticket reports this as measured instead of
-# changing the RTL; the summary records the achieved Fmax and meetsConstraint: false, and the
-# iterative-divider experiment is where it gets addressed. Only this exact message form is allowed.
+# changing the RTL; the summary records the achieved Fmax and meetsConstraint: false. The
+# iterative divider (DIV_IMPL=ITER, research/cpu/experiments/div-impl/) meets the target, so its
+# run does not print this. Only this exact message form is allowed.
 ^Warning: Max frequency for clock '[^']+': [0-9.]+ MHz \(FAIL at [0-9.]+ MHz\)$
+
+# Only with the iterative divider (DIV_IMPL=ITER), in the iCE40 flow: ABC9 notes that the output of
+# one carry box (an SB_CARRY; the variant's new carry chain is the divider's trial subtraction,
+# whose borrow selects both the quotient bit and the next remainder) feeds more than one node
+# inside the network it optimises, so it maps around that box rather than through it. It is a limit on ABC's optimisation, not a
+# fault in the design: the same run's `&verify` reports "Networks are equivalent", and the divider
+# is checked exhaustively by test-divider and by make verify DIV_IMPL=ITER. Only this message form,
+# with no complex flops, is allowed.
+^ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and [0-9]+ carries\.$

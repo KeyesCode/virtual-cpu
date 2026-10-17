@@ -10,14 +10,24 @@
 make -C hardware/rtl/vcpu8 formal            # alu_prove, core_prove, core_bmc: every task must PASS
 make -C hardware/rtl/vcpu8 formal-selftest   # a deliberately false property must FAIL with a trace
 make -C hardware/rtl/vcpu8 formal-mutant     # broken rf_we in a copy of the RTL must fail we_rf
+make -C hardware/rtl/vcpu8 formal DIV_IMPL=ITER   # the same tasks on the iterative-divider variant
 ```
 
 `make formal` prints one line per task, with its proof kind, depth and engine, and exits non-zero if any task ends in FAIL, ERROR or UNKNOWN. These are the lines from the run on this commit:
 
 ```text
-PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (1s)
+PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (0s)
 PASS    core_prove                 k-induction, depth 20, smtbmc boolector; induction closed at k = 3 (7s)
-PASS    core_bmc                   BMC, depth 40, smtbmc boolector (36s)
+PASS    core_bmc                   BMC, depth 40, smtbmc boolector (30s)
+```
+
+`make formal DIV_IMPL=ITER` proves the same properties on the [iterative-divider variant](alu.md#iterative-divider). It copies `core/` and `formal/` into `build/formal-div-iter/` and adds `chparam -set DIV_ITER 1 formal_core_top` before `hierarchy` in the copies of `core_prove.sby` and `core_bmc.sby`, so the harness, the core and the properties are elaborated with `DIV_ITER = 1` and include `vcpu8_divider`. `alu_prove` is the same task in both: it proves `vcpu8_alu` with its default parameter. With the divider's state added, induction needs more steps to close:
+
+```text
+formal: DIV_IMPL=ITER, core tasks with DIV_ITER = 1 (build/formal-div-iter/)
+PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (0s)
+PASS    core_prove                 k-induction, depth 20, smtbmc boolector; induction closed at k = 10 (8s)
+PASS    core_bmc                   BMC, depth 40, smtbmc boolector (37s)
 ```
 
 The tools come from the pinned OSS CAD Suite (SBY v0.70-9, Yosys 0.70+145, Boolector 3.2.4). If `sby`, `yosys` or `boolector` is missing, the target stops before running anything and points to `pnpm hardware:setup`. Every task uses the `smtbmc boolector` engine. With Yices 2.7.0 from the same suite, `core_bmc` took 281 s, against 30 s with Boolector, both measured on the same machine.
@@ -28,14 +38,14 @@ The tools come from the pinned OSS CAD Suite (SBY v0.70-9, Yosys 0.70+145, Boole
 | ----------------------------------------------------------- | ---------- | ---------------------------- | ------------------ | ----------- | ------------ | ------ |
 | [ALU](#alu-properties-alu_prove)                            | 25         | none                         | `smtbmc boolector` | k-induction | 1 (complete) | PASS   |
 | [Deterministic reset](#1-deterministic-reset)               | 7          | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
-| [Legal FSM](#2-legal-fsm)                                   | 10         | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
+| [Legal FSM](#2-legal-fsm)                                   | 13         | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
 | [Register-write constraints](#3-register-write-constraints) | 7          | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
 | [Halt and fault](#4-halt-and-fault)                         | 7          | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
 | [Retirement](#5-retirement)                                 | 5          | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
 | [Memory-access validity](#6-memory-access-validity)         | 8          | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
 | [Helper invariants](#helper-invariants)                     | 5          | reset in cycle 0, anyseq RAM | `smtbmc boolector` | k-induction | 20 (k = 3)   | PASS   |
 
-The core groups are also checked by BMC from reset to depth 40 (`core_bmc`, PASS). Every core property is proven for unbounded time: none holds only to a bound. "Assertions" counts the labelled `assert` statements, all 74 of which appear in the SMT models (`yosys-smt2-assert` lines in `build/formal/*/model/design_smt2.smt2`).
+The core groups are also checked by BMC from reset to depth 40 (`core_bmc`, PASS). Every core property is proven for unbounded time: none holds only to a bound. The table is the default design's; with `DIV_IMPL=ITER` every group passes the same way, with induction closing at k = 10. "Assertions" counts the labelled `assert` statements, all 77 of which appear in the SMT models of both variants (`yosys-smt2-assert` lines in `build/formal/*/model/design_smt2.smt2`).
 
 ### Files
 
@@ -131,20 +141,23 @@ Checked in the cycle after any cycle with `rst` high, whatever the state before 
 
 ### 2. Legal FSM
 
-| Label             | Statement                                                                 |
-| ----------------- | ------------------------------------------------------------------------- |
-| `fsm_legal`       | The state is one of the eight `fsm_state_t` values                        |
-| `fsm_t_fetch`     | FETCH → DECODE                                                            |
-| `fsm_t_decode`    | DECODE → OPERAND1, EXECUTE or FAULTED                                     |
-| `fsm_t_operand1`  | OPERAND1 → OPERAND2, EXECUTE or FAULTED                                   |
-| `fsm_t_operand2`  | OPERAND2 → EXECUTE or FAULTED                                             |
-| `fsm_t_execute`   | EXECUTE → WRITEBACK or FAULTED                                            |
-| `fsm_t_writeback` | WRITEBACK → FETCH, HALTED or FAULTED                                      |
-| `fsm_t_halted`    | HALTED → HALTED                                                           |
-| `fsm_t_faulted`   | FAULTED → FAULTED                                                         |
-| `fsm_t_other`     | No other source state exists (fails if the encoding grows without a case) |
+| Label              | Statement                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| `fsm_legal`        | The state is one of the eight `fsm_state_t` values                                      |
+| `fsm_t_fetch`      | FETCH → DECODE                                                                          |
+| `fsm_t_decode`     | DECODE → OPERAND1, EXECUTE or FAULTED                                                   |
+| `fsm_t_operand1`   | OPERAND1 → OPERAND2, EXECUTE or FAULTED                                                 |
+| `fsm_t_operand2`   | OPERAND2 → EXECUTE or FAULTED                                                           |
+| `fsm_t_execute`    | EXECUTE → WRITEBACK or FAULTED, or EXECUTE for a DIV waiting for the iterative divider  |
+| `div_wait_bounded` | EXECUTE lasts at most 1 cycle, or 9 with the iterative divider (`DIV_ITER = 1`)         |
+| `div_busy_execute` | The iterative divider is busy only during a DIV's EXECUTE (it is never busy by default) |
+| `div_done_execute` | The iterative divider reports done only during a DIV's EXECUTE (ITER only)              |
+| `fsm_t_writeback`  | WRITEBACK → FETCH, HALTED or FAULTED                                                    |
+| `fsm_t_halted`     | HALTED → HALTED                                                                         |
+| `fsm_t_faulted`    | FAULTED → FAULTED                                                                       |
+| `fsm_t_other`      | No other source state exists (fails if the encoding grows without a case)               |
 
-The state is 3 bits and there are eight states, so every encoding is legal. `fsm_legal` stays as a guard in case the encoding ever grows. The transitions are checked across every edge that is not a reset (a reset goes to FETCH from any state, by `reset_state`). No running state can stay where it is, and every transition moves forward, so an instruction takes at most six cycles from FETCH to the end of WRITEBACK.
+The state is 3 bits and there are eight states, so every encoding is legal. `fsm_legal` stays as a guard in case the encoding ever grows. The transitions are checked across every edge that is not a reset (a reset goes to FETCH from any state, by `reset_state`). In the default design no running state can stay where it is, and every transition moves forward, so an instruction takes at most six cycles from FETCH to the end of WRITEBACK. With the iterative divider, EXECUTE may repeat, but only while a DIV waits for `div_done` (`fsm_t_execute` reads the control unit's `dec_is_div` and the divider's `div_done`), and `div_wait_bounded` limits it to 9 consecutive EXECUTE cycles. It counts them with a formal-only counter, `f_exec`, that saturates so an overrun stays visible. An instruction then takes at most 14 cycles. `div_wait_bounded` is not vacuous: on a copy of the variant whose `div_wait` ignores `div_done`, `core_prove` fails on it. `div_busy_execute` also says that a DIV which faults in EXECUTE (`DIVIDE_BY_ZERO`) never started the divider, since it would otherwise still be busy in FAULTED. None of the three needs a helper invariant: `core_prove` closes at k = 10 with the default helpers alone.
 
 ### 3. Register-write constraints
 
@@ -244,4 +257,5 @@ A formal setup can pass vacuously, for example if an assumption rules out every 
 - **Fault priority and fault conditions.** Beyond the properties above (a precise fault writes and retires nothing, and only `PC_OVERFLOW` comes from WRITEBACK), nothing proves _which_ fault a given instruction raises or in what order the checks apply. The fixtures and differential tests cover that.
 - **Memory contents and the memory module.** The RAM is abstracted away (see above), so nothing is proven about what a load returns, what a store leaves behind, or `vcpu8_memory` itself.
 - **vcpu8_top.** The properties are proven on `vcpu8_core`. `vcpu8_top` adds only the RAM and wires.
-- **Liveness beyond the FSM.** The transition properties bound each instruction to at most six cycles. Nothing is proven about whole programs, for example that a program terminates.
+- **The iterative divider's arithmetic.** The core properties hold with `vcpu8_divider` in place, and `div_busy_execute` shows a faulting DIV never starts it, but nothing formal says its quotient is right. That is `make test-divider`'s exhaustive comparison with `div()`, and `make verify DIV_IMPL=ITER`.
+- **Liveness beyond the FSM.** The transition properties bound each instruction to at most six cycles, or 14 with the iterative divider. Nothing is proven about whole programs, for example that a program terminates.

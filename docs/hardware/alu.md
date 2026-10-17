@@ -6,17 +6,20 @@ The equations here are the same as the table in [hardware-porting.md](../hardwar
 
 ## Interface
 
-| Port   | Dir | Width | Meaning                                                                |
-| ------ | --- | ----- | ---------------------------------------------------------------------- |
-| `a`    | in  | 8     | First operand: field a of the register byte (the destination register) |
-| `b`    | in  | 8     | Second operand: field b. Unary operations ignore it                    |
-| `op`   | in  | 4     | `vcpu8_types_pkg::alu_op_t`, selected by the decoder                   |
-| `c_in` | in  | 1     | The current C flag. Only INC and DEC read it                           |
-| `r`    | out | 8     | Result                                                                 |
-| `z`    | out | 1     | `r == 0`, for every operation                                          |
-| `c`    | out | 1     | Carry, borrow or shifted-out bit; see the table                        |
-| `n`    | out | 1     | `r[7]`, for every operation                                            |
-| `v`    | out | 1     | Signed overflow; see the table                                         |
+| Port    | Dir | Width | Meaning                                                                |
+| ------- | --- | ----- | ---------------------------------------------------------------------- |
+| `a`     | in  | 8     | First operand: field a of the register byte (the destination register) |
+| `b`     | in  | 8     | Second operand: field b. Unary operations ignore it                    |
+| `op`    | in  | 4     | `vcpu8_types_pkg::alu_op_t`, selected by the decoder                   |
+| `c_in`  | in  | 1     | The current C flag. Only INC and DEC read it                           |
+| `div_q` | in  | 8     | The iterative divider's quotient. Read only when `DIV_ITER = 1`        |
+| `r`     | out | 8     | Result                                                                 |
+| `z`     | out | 1     | `r == 0`, for every operation                                          |
+| `c`     | out | 1     | Carry, borrow or shifted-out bit; see the table                        |
+| `n`     | out | 1     | `r[7]`, for every operation                                            |
+| `v`     | out | 1     | Signed overflow; see the table                                         |
+
+The parameter `DIV_ITER` (default 0) selects the divider. With 0, the v1 design, DIV is the combinational divider below and `div_q` is ignored. With 1, the ALU has no divider: `ALU_DIV` passes `div_q` through, the quotient of the [iterative divider](#iterative-divider), and Z, N, C and V are formed from it exactly as before. `vcpu8_core` sets it from its own `DIV_ITER`.
 
 CMP has no `alu_op_t` value of its own. The decoder selects `ALU_SUB` for it and disables the register write, so CMP sets exactly the flags SUB would.
 
@@ -94,7 +97,7 @@ This follows the brief's rule of using the simplest correct synthesizable implem
 | 8 ÷ 8 divider with the `b == 0` guard | 214   | 71                         |
 | 9-bit adder                           | 38    | 15                         |
 
-The divider is smaller than the multiplier but more than twice as deep, and it alone sets the ALU's longest path, and so the clock period the ALU allows. A restoring divider that produces one quotient bit per clock removes that depth at the cost of extra EXECUTE cycles per DIV ([hardware-porting.md](../hardware-porting.md#alu-alu) sketches one iteration per quotient bit). That trade-off is the subject of the iterative-divider experiment ticket. It changes cycle counts, never results.
+The divider is smaller than the multiplier but more than twice as deep, and it alone sets the ALU's longest path, and so the clock period the ALU allows. A restoring divider that produces one quotient bit per clock removes that depth at the cost of extra EXECUTE cycles per DIV ([hardware-porting.md](../hardware-porting.md#alu-alu) sketches one iteration per quotient bit). [The iterative divider](#iterative-divider) below is that alternative, and the [div-impl experiment](../../research/cpu/experiments/div-impl/README.md) measures the trade-off. It changes cycle counts, never results.
 
 These numbers come from generic gates and are only indicative. The synthesis ticket reports the real FPGA resource and timing figures. To reproduce them:
 
@@ -109,6 +112,40 @@ yosys -p 'read_verilog -sv hardware/rtl/vcpu8/core/vcpu8_types_pkg.sv hardware/r
 DIV with `b = 0` is a fault. The control unit checks `b == 0` before any state is written and raises `DIVIDE_BY_ZERO`, so the ALU's output for it is never used. The check does not depend on the divider.
 
 The ALU still has to produce something defined for `b = 0`, because simulation, formal tools and synthesis all see that input. In plain Verilog, `a / 0` is X. The `b == 8'h00` guard therefore forces the quotient to 0, giving `r = 00`, Z = 1, C = N = V = 0. No X can reach the datapath, and the guard costs a few gates.
+
+## Iterative divider
+
+`hardware/rtl/vcpu8/core/vcpu8_divider.sv` is the alternative to the combinational divider: an unsigned 8-bit restoring divider that finds one quotient bit per clock. It is used only when the design is built with `DIV_ITER = 1` (`make … DIV_IMPL=ITER`, or the `div-iter` variant of the experiment); the default build does not instantiate it.
+
+| Port    | Dir | Width | Meaning                                                                           |
+| ------- | --- | ----- | --------------------------------------------------------------------------------- |
+| `start` | in  | 1     | Begin a division of `a` by `b`. Sampled only when idle (`busy` low)               |
+| `a`     | in  | 8     | Dividend; read only in the start cycle                                            |
+| `b`     | in  | 8     | Divisor, non-zero; latched in the start cycle                                     |
+| `busy`  | out | 1     | High for the 7 cycles after the start cycle                                       |
+| `done`  | out | 1     | One-cycle pulse, exactly 8 cycles after the start cycle                           |
+| `q`     | out | 8     | Quotient `a / b`, valid from the `done` cycle until the next start                |
+| `rem`   | out | 8     | Remainder `a % b`, likewise. Only the unit test reads it; the core leaves it open |
+
+Each iteration shifts the next dividend bit into the partial remainder and subtracts `b` if it fits:
+
+```text
+t = {rem, q[7]}                      // the dividend shifts out of q from the top
+if (t >= b)  rem = t - b, q = {q[6:0], 1}
+else         rem = t,     q = {q[6:0], 0}
+```
+
+`rem < b` holds after every step, so `t` fits in 9 bits and `t - b` in 8. The datapath is one 9-bit subtractor, a 16-bit shift register for the remainder and quotient, the latched divisor and a 3-bit step counter. The start edge itself performs the first iteration from `a` and `b`, so the eight iterations end at the eighth edge and `done` comes 8 cycles after the start cycle. `rst` returns the divider to idle from any state. A start while `busy` is ignored. The CPU never starts it with `b = 0`, because `DIVIDE_BY_ZERO` is raised first ([Divide by zero](#divide-by-zero)), but the outputs are still defined then: every step subtracts nothing, giving `q = FF` and `rem = a`.
+
+In the core, the divider reads the same operands as the ALU, and the control FSM holds DIV in EXECUTE until `done` ([control-unit.md](control-unit.md#states)). The quotient stays in `q` through WRITEBACK, where the ALU passes it on as DIV's result through `div_q`. DIV therefore takes 13 clocks instead of 5, and its result and flags are unchanged.
+
+`make -C hardware/rtl/vcpu8 test-divider` (part of `make test`) checks the module on its own. `pnpm --filter @vcpu/rtl-tools gen:div-vectors` (`packages/rtl-tools/src/gen/div-vectors.ts`) calls `div()` from `@vcpu/cpu-core` for every `(a, b ≠ 0)` and writes 65,280 records of `{a, b, q}` to `build/vectors/div.hex`. `tb/unit/tb_vcpu8_divider.sv` runs each one through a full handshake: one start pulse, then different values on `a` and `b`, so the divider must use what it latched. It requires the expected `q`, `q × b + rem = a` with `rem < b`, `busy` high and `done` low until `done` arrives exactly 8 cycles after the start cycle, and `done` low again in the next cycle. Directed checks follow: a start while busy is ignored, `rst` while busy returns to idle with no `done`, and `b = 0` gives X-free outputs. The run on this commit prints:
+
+```text
+divider: 65280 vectors, 0 mismatches, done 8 cycles after start; 3 directed checks, 0 failed
+```
+
+The vitest test `packages/rtl-tools/src/gen/div-vectors.test.ts` checks the record count, the format and the edge cases (`0 / x = 0`, `FF / 1 = FF`, `x / x = 1`) against the reference, without the hardware toolchain.
 
 ## Verification
 

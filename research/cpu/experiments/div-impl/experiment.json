@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "description": "Combinational versus iterative DIV: the ALU's single-cycle divider against vcpu8_divider, a restoring divider that finds one quotient bit per clock (8 iterations). It measures what the 8 extra cycles per DIV cost against the area and the Fmax the iterative divider saves.",
+  "verify": { "seed": 1, "count": 1000 },
+  "baseline": "div-comb",
+  "variants": [
+    {
+      "name": "div-comb",
+      "description": "Combinational divider inside the ALU: the default design (DIV_IMPL=COMB, DIV_ITER = 0).",
+      "defines": {},
+      "parameters": {}
+    },
+    {
+      "name": "div-iter",
+      "description": "Iterative restoring divider, one quotient bit per clock; DIV waits 8 extra cycles in EXECUTE (DIV_IMPL=ITER).",
+      "defines": {},
+      "parameters": { "DIV_ITER": 1 }
+    }
+  ]
+}

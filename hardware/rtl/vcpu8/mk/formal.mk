@@ -8,9 +8,21 @@
 #
 # FORMAL_DIR runs the tasks of another copy of formal/ (beside its own core/), as formal-mutant
 # does. Differential simulation (`make test`) remains the primary correctness evidence.
+#
+# DIV_IMPL=ITER proves the same tasks on the iterative divider: a copy of core/ and formal/ in
+# build/formal-div-iter/, whose core tasks set DIV_ITER = 1 on formal_core_top with chparam before
+# hierarchy. alu_prove is the same in both: it proves vcpu8_alu with its default parameter (the
+# other operations are the same source either way), and test-divider checks the divider
+# exhaustively.
 
+FORMAL_ITER_DIR := $(BUILD_DIR)/formal-div-iter
+ifeq ($(DIV_ITER),1)
+  FORMAL_DIR    ?= $(FORMAL_ITER_DIR)/formal
+  FORMAL_OUT    ?= $(FORMAL_ITER_DIR)/out
+endif
 FORMAL_DIR    ?= $(HW_DIR)/formal
 FORMAL_OUT    ?= $(BUILD_DIR)/formal
+FORMAL_CORE_TASKS := core_prove core_bmc
 FORMAL_TASKS  := alu_prove core_prove core_bmc
 FORMAL_SH     := $(HW_DIR)/scripts/formal.sh
 # The solvers the .sby engines name: every task uses smtbmc with boolector, which ran core_bmc
@@ -29,7 +41,18 @@ formal-tools:
 	  echo "SMT solver $$s not found; the formal tasks need it. Run 'pnpm hardware:setup' to install OSS CAD Suite $(OSS_CAD_SUITE_VERSION) into $(OSS_CAD_SUITE_DIR)." >&2; \
 	  exit 127; }; done
 
-formal: formal-tools ## SymbiYosys: prove the ALU and core properties (k-induction and BMC)
+formal: formal-tools ## SymbiYosys: prove the ALU and core properties (k-induction and BMC); DIV_IMPL=ITER
+ifeq ($(DIV_ITER),1)
+	@rm -rf $(FORMAL_ITER_DIR) && mkdir -p $(FORMAL_ITER_DIR)
+	@cp -R $(HW_DIR)/core $(HW_DIR)/formal $(FORMAL_ITER_DIR)/
+	@set -e; for t in $(FORMAL_CORE_TASKS); do \
+	  awk '/^hierarchy -top formal_core_top$$/ { print "chparam -set DIV_ITER 1 formal_core_top" } { print }' \
+	    $(HW_DIR)/formal/$$t.sby > $(FORMAL_ITER_DIR)/formal/$$t.sby; \
+	  grep -q '^chparam -set DIV_ITER 1 formal_core_top$$' $(FORMAL_ITER_DIR)/formal/$$t.sby || { \
+	    echo "formal: could not set DIV_ITER in $$t.sby" >&2; exit 1; }; \
+	done
+	@echo "formal: DIV_IMPL=ITER, core tasks with DIV_ITER = 1 (build/formal-div-iter/)"
+endif
 	@bash $(FORMAL_SH) $(FORMAL_OUT) $(foreach t,$(FORMAL_TASKS),$(FORMAL_DIR)/$(t).sby)
 
 formal-selftest: formal-tools ## Check a deliberately false formal property fails with a trace

@@ -111,6 +111,8 @@ const VariantResultSchema = z.strictObject({
     .strictObject({
       cells: z.number().int(),
       flipFlops: z.number().int(),
+      /** Gates on the longest path of the flattened generic netlist (`ltp -noff`); not a delay. */
+      logicDepth: z.number().int().nullable(),
       fpga: z.array(
         z.strictObject({
           family: z.string(),
@@ -272,14 +274,28 @@ function benchmarkSummary(report: RtlBenchmarkReport): NonNullable<VariantResult
   };
 }
 
+/** The generic logic depth from a synthesis summary (synth/summary.ts), or null without one. */
+function readLogicDepth(summary: string): number | null {
+  const parsed = z
+    .object({
+      generic: z.object({
+        gates: z.object({ logicDepth: z.object({ length: z.number().int().min(0) }) }),
+      }),
+    })
+    .safeParse(JSON.parse(readFileSync(summary, 'utf8')));
+  return parsed.success ? parsed.data.generic.gates.logicDepth.length : null;
+}
+
 function synthSummary(
   synthesis: Synthesis,
   cycles: number,
+  logicDepth: number | null,
 ): NonNullable<VariantResult['synth']> | null {
   if (!synthesis.available) return null;
   return {
     cells: synthesis.generic.cells,
     flipFlops: synthesis.generic.flipFlops,
+    logicDepth,
     fpga: synthesis.fpga.flatMap((f) =>
       f.status === 'ran'
         ? [
@@ -412,7 +428,7 @@ async function runVariant(
     ...result,
     status: 'passed',
     benchmark,
-    synth: synthSummary(synthesis, benchmark.cycles),
+    synth: synthSummary(synthesis, benchmark.cycles, readLogicDepth(synth.summary)),
   };
 }
 
@@ -435,15 +451,15 @@ export function renderExperimentMarkdown(result: ExperimentResult): string {
     '',
     `Revision \`${result.revision}\`, ISA ${result.isaVersion}, commit \`${result.git.sha ?? 'unknown'}\`${result.git.dirty === true ? ' (dirty working tree)' : ''}, ${result.createdAt}. Toolchain: ${result.toolchain ?? 'unknown'}.`,
     '',
-    `Each variant ran \`verify\` (${result.config.verify.corpora.join(', ')}; ${String(result.config.verify.count)} random programs from seed ${String(result.config.verify.seed)}), then the benchmark (${String(result.config.benchmark.programs)} programs in \`${result.config.benchmark.programDir}\`), then \`make synth\`. A variant that fails a stage gets no metrics. Deltas are against \`${result.config.baseline}\`. Cycles are RTL clock edges; Fmax is nextpnr's estimate for the named device; cells are generic Yosys cells, not transistors.`,
+    `Each variant ran \`verify\` (${result.config.verify.corpora.join(', ')}; ${String(result.config.verify.count)} random programs from seed ${String(result.config.verify.seed)}), then the benchmark (${String(result.config.benchmark.programs)} programs in \`${result.config.benchmark.programDir}\`), then \`make synth\`. A variant that fails a stage gets no metrics. Deltas are against \`${result.config.baseline}\`. Cycles are RTL clock edges; Fmax is nextpnr's estimate for the named device, and suite time is the suite's cycles / that Fmax; cells are generic Yosys cells, not transistors; logic depth is the gates on the longest path of the generic netlist, not a delay.`,
     '',
-    `| Variant | Result | Verify cases | Cycles | CPI | DIV-heavy program cycles | Cells | FFs |${families.map((f) => ` ${f} LUTs | ${f} Fmax (MHz) |`).join('')}`,
-    `| ------- | ------ | -----------: | -----: | --: | -----------------------: | ----: | --: |${families.map(() => ' ---: | ---: |').join('')}`,
+    `| Variant | Result | Verify cases | Cycles | CPI | DIV-heavy program cycles | Cells | FFs | Logic depth |${families.map((f) => ` ${f} LUTs | ${f} Fmax (MHz) | ${f} suite time (µs) |`).join('')}`,
+    `| ------- | ------ | -----------: | -----: | --: | -----------------------: | ----: | --: | ----------: |${families.map(() => ' ---: | ---: | ---: |').join('')}`,
   ];
   for (const v of result.variants) {
     if (v.status === 'failed' || v.benchmark === null || v.synth === null) {
       lines.push(
-        `| ${v.name} | FAILED at ${v.failedStage ?? '?'}: ${v.reason ?? ''} | ${v.verify === null ? '-' : String(v.verify.cases)} | | | | | |${families.map(() => ' | |').join('')}`,
+        `| ${v.name} | FAILED at ${v.failedStage ?? '?'}: ${v.reason ?? ''} | ${v.verify === null ? '-' : String(v.verify.cases)} | | | | | | |${families.map(() => ' | | |').join('')}`,
       );
       continue;
     }
@@ -458,11 +474,15 @@ export function renderExperimentMarkdown(result: ExperimentResult): string {
       const f = s.fpga.find((x) => x.family === family);
       const bf = base?.synth?.fpga.find((x) => x.family === family);
       return f === undefined
-        ? ' - | - |'
-        : ` ${String(f.luts)}${isBase ? '' : delta(f.luts, bf?.luts)} | ${fixed(f.fmaxMHz, 2)}${isBase ? '' : delta(f.fmaxMHz, bf?.fmaxMHz, 2)} |`;
+        ? ' - | - | - |'
+        : ` ${String(f.luts)}${isBase ? '' : delta(f.luts, bf?.luts)} | ${fixed(f.fmaxMHz, 2)}${isBase ? '' : delta(f.fmaxMHz, bf?.fmaxMHz, 2)} | ${fixed(f.suiteMicroseconds, 1)}${isBase ? '' : delta(f.suiteMicroseconds, bf?.suiteMicroseconds, 1)} |`;
     });
+    const depth =
+      s.logicDepth === null
+        ? '-'
+        : `${String(s.logicDepth)}${isBase || base?.synth?.logicDepth == null ? '' : delta(s.logicDepth, base.synth.logicDepth)}`;
     lines.push(
-      `| ${v.name} | passed | ${String(v.verify?.cases ?? 0)} | ${String(b.cycles)}${isBase ? '' : delta(b.cycles, base?.benchmark?.cycles)} | ${fixed(b.cpi)} | ${div} | ${String(s.cells)}${isBase ? '' : delta(s.cells, base?.synth?.cells)} | ${String(s.flipFlops)}${isBase ? '' : delta(s.flipFlops, base?.synth?.flipFlops)} |${fpga.join('')}`,
+      `| ${v.name} | passed | ${String(v.verify?.cases ?? 0)} | ${String(b.cycles)}${isBase ? '' : delta(b.cycles, base?.benchmark?.cycles)} | ${fixed(b.cpi)} | ${div} | ${String(s.cells)}${isBase ? '' : delta(s.cells, base?.synth?.cells)} | ${String(s.flipFlops)}${isBase ? '' : delta(s.flipFlops, base?.synth?.flipFlops)} | ${depth} |${fpga.join('')}`,
     );
   }
   lines.push('');

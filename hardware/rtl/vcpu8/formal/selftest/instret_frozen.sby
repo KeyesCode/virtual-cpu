@@ -9,7 +9,7 @@ smtbmc boolector
 
 [script]
 read -formal vcpu8_isa_pkg.sv vcpu8_types_pkg.sv
-read -formal vcpu8_alu.sv vcpu8_control.sv vcpu8_decoder.sv vcpu8_flags.sv vcpu8_registers.sv vcpu8_core.sv
+read -formal vcpu8_alu.sv vcpu8_control.sv vcpu8_decoder.sv vcpu8_divider.sv vcpu8_flags.sv vcpu8_registers.sv vcpu8_core.sv
 read -formal vcpu8_core_props.sv instret_frozen.sv
 hierarchy -top selftest_instret_frozen
 proc -norom
@@ -21,6 +21,7 @@ prep -top selftest_instret_frozen
 ../../core/vcpu8_alu.sv
 ../../core/vcpu8_control.sv
 ../../core/vcpu8_decoder.sv
+../../core/vcpu8_divider.sv
 ../../core/vcpu8_flags.sv
 ../../core/vcpu8_registers.sv
 ../../core/vcpu8_core.sv

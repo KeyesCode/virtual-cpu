@@ -33,7 +33,8 @@ module tb_vcpu8_alu;
   logic                     n;
   logic                     v;
 
-  vcpu8_alu dut (.a(a), .b(b), .op(op), .c_in(c_in), .r(r), .z(z), .c(c), .n(n), .v(v));
+  // The default ALU (DIV_ITER = 0), with its combinational divider; it ignores div_q.
+  vcpu8_alu dut (.a(a), .b(b), .op(op), .c_in(c_in), .div_q(8'h00), .r(r), .z(z), .c(c), .n(n), .v(v));
 
   // The ALU's flags packed as a FLAGS nibble, positions from the generated ISA package.
   function automatic logic [3:0] flags_of(input logic fz, input logic fc, input logic fn,

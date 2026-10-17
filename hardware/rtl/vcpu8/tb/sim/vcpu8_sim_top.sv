@@ -5,7 +5,11 @@
 // `cycle` counts the rising edges since reset was released, exactly as the runner counts cycles:
 // it reads N during the clock cycle that follows edge N. Waveforms show it so that a cycle number
 // in the runner's trace (its `cycle` field) can be found on the time axis.
-module vcpu8_sim_top (
+//
+// DIV_ITER is passed to vcpu8_top: `make … DIV_IMPL=ITER` and experiment variants set it with -G.
+module vcpu8_sim_top #(
+  parameter int DIV_ITER = 0
+) (
   input  logic        clk,
   input  logic        rst,
   output logic [31:0] cycle,
@@ -34,7 +38,7 @@ module vcpu8_sim_top (
   output logic [7:0]  mem_wdata,
   output logic [7:0]  mem_rdata
 );
-  vcpu8_top u_top (.*);
+  vcpu8_top #(.DIV_ITER(DIV_ITER)) u_top (.*);
 
   always_ff @(posedge clk) begin
     if (rst) cycle <= 32'd0;

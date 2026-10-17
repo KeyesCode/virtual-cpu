@@ -2,27 +2,30 @@
 
 Project 2 rebuilds VCPU-8 (ISA 1.0.0, frozen) as a synthesizable multicycle SystemVerilog CPU that matches the TypeScript emulator at every instruction boundary. These documents describe the RTL, how it is verified and how to build it.
 
-Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md), and with the [ISA compatibility audit](isa-compatibility.md), which fixes exactly which ISA the RTL implements.
+**Project 2 is complete.** The [Project 2 report](project-2-report.md) has the results of the final audit: the Definition-of-Done evidence, the verification, synthesis and benchmark results, the known limitations, the FPGA readiness assessment and the commands that reproduce everything.
+
+New to the RTL? Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md), and with the [ISA compatibility audit](isa-compatibility.md), which fixes exactly which ISA the RTL implements. Then read the [microarchitecture](vcpu8-microarchitecture.md) for the map.
 
 ## Documents
 
-| Document                                                 | Status  | Contents                                                                                                        |
-| -------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
-| [isa-compatibility.md](isa-compatibility.md)             | written | ISA version, opcode table, state, faults, doc-vs-code checks, brief discrepancies                               |
-| [vcpu8-microarchitecture.md](vcpu8-microarchitecture.md) | written | Module hierarchy, how the RTL maps to logic, clock and reset, measured clocks per instruction, running programs |
-| [datapath.md](datapath.md)                               | written | Registers, multiplexers and how an instruction moves through them                                               |
-| [control-unit.md](control-unit.md)                       | written | The decoder; the multicycle FSM, fault detection and priority, retirement                                       |
-| [alu.md](alu.md)                                         | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification                                       |
-| [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
-| [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
-| [formal-verification.md](formal-verification.md)         | written | SymbiYosys properties: reset, FSM, writes, halt, retirement, memory access, ALU; their scope and limits         |
-| [verification-strategy.md](verification-strategy.md)     | written | Verification layers; live differential verification, random programs, coverage, mutants, failure replay         |
-| [simulation-guide.md](simulation-guide.md)               | written | Running programs on the RTL, waveforms and GTKWave, a cycle-by-cycle walkthrough of the demo program            |
-| [synthesis-guide.md](synthesis-guide.md)                 | written | Yosys and nextpnr flows and their reports                                                                       |
-| [performance-analysis.md](performance-analysis.md)       | written | RTL cycles and CPI of the benchmark programs, the instructional model, Fmax-based time, running experiments     |
-| `fpga-readiness.md`                                      | planned | What remains before the design runs on an FPGA                                                                  |
+| Document                                                 | Contents                                                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [project-2-report.md](project-2-report.md)               | The completion report: DoD evidence, the clean-clone audit, the ten final deliverables, limitations, next revision       |
+| [isa-compatibility.md](isa-compatibility.md)             | ISA version, opcode table, state, faults, doc-vs-code checks, brief discrepancies                                        |
+| [vcpu8-microarchitecture.md](vcpu8-microarchitecture.md) | Module hierarchy, how the RTL maps to logic, clock and reset, measured clocks per instruction, running programs          |
+| [datapath.md](datapath.md)                               | Registers, multiplexers and how an instruction moves through them                                                        |
+| [control-unit.md](control-unit.md)                       | The decoder; the multicycle FSM, fault detection and priority, retirement                                                |
+| [alu.md](alu.md)                                         | ALU equations, flags, MUL and DIV implementation, the iterative divider, exhaustive verification                         |
+| [register-file.md](register-file.md)                     | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                                     |
+| [memory-interface.md](memory-interface.md)               | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                            |
+| [formal-verification.md](formal-verification.md)         | SymbiYosys properties: reset, FSM, writes, halt, retirement, memory access, ALU; their scope and limits                  |
+| [verification-strategy.md](verification-strategy.md)     | Verification layers; live differential verification, random programs, coverage, mutants, failure replay                  |
+| [simulation-guide.md](simulation-guide.md)               | Running programs on the RTL, waveforms and GTKWave, a cycle-by-cycle walkthrough of the demo program                     |
+| [synthesis-guide.md](synthesis-guide.md)                 | What synthesis does, why timing constraints matter, the Yosys and nextpnr flows and their reports                        |
+| [performance-analysis.md](performance-analysis.md)       | RTL cycles and CPI of the benchmark programs, the instructional model, Fmax-based time, the divider experiment           |
+| [fpga-readiness.md](fpga-readiness.md)                   | Resource fit, timing at 12 MHz, clocking and reset on a board, block RAM and `INIT_FILE`, the Project 5 debug plan, gaps |
 
-Each planned document is written by the ticket that builds the part it describes.
+Research results live outside `docs/`: the synthesis baseline in [research/cpu/synth/](../../research/cpu/synth/baseline.md), the benchmark reports in [research/cpu/reports/](../../research/cpu/README.md) and the experiments in [research/cpu/experiments/](../../research/cpu/experiments/README.md).
 
 ## Layout
 

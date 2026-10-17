@@ -78,7 +78,7 @@ That never happens, because the **decoder** validates the register byte first ([
 - a used field holding 8–15 is a `MALFORMED_OPERAND` fault;
 - an unused field b (formats R, RI and RA) that is not `0000` is a `MALFORMED_OPERAND` fault.
 
-A faulting instruction never reaches EXECUTE or WRITEBACK, so `we` is never raised for it, and the fields reach `ra_addr`, `rb_addr` and `wa` as 3 bits only after validation. Register index validation is therefore the decoder's job, and the register file can assume that every address is a real register. The tests for invalid encodings belong to the decoder ticket. This module's tests show that all eight 3-bit indices are distinct storage.
+A faulting instruction never reaches EXECUTE or WRITEBACK, so `we` is never raised for it, and the fields reach `ra_addr`, `rb_addr` and `wa` as 3 bits only after validation. Register index validation is therefore the decoder's job, and the register file can assume that every address is a real register. The decoder's tests cover the invalid encodings ([control-unit.md](control-unit.md#verification)). This module's tests show that all eight 3-bit indices are distinct storage.
 
 ## `vcpu8_flags`
 

@@ -99,7 +99,7 @@ This follows the brief's rule of using the simplest correct synthesizable implem
 
 The divider is smaller than the multiplier but more than twice as deep, and it alone sets the ALU's longest path, and so the clock period the ALU allows. A restoring divider that produces one quotient bit per clock removes that depth at the cost of extra EXECUTE cycles per DIV ([hardware-porting.md](../hardware-porting.md#alu-alu) sketches one iteration per quotient bit). [The iterative divider](#iterative-divider) below is that alternative, and the [div-impl experiment](../../research/cpu/experiments/div-impl/README.md) measures the trade-off. It changes cycle counts, never results.
 
-These numbers come from generic gates and are only indicative. The synthesis ticket reports the real FPGA resource and timing figures. To reproduce them:
+These numbers come from generic gates and are only indicative. [synthesis-guide.md](synthesis-guide.md#results) has the whole design's FPGA resource and timing figures. To reproduce them:
 
 ```sh
 yosys -p 'read_verilog -sv hardware/rtl/vcpu8/core/vcpu8_types_pkg.sv hardware/rtl/vcpu8/core/vcpu8_alu.sv;
@@ -165,7 +165,7 @@ The proof is an exhaustive comparison with the TypeScript ALU. Its expected valu
 
 2. `tb/unit/tb_vcpu8_alu.sv` loads the records, drives each one into `vcpu8_alu` and compares `r` and ZCNV. Before the comparison it fails if `alu.hex` holds fewer or more records than `alu.meta`. It then:
    - repeats nine documented edge cases by name (ADD `7F+01` and `FF+01`, SUB `00−01` and `80−01`, CMP `05−05`, MUL `10×10`, INC `FF` and DEC `00` with C set, SHR `01`), looking up their expected values in the vectors;
-   - sweeps DIV over all 256 values of `a` with `b = 0` and checks that no output is X or Z. Verilator simulates two-state logic, so this check cannot itself see an X. The X-freedom comes from the explicit guard above, and the formal ticket can prove it.
+   - sweeps DIV over all 256 values of `a` with `b = 0` and checks that no output is X or Z. Verilator simulates two-state logic, so this check cannot itself see an X. The X-freedom comes from the explicit guard above, and the formal property `alu_div_0` proves R = 0 for every `a` when `b = 0` ([formal-verification.md](formal-verification.md#alu-properties-alu_prove)).
    - prints the totals and the first 20 mismatches, and exits non-zero through `$fatal` if any check failed.
 
 3. `test-alu` then runs `test-alu-corrupt`. It copies the vectors, flips the expected flags of one record (SUB `00 − 01`, vector 65,537), and requires the testbench to exit non-zero with a `MISMATCH vector 65537` line. This shows the harness can fail.

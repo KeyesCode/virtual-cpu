@@ -297,11 +297,11 @@ Reports go to `build/reports/verify.json` (every non-random case, every failure,
 
 ## What is not covered
 
-- **Cycle timing.** Only architectural state at instruction boundaries is compared. Clock counts per instruction are recorded but not checked against anything; the performance ticket measures them.
+- **Cycle timing.** Only architectural state at instruction boundaries is compared. `make verify` records clock counts per instruction but does not check them. [performance-analysis.md](performance-analysis.md) reports them, and `make benchmark-compare` checks the benchmark's cycle counts against the committed report.
 - **Internal signals.** The FSM state, IR, bus addresses and anything else between boundaries are not compared. A wrong internal value that never reaches architectural state is invisible here. The formal properties ([formal-verification.md](formal-verification.md)) cover some of these.
 - **States the RTL can reach only by other means.** Every run starts from reset with a memory image, as the emulator does. Nothing loads registers directly or resets mid-run.
 - **The RUNNING and PAUSED statuses and the debugger.** The run-control features of the emulator (pause, breakpoints, undo) have no RTL counterpart and are not exercised.
 - **Long programs.** Random programs stop within 2,000 steps, and directed programs within their headers' limits. Behaviour that needs longer runs is covered only by construction.
 - **Uniform coverage of every operand value.** Random programs bias operands toward boundary values, and the exhaustive ALU test covers every operand pair for the ALU alone. No run executes every instruction with every operand in every machine state.
-- **Gate-level and FPGA behaviour.** Verification runs on Verilator's model of the RTL. Synthesis results and timing are another ticket's.
+- **Gate-level and FPGA behaviour.** Verification runs on Verilator's model of the RTL. Nothing simulates the synthesized netlist, and nothing has run on an FPGA. Synthesis results and timing are in [synthesis-guide.md](synthesis-guide.md), and [fpga-readiness.md](fpga-readiness.md#gaps-and-risks) lists this as a gap.
 - **The comparator itself.** The comparator is shared by both sides, so a comparator bug that hid a field would hide it everywhere. Its vitest tests, `fixtures-tamper` and the mutants guard against this.

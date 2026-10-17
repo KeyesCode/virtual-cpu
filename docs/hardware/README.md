@@ -12,7 +12,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | `vcpu8-microarchitecture.md`                 | planned | Module breakdown and how the RTL corresponds to physical logic                    |
 | `datapath.md`                                | planned | Registers, multiplexers and how an instruction moves through them                 |
 | `control-unit.md`                            | planned | The multicycle FSM, fault detection and priority                                  |
-| `alu.md`                                     | planned | ALU equations, flags, MUL and DIV implementation                                  |
+| [alu.md](alu.md)                             | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification         |
 | `register-file.md`                           | planned | Read ports, write port and read-during-write behaviour                            |
 | `memory-interface.md`                        | planned | The 256 × 8 synchronous RAM, timing, program loading                              |
 | `verification-strategy.md`                   | planned | Unit tests, fixtures, differential and random testing, formal properties          |

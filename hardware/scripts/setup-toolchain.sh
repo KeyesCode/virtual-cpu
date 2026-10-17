@@ -93,7 +93,9 @@ echo "Extracting into ${install_dir}"
 tar -xzf "${archive}" -C "${staging}"
 [[ -x "${staging}/oss-cad-suite/bin/yosys" ]] || die "${tarball} does not contain oss-cad-suite/bin/yosys"
 if [[ "${platform}" == darwin_* ]] && command -v xattr > /dev/null; then
-  # curl downloads are not quarantined, but a tarball fetched by a browser would be.
+  # curl downloads are not quarantined, but a tarball fetched by a browser would be. xattr -d
+  # exits non-zero when no file carries the attribute, the usual case, so its status is ignored;
+  # a tool still blocked by Gatekeeper fails print_versions below.
   xattr -dr com.apple.quarantine "${staging}/oss-cad-suite" 2> /dev/null || true
 fi
 rm -rf "${install_dir}"

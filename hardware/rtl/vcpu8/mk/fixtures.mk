@@ -19,13 +19,16 @@ fixtures_run = cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/rtl-tools fixture
 
 .PHONY: fixtures fixtures-tamper
 
-fixtures: $(SIM_BIN) ## Run every fixture on the RTL: end state + lock-step trace (FILTER=<glob>)
+# The runner is a prerequisite by its target name, sim: SIM_BIN is defined in sim.mk, which is
+# included after this file, so $(SIM_BIN) in a rule line here would expand to nothing and a clean
+# build/ would run the check with no runner.
+fixtures: sim ## Run every fixture on the RTL: end state + lock-step trace (FILTER=<glob>)
 	$(call fixtures_run,$(FIXTURES_DIR),$(BUILD_DIR)/fixtures,$(FIXTURES_REPORT)) $(if $(FILTER),--filter '$(FILTER)')
 
 # The check must fail, precisely, on tampered copies: op-add with expected R0 changed must exit
 # non-zero naming registers[0], and op-push-full-stack with a trace memWrites value changed must
 # exit non-zero naming the step and memWrites[0].value. fixtures/v1/ is never touched.
-fixtures-tamper: $(SIM_BIN) ## Prove the fixture check fails, with a precise report, on tampered fixtures
+fixtures-tamper: sim ## Prove the fixture check fails, with a precise report, on tampered fixtures
 	@rm -rf $(FIXTURES_TAMPER_DIR)
 	cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/rtl-tools cli tamper-fixtures --dir $(FIXTURES_DIR) --out $(FIXTURES_TAMPER_DIR)
 	@for kind in register memwrite; do \

@@ -3,8 +3,7 @@
 // Nothing here is part of the ISA. These are internal encodings chosen by this RTL design, and
 // another implementation of ISA 1.0.0 may pick different ones. Architectural numbers (opcodes,
 // fault and status codes, reset values, flag positions) live only in the generated
-// vcpu8_isa_pkg.sv. Later tickets add their select enums here (for example the decoder's
-// write-back and address mux selects).
+// vcpu8_isa_pkg.sv. Later tickets add their select enums here.
 
 package vcpu8_types_pkg;
 
@@ -76,5 +75,31 @@ package vcpu8_types_pkg;
     COND_NC = 2'b10,
     COND_C  = 2'b11
   } cond_t;
+
+  // Control FSM (vcpu8_control). OPERAND1 latches byte 1 and, for a 3-byte instruction, OPERAND2
+  // latches byte 2. HALTED and FAULTED are terminal until reset.
+  typedef enum logic [2:0] {
+    FSM_FETCH     = 3'd0,
+    FSM_DECODE    = 3'd1,
+    FSM_OPERAND1  = 3'd2,
+    FSM_OPERAND2  = 3'd3,
+    FSM_EXECUTE   = 3'd4,
+    FSM_WRITEBACK = 3'd5,
+    FSM_HALTED    = 3'd6,
+    FSM_FAULTED   = 3'd7
+  } fsm_state_t;
+
+  // RAM address source, chosen by the FSM state. The FSM maps the decoder's mem_addr_sel_t onto
+  // BUS_TB … BUS_SP1 for the data access of EXECUTE and WRITEBACK.
+  typedef enum logic [2:0] {
+    BUS_PC  = 3'd0,  // opcode fetch; also the idle address
+    BUS_PC1 = 3'd1,  // operand byte 1
+    BUS_PC2 = 3'd2,  // operand byte 2
+    BUS_TB  = 3'd3,  // IR.tb, the absolute address byte
+    BUS_RA  = 3'd4,  // ra_data
+    BUS_RB  = 3'd5,  // rb_data
+    BUS_SP  = 3'd6,  // SP (push)
+    BUS_SP1 = 3'd7   // SP + 1 (pop)
+  } bus_addr_sel_t;
 
 endpackage

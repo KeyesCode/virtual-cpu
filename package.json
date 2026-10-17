@@ -17,6 +17,7 @@
     "hardware:gen": "pnpm --silent --filter @vcpu/rtl-tools gen:isa",
     "hardware:lint": "make -C hardware/rtl/vcpu8 lint",
     "hardware:test": "make -C hardware/rtl/vcpu8 test",
+    "hardware:simulate": "make -C hardware/rtl/vcpu8 simulate",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

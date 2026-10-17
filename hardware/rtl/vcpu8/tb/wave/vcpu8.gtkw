@@ -1,0 +1,109 @@
+[*]
+[*] VCPU-8 waveform view for `make -C hardware/rtl/vcpu8 wave`; see docs/hardware/simulation-guide.md.
+[*] Open it from hardware/rtl/vcpu8:  gtkwave build/waves/wave-demo.fst tb/wave/vcpu8.gtkw
+[*] The ^N lines name GTKWave translate filters (tb/wave/*.txt, generated from the RTL packages by
+[*] `pnpm --filter @vcpu/rtl-tools cli gen-wave-filters`); `make wave-check` checks every signal below.
+[*] GTKWave finds each filter at its path relative to [savefile], that is, beside this file, so it
+[*] does not matter which directory GTKWave is started from.
+[*]
+[savefile] "tb/wave/vcpu8.gtkw"
+[timestart] 0
+[size] 1600 1000
+[pos] -1 -1
+[sst_width] 260
+[signals_width] 300
+[sst_expanded] 1
+[sst_vpaned_height] 300
+@800200
+-Clock and reset
+@28
+TOP.vcpu8_sim_top.clk
+TOP.vcpu8_sim_top.rst
+@24
+TOP.vcpu8_sim_top.cycle[31:0]
+@1000200
+-Clock and reset
+@800200
+-Fetch and decode
+@2022
+^1 tb/wave/fsm_state.txt
+TOP.vcpu8_sim_top.u_top.u_core.u_control.state[2:0]
+@22
+TOP.vcpu8_sim_top.dbg_pc[7:0]
+TOP.vcpu8_sim_top.dbg_ir_op[7:0]
+TOP.vcpu8_sim_top.dbg_ir_rb[7:0]
+TOP.vcpu8_sim_top.dbg_ir_tb[7:0]
+@24
+TOP.vcpu8_sim_top.dbg_ir_len[1:0]
+@1000200
+-Fetch and decode
+@800200
+-ALU
+@22
+TOP.vcpu8_sim_top.u_top.u_core.u_alu.a[7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_alu.b[7:0]
+@2022
+^2 tb/wave/alu_op.txt
+TOP.vcpu8_sim_top.u_top.u_core.u_alu.op[3:0]
+@22
+TOP.vcpu8_sim_top.u_top.u_core.u_alu.r[7:0]
+@1000200
+-ALU
+@800200
+-Register write
+@28
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.we
+@24
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.wa[2:0]
+@22
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.wd[7:0]
+@1000200
+-Register write
+@800200
+-Memory bus
+@22
+TOP.vcpu8_sim_top.mem_addr[7:0]
+@28
+TOP.vcpu8_sim_top.mem_we
+@22
+TOP.vcpu8_sim_top.mem_wdata[7:0]
+TOP.vcpu8_sim_top.mem_rdata[7:0]
+@1000200
+-Memory bus
+@800200
+-Flags, retirement and status
+@28
+TOP.vcpu8_sim_top.u_top.u_core.u_flags.flags[3:0]
+@22
+TOP.vcpu8_sim_top.dbg_flags[7:0]
+@28
+TOP.vcpu8_sim_top.retire
+@22
+TOP.vcpu8_sim_top.retire_pc[7:0]
+@24
+TOP.vcpu8_sim_top.instret[31:0]
+@2022
+^3 tb/wave/status.txt
+TOP.vcpu8_sim_top.status[2:0]
+^4 tb/wave/fault_code.txt
+TOP.vcpu8_sim_top.fault_code[2:0]
+@1000200
+-Flags, retirement and status
+@c00200
+-Registers and stack
+@22
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[0][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[1][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[2][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[3][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[4][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[5][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[6][7:0]
+TOP.vcpu8_sim_top.u_top.u_core.u_registers.r[7][7:0]
+TOP.vcpu8_sim_top.dbg_sp[7:0]
+@24
+TOP.vcpu8_sim_top.dbg_sd[6:0]
+@1000200
+-Registers and stack
+[pattern_trace] 1
+[pattern_trace] 0

@@ -16,7 +16,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
 | [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
 | `verification-strategy.md`                               | planned | Unit tests, fixtures, differential and random testing, formal properties                                        |
-| `simulation-guide.md`                                    | planned | Running simulations, waveforms and GTKWave                                                                      |
+| [simulation-guide.md](simulation-guide.md)               | written | Running programs on the RTL, waveforms and GTKWave, a cycle-by-cycle walkthrough of the demo program            |
 | [synthesis-guide.md](synthesis-guide.md)                 | written | Yosys and nextpnr flows and their reports                                                                       |
 | `performance-analysis.md`                                | planned | RTL cycle counts and CPI, compared with the instructional timing model                                          |
 | `fpga-readiness.md`                                      | planned | What remains before the design runs on an FPGA                                                                  |
@@ -42,7 +42,9 @@ hardware/
     │   └── vcpu8_top.sv       the core plus vcpu8_memory: the whole CPU
     ├── tb/                    testbenches and probes (simulation only)
     │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
-    │   └── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
+    │   ├── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
+    │   ├── programs/          wave-demo.asm, the demonstration program for waveforms
+    │   └── wave/              vcpu8.gtkw (the GTKWave view) and its translate filter files
     ├── synth/                 Yosys scripts (generic, iCE40, ECP5) and the reviewed warning allowlist
     ├── scripts/               helper scripts for the make targets
     └── build/                 all outputs (git-ignored)
@@ -120,13 +122,16 @@ Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `m
 | `simulate`          | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                      |
 | `fixtures`          | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                         |
 | `fixtures-tamper`   | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step) |
+| `sim-trace`         | Builds the tracing runner `build/sim-trace/vcpu8_sim` (Verilator `--trace`), used only by `wave`                                                                                                                          |
+| `wave`              | `PROGRAM=…` (default the demo), `WAVE_FORMAT=fst\|vcd`, `MAX_CYCLES=N`: runs the program on the tracing runner and writes `build/waves/<name>.fst` ([simulation-guide.md](simulation-guide.md#generating-waveforms))      |
+| `wave-check`        | Checks the demo's waveform: every required signal and every signal of `tb/wave/vcpu8.gtkw` present, filter files current, `retire` count equal to the emulator's                                                          |
 | `synth`             | Yosys and nextpnr synthesis reports in `build/synth/`; fails on a latch, loop, multiple driver, undriven net or unreviewed warning ([synthesis-guide.md](synthesis-guide.md))                                             |
 | `synth-baseline`    | `synth`, then rewrites the committed `research/cpu/synth/baseline.{json,md}`                                                                                                                                              |
 | `synth-compare`     | `synth`, then prints the deltas against the committed baseline                                                                                                                                                            |
 | `synth-latch-check` | Proves the synthesis gate fails on scratch copies of `core/` with a latch added                                                                                                                                           |
 | `clean`             | Removes `build/`                                                                                                                                                                                                          |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…` and `pnpm hardware:synth`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:wave [PROGRAM=…]` and `pnpm hardware:synth`.
 
 ### Adding targets and unit tests
 

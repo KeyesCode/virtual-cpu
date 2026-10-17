@@ -1,7 +1,7 @@
 // vcpu8_sim: run a 256-byte VCPU-8 image on the Verilated RTL until HALTED, FAULTED or a limit.
 //
 //   vcpu8_sim --image <file.mem.hex> [--max-steps N] [--max-cycles N]
-//             [--state <out.json>] [--trace <out.jsonl>] [--quiet]
+//             [--state <out.json>] [--trace <out.jsonl>] [--wave <out.vcd>] [--quiet]
 //
 // The image ($readmemh format: 256 lines of two hex digits) is written into the RAM array through
 // the wrapper's DPI functions while reset is held, then reset is released and the clock runs.
@@ -13,6 +13,15 @@
 // --state writes the end state as JSON, format vcpu8-rtl-state/1. --trace writes one JSON line per
 // step with the fields of the fixture trace (fixtures/README.md) plus `cycle`, the clock count when
 // the step completed. Without --quiet a readable summary goes to stdout.
+//
+// --wave writes a VCD of every signal, from the first reset cycle to the stop. Only the tracing
+// build (Verilator --trace, build/sim-trace/ from mk/wave.mk) has it; the plain runner rejects the
+// flag, so `make test` never pays for tracing. `make wave` turns the VCD into FST with GTKWave's
+// vcd2fst: the pinned Verilator's own FST writer needs liblz4, which OSS CAD Suite does not ship.
+// Time is in ns (the tracing build is Verilated with --timescale 1ns/1ns) and the clock period is
+// 10 ns: the two reset edges are at 10 and 20 ns, reset is released at 25 ns, and post-reset edge N
+// is at 10 × (N + 2) ns. After a stop in HALTED or FAULTED the waveform runs two more cycles, which
+// change nothing, so the last retire pulse and the final state are visible.
 //
 // Exit status: 0 when the run completed (whatever the stop reason), 2 for a malformed argument,
 // an unreadable or malformed image, or an output file that cannot be written.
@@ -33,10 +42,15 @@
 #include "Vvcpu8_sim_top__Dpi.h"
 #include "svdpi.h"
 #include "verilated.h"
+#if VM_TRACE
+#include "verilated_vcd_c.h"
+#endif
 
 namespace {
 
 constexpr int kMemorySize = 256;
+constexpr uint64_t kHalfPeriodNs = 5;
+constexpr int kTrailingCycles = 2;
 
 // Status and fault names for the JSON outputs, indexed by their 3-bit hardware numbers
 // (CPU_STATUS_NUMBERS and FAULT_CODE_NUMBERS in @vcpu/shared, vcpu8_isa_pkg in the RTL). The
@@ -60,6 +74,7 @@ struct Options {
   std::string image;
   std::string state;
   std::string trace;
+  std::string wave;
   uint64_t max_steps = 1000000;
   uint64_t max_cycles = 0;  // 0: no limit
   bool quiet = false;
@@ -73,7 +88,7 @@ struct MemWrite {
 [[noreturn]] void fail(const std::string& message) {
   std::cerr << "vcpu8_sim: " << message << "\n"
             << "usage: vcpu8_sim --image <file.mem.hex> [--max-steps N] [--max-cycles N]"
-               " [--state <out.json>] [--trace <out.jsonl>] [--quiet]\n";
+               " [--state <out.json>] [--trace <out.jsonl>] [--wave <out.vcd>] [--quiet]\n";
   std::exit(2);
 }
 
@@ -96,6 +111,13 @@ Options parse_args(int argc, char** argv) {
     if (arg == "--image" || arg == "--state" || arg == "--trace") {
       if (value == nullptr) fail(arg + " needs a value");
       (arg == "--image" ? options.image : arg == "--state" ? options.state : options.trace) = value;
+      ++i;
+    } else if (arg == "--wave") {
+      if (value == nullptr) fail(arg + " needs a value");
+#if !VM_TRACE
+      fail("--wave needs the tracing build of the runner: make -C hardware/rtl/vcpu8 wave");
+#endif
+      options.wave = value;
       ++i;
     } else if (arg == "--max-steps") {
       options.max_steps = parse_count(arg, value);
@@ -163,10 +185,26 @@ class Sim {
  public:
   explicit Sim(const Options& options) : options_(options) {
     context_->commandArgs(0, static_cast<const char**>(nullptr));
+#if VM_TRACE
+    context_->traceEverOn(true);
+#endif
     top_ = std::make_unique<Vvcpu8_sim_top>(context_.get(), "TOP");
+#if VM_TRACE
+    if (!options_.wave.empty()) {
+      wave_ = std::make_unique<VerilatedVcdC>();
+      top_->trace(wave_.get(), 99);
+      wave_->open(options_.wave.c_str());
+      if (!wave_->isOpen()) fail("cannot write " + options_.wave);
+    }
+#endif
   }
 
-  ~Sim() { top_->final(); }
+  ~Sim() {
+    top_->final();
+#if VM_TRACE
+    if (wave_) wave_->close();
+#endif
+  }
 
   void load(const std::vector<int>& image) {
     top_->clk = 0;
@@ -174,10 +212,12 @@ class Sim {
     top_->eval();
     svSetScope(svGetScopeFromName("TOP.vcpu8_sim_top"));
     for (int a = 0; a < kMemorySize; ++a) vcpu8_mem_write(a, static_cast<char>(image[a]));
-    // Hold reset for two clock edges, then release it while the clock is low.
-    for (int i = 0; i < 2; ++i) tick();
+    dump(0);
+    // Hold reset for two clock edges, then release it with the falling edge after the second.
+    tick();
+    tick_high();
     top_->rst = 0;
-    top_->eval();
+    tick_low();
   }
 
   // Runs to a stop and returns its reason.
@@ -205,6 +245,14 @@ class Sim {
       if (steps_ >= options_.max_steps) return "max_steps";
       if (options_.max_cycles != 0 && cycles_ >= options_.max_cycles) return "max_cycles";
     }
+  }
+
+  // With --wave, runs kTrailingCycles more cycles after a stop in HALTED or FAULTED. Both are
+  // terminal, so no state changes; the waveform just shows the final state for a while.
+  void drain() {
+    if (options_.wave.empty()) return;
+    if (top_->status != kStatusHalted && top_->status != kStatusFaulted) return;
+    for (int i = 0; i < kTrailingCycles; ++i) tick();
   }
 
   std::vector<int> registers() const {
@@ -283,13 +331,23 @@ class Sim {
   }
 
  private:
+  // Rising edges are at multiples of 10 ns and falling edges halfway between.
   void tick_high() {
+    time_ += kHalfPeriodNs;
     top_->clk = 1;
     top_->eval();
+    dump(time_);
   }
   void tick_low() {
+    time_ += kHalfPeriodNs;
     top_->clk = 0;
     top_->eval();
+    dump(time_);
+  }
+  void dump([[maybe_unused]] uint64_t time) {
+#if VM_TRACE
+    if (wave_) wave_->dump(time);
+#endif
   }
   void tick() {
     tick_high();
@@ -333,6 +391,10 @@ class Sim {
   const Options& options_;
   std::unique_ptr<VerilatedContext> context_ = std::make_unique<VerilatedContext>();
   std::unique_ptr<Vvcpu8_sim_top> top_;
+#if VM_TRACE
+  std::unique_ptr<VerilatedVcdC> wave_;
+#endif
+  uint64_t time_ = kHalfPeriodNs;  // ns; the first rising edge is at 10
   std::vector<MemWrite> writes_;
   uint64_t steps_ = 0;
   uint64_t cycles_ = 0;
@@ -359,6 +421,7 @@ int main(int argc, char** argv) {
     if (!trace_file) fail("cannot write " + options.trace);
   }
   const std::string stop_reason = sim.run(options.trace.empty() ? nullptr : &trace_file);
+  sim.drain();
   trace_file.close();
   if (!options.trace.empty() && !trace_file) fail("cannot write " + options.trace);
 

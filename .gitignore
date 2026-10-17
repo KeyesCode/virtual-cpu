@@ -6,3 +6,5 @@ coverage/
 .DS_Store
 *.log
 benchmarks/results/
+
+hardware/rtl/vcpu8/build/

@@ -1,0 +1,26 @@
+{
+  "name": "@vcpu/rtl-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "gen:isa": "tsx src/cli.ts gen-isa",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vcpu/assembler": "workspace:*",
+    "@vcpu/cpu-core": "workspace:*",
+    "@vcpu/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

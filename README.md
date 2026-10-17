@@ -86,6 +86,8 @@ packages/
   assembler/    @vcpu/assembler  two-pass assembler and disassembler
   debugger/     @vcpu/debugger   breakpoints, watchpoints, step-back history
   benchmarks/   @vcpu/benchmarks benchmark suite
+  rtl-tools/    @vcpu/rtl-tools  SystemVerilog ISA package generator (Project 2)
+hardware/       Project 2 RTL (rtl/vcpu8/) and the pinned OSS CAD Suite toolchain
 examples/       20 example programs, each with a .expect.json checked by the tests
 fixtures/v1/    hardware test fixtures (vcpu8-fixture/1)
 benchmarks/     committed baseline.json; results/ holds local runs (git-ignored)
@@ -101,19 +103,21 @@ Workspace packages are consumed straight from their TypeScript source through `e
 
 New to hardware? Start with the concepts guide. Porting to RTL? Start with hardware porting.
 
-| Document                                             | What it covers                                                                              |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [docs/concepts.md](docs/concepts.md)                 | A short course from transistors and logic gates to fetch-decode-execute, tied to VCPU-8     |
-| [docs/architecture.md](docs/architecture.md)         | Programmer's model, block diagram, design principles, versioning, v1.0 limitations          |
-| [docs/instruction-set.md](docs/instruction-set.md)   | ISA 1.0.0: formats, encodings, opcode map, per-instruction semantics and flags, timing      |
-| [docs/memory-model.md](docs/memory-model.md)         | Memory map, address rules, the stack and its depth counter, program images                  |
-| [docs/cpu-execution.md](docs/cpu-execution.md)       | The execution cycle, faults and their priority, reset, statuses, metrics                    |
-| [docs/benchmarks.md](docs/benchmarks.md)             | How host time is measured, how simulated cycles are estimated, comparing against a baseline |
-| [docs/hardware-porting.md](docs/hardware-porting.md) | Mapping VCPU-8 to SystemVerilog modules, and using the fixtures in a testbench              |
-| [docs/project-1-report.md](docs/project-1-report.md) | Project 1 completion report: evidence, results, limitations, Project 2 readiness            |
-| [examples/README.md](examples/README.md)             | The 20 example programs, their expected results and overflow notes                          |
-| [fixtures/README.md](fixtures/README.md)             | The `vcpu8-fixture/1` format and what `fixtures/v1/` contains                               |
-| [apps/cli/README.md](apps/cli/README.md)             | Full CLI reference                                                                          |
+| Document                                                                 | What it covers                                                                              |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [docs/concepts.md](docs/concepts.md)                                     | A short course from transistors and logic gates to fetch-decode-execute, tied to VCPU-8     |
+| [docs/architecture.md](docs/architecture.md)                             | Programmer's model, block diagram, design principles, versioning, v1.0 limitations          |
+| [docs/instruction-set.md](docs/instruction-set.md)                       | ISA 1.0.0: formats, encodings, opcode map, per-instruction semantics and flags, timing      |
+| [docs/memory-model.md](docs/memory-model.md)                             | Memory map, address rules, the stack and its depth counter, program images                  |
+| [docs/cpu-execution.md](docs/cpu-execution.md)                           | The execution cycle, faults and their priority, reset, statuses, metrics                    |
+| [docs/benchmarks.md](docs/benchmarks.md)                                 | How host time is measured, how simulated cycles are estimated, comparing against a baseline |
+| [docs/hardware-porting.md](docs/hardware-porting.md)                     | Mapping VCPU-8 to SystemVerilog modules, and using the fixtures in a testbench              |
+| [docs/hardware/README.md](docs/hardware/README.md)                       | Project 2 RTL: toolchain setup (macOS, Ubuntu), make targets, the hardware docs index       |
+| [docs/hardware/isa-compatibility.md](docs/hardware/isa-compatibility.md) | ISA compatibility audit: the ISA the RTL implements, cross-checks, brief discrepancies      |
+| [docs/project-1-report.md](docs/project-1-report.md)                     | Project 1 completion report: evidence, results, limitations, Project 2 readiness            |
+| [examples/README.md](examples/README.md)                                 | The 20 example programs, their expected results and overflow notes                          |
+| [fixtures/README.md](fixtures/README.md)                                 | The `vcpu8-fixture/1` format and what `fixtures/v1/` contains                               |
+| [apps/cli/README.md](apps/cli/README.md)                                 | Full CLI reference                                                                          |
 
 ## Deployment
 

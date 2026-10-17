@@ -1,0 +1,30 @@
+# core_bmc: the same vcpu8_core properties as core_prove, by bounded model checking from reset to
+# depth 40. Every property also closes by induction in core_prove, so this task adds no claim; it
+# is the reset-rooted check, whose counterexamples always start at reset, and the home for any
+# future property that does not close by induction.
+[options]
+mode bmc
+depth 40
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal vcpu8_isa_pkg.sv vcpu8_types_pkg.sv
+read -formal vcpu8_alu.sv vcpu8_control.sv vcpu8_decoder.sv vcpu8_flags.sv vcpu8_registers.sv vcpu8_core.sv
+read -formal vcpu8_core_props.sv formal_core_top.sv
+hierarchy -top formal_core_top
+proc -norom
+prep -top formal_core_top
+
+[files]
+../core/vcpu8_isa_pkg.sv
+../core/vcpu8_types_pkg.sv
+../core/vcpu8_alu.sv
+../core/vcpu8_control.sv
+../core/vcpu8_decoder.sv
+../core/vcpu8_flags.sv
+../core/vcpu8_registers.sv
+../core/vcpu8_core.sv
+vcpu8_core_props.sv
+formal_core_top.sv

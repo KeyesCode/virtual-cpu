@@ -11,7 +11,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [isa-compatibility.md](isa-compatibility.md) | written | ISA version, opcode table, state, faults, doc-vs-code checks, brief discrepancies |
 | `vcpu8-microarchitecture.md`                 | planned | Module breakdown and how the RTL corresponds to physical logic                    |
 | `datapath.md`                                | planned | Registers, multiplexers and how an instruction moves through them                 |
-| `control-unit.md`                            | planned | The multicycle FSM, fault detection and priority                                  |
+| [control-unit.md](control-unit.md)           | partial | The decoder (written); the multicycle FSM, fault detection and priority (planned) |
 | `alu.md`                                     | planned | ALU equations, flags, MUL and DIV implementation                                  |
 | `register-file.md`                           | planned | Read ports, write port and read-during-write behaviour                            |
 | `memory-interface.md`                        | planned | The 256 × 8 synchronous RAM, timing, program loading                              |
@@ -34,11 +34,12 @@ hardware/
     ├── mk/                    one make fragment per topic (isa.mk, …)
     ├── core/                  synthesizable RTL; *_pkg.sv packages first
     │   ├── vcpu8_isa_pkg.sv   GENERATED from @vcpu/shared, committed, drift-checked
-    │   └── vcpu8_types_pkg.sv microarchitecture types (alu_op_t), hand-written
+    │   ├── vcpu8_types_pkg.sv microarchitecture types (alu_op_t, decoder selects), hand-written
+    │   └── vcpu8_decoder.sv   combinational decoder: opcode and register byte → control signals
     ├── tb/                    testbenches and probes (simulation only)
     ├── scripts/               helper scripts for the make targets
     └── build/                 all outputs (git-ignored)
-packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator and, later, the RTL runners
+packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators and, later, the RTL runners
 ```
 
 ## Toolchain setup

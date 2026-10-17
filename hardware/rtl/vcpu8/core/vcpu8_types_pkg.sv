@@ -25,4 +25,56 @@ package vcpu8_types_pkg;
     ALU_SHR = 4'd11
   } alu_op_t;
 
+  // Decoder selects (vcpu8_decoder). Each enum's 0 value is the decoder's default, so an output
+  // the instruction does not use reads 0, and an invalid opcode drives every select to 0.
+
+  // Register write-back data source. The write address is always field a of the register byte.
+  typedef enum logic [1:0] {
+    WSEL_ALU = 2'd0,  // alu_r
+    WSEL_TB  = 2'd1,  // IR.tb, the trailing byte (LDI's immediate)
+    WSEL_MEM = 2'd2,  // ram_rdata (LOAD, POP)
+    WSEL_RB  = 2'd3   // rb_data, register port B (MOV)
+  } wsel_t;
+
+  // Data-memory address source for a LOAD, STORE, PUSH, POP, CALL or RET access.
+  typedef enum logic [2:0] {
+    MEM_ADDR_TB  = 3'd0,  // IR.tb, the absolute address byte
+    MEM_ADDR_RA  = 3'd1,  // ra_data
+    MEM_ADDR_RB  = 3'd2,  // rb_data
+    MEM_ADDR_SP  = 3'd3,  // SP (push)
+    MEM_ADDR_SP1 = 3'd4   // SP + 1 (pop)
+  } mem_addr_sel_t;
+
+  // Data-memory write data source.
+  typedef enum logic [1:0] {
+    MEM_WDATA_RA       = 2'd0,  // ra_data
+    MEM_WDATA_RB       = 2'd1,  // rb_data
+    MEM_WDATA_RET_ADDR = 2'd2   // PC + len, CALL's return address
+  } mem_wdata_sel_t;
+
+  // SP/SD update: push is SP - 1 and SD + 1, pop is SP + 1 and SD - 1.
+  typedef enum logic [1:0] {
+    STACK_NONE = 2'd0,
+    STACK_PUSH = 2'd1,
+    STACK_POP  = 2'd2
+  } stack_op_t;
+
+  // Next-PC select.
+  typedef enum logic [2:0] {
+    PC_SEQ  = 3'd0,  // PC + len
+    PC_HOLD = 3'd1,  // unchanged (HLT)
+    PC_TB   = 3'd2,  // IR.tb (JMP, CALL)
+    PC_COND = 3'd3,  // IR.tb if the branch condition holds, else PC + len
+    PC_MEM  = 3'd4   // ram_rdata, the popped return address (RET)
+  } pc_sel_t;
+
+  // Branch condition, encoded {flag, value}: cond[1] picks the flag (0 = Z, 1 = C) and cond[0] is
+  // the value it must have, so the branch is taken when (cond[1] ? C : Z) == cond[0].
+  typedef enum logic [1:0] {
+    COND_NZ = 2'b00,
+    COND_Z  = 2'b01,
+    COND_NC = 2'b10,
+    COND_C  = 2'b11
+  } cond_t;
+
 endpackage

@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { writeDecoderVectors } from './gen/decoder-vectors.js';
 import { ISA_PKG_PATH, renderIsaPackage } from './gen/isa-pkg.js';
 
 // `pnpm --filter @vcpu/rtl-tools …` runs this from packages/rtl-tools; INIT_CWD is the directory
@@ -9,7 +10,8 @@ const cwd = process.env.INIT_CWD ?? process.cwd();
 const USAGE = `Usage: tsx src/cli.ts <command> [options]
 
 Commands:
-  gen-isa [--out <file>]   Write the generated ISA package (default: ${ISA_PKG_PATH})
+  gen-isa [--out <file>]                 Write the generated ISA package (default: ${ISA_PKG_PATH})
+  gen-decoder-vectors --out-dir <dir>    Write decoder-ops.hex and decoder-rb.hex for the decoder testbench
 `;
 
 type Command = (args: readonly string[]) => number;
@@ -32,7 +34,22 @@ function genIsa(args: readonly string[]): number {
   return 0;
 }
 
-const COMMANDS: Readonly<Record<string, Command>> = { 'gen-isa': genIsa };
+function genDecoderVectors(args: readonly string[]): number {
+  const [flag, value, ...extra] = args;
+  if (flag !== '--out-dir' || value === undefined || extra.length > 0) {
+    process.stderr.write(`gen-decoder-vectors: expected --out-dir <dir>\n${USAGE}`);
+    return 2;
+  }
+  for (const file of writeDecoderVectors(resolve(cwd, value))) {
+    process.stdout.write(`wrote ${file}\n`);
+  }
+  return 0;
+}
+
+const COMMANDS: Readonly<Record<string, Command>> = {
+  'gen-isa': genIsa,
+  'gen-decoder-vectors': genDecoderVectors,
+};
 
 const [name, ...rest] = process.argv.slice(2);
 const command = name === undefined ? undefined : COMMANDS[name];

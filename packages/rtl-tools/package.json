@@ -9,6 +9,7 @@
   "scripts": {
     "cli": "tsx src/cli.ts",
     "gen:isa": "tsx src/cli.ts gen-isa",
+    "gen:decoder-vectors": "tsx src/cli.ts gen-decoder-vectors",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

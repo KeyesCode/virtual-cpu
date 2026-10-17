@@ -20,6 +20,7 @@
     "hardware:simulate": "make -C hardware/rtl/vcpu8 simulate",
     "hardware:wave": "make -C hardware/rtl/vcpu8 wave",
     "hardware:formal": "make -C hardware/rtl/vcpu8 formal",
+    "hardware:synth": "make -C hardware/rtl/vcpu8 synth",
     "hardware:verify": "make -C hardware/rtl/vcpu8 verify",
     "hardware:verify:long": "make -C hardware/rtl/vcpu8 verify-long",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",

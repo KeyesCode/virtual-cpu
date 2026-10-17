@@ -1,0 +1,19 @@
+# Reviewed warnings that `make synth` accepts. Every other warning fails it.
+#
+# `@vcpu/rtl-tools synth-summary` collects each line of the Yosys and nextpnr logs that starts with
+# "Warning:" (or "ABC: Warning:", ABC's own output inside a Yosys log) and matches it against the
+# regular expressions below, one per line, in JavaScript syntax. The comment block above each
+# expression is its review and is copied into the summary. docs/hardware/synthesis-guide.md#warnings
+# explains each one at more length. Add an entry only after reading the warning and deciding the
+# design is correct as it stands; never to silence a real problem.
+
+# ABC is handed only the combinational part of each module, because Yosys keeps the flip-flops
+# itself. ABC notes that this network has no latches and so needs no sequential optimisation.
+# It says nothing about the design.
+^ABC: Warning: The network is combinational
+
+# nextpnr-ice40's timing estimate misses the 12 MHz target on the iCE40UP5K: the longest path runs
+# through the single-cycle combinational divider. The ticket reports this as measured instead of
+# changing the RTL; the summary records the achieved Fmax and meetsConstraint: false, and the
+# iterative-divider experiment is where it gets addressed. Only this exact message form is allowed.
+^Warning: Max frequency for clock '[^']+': [0-9.]+ MHz \(FAIL at [0-9.]+ MHz\)$

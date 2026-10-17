@@ -1,7 +1,7 @@
 {
   "format": "vcpu8-synth-summary/1",
   "provenance": {
-    "gitSha": "5ad88db2dc76bb94b55a8af63495b6a9627862d5",
+    "gitSha": "f6f9ef73eb1b8d0ae21fd91b2d43f1cd68458fca",
     "gitDirty": false,
     "toolchain": "OSS CAD Suite 2026-10-16",
     "tools": {
@@ -305,7 +305,7 @@
       "speedGrade": null,
       "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
       "top": "vcpu8_fpga_wrapper",
-      "initFile": "fixtures/v1/example-14-fibonacci.mem.hex",
+      "initFile": "hardware/rtl/vcpu8/tb/programs/wave-demo.asm",
       "seed": 1,
       "synth": {
         "luts": 719,
@@ -375,7 +375,7 @@
       "speedGrade": "6",
       "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
       "top": "vcpu8_fpga_wrapper",
-      "initFile": "fixtures/v1/example-14-fibonacci.mem.hex",
+      "initFile": "hardware/rtl/vcpu8/tb/programs/wave-demo.asm",
       "seed": 1,
       "synth": {
         "luts": 511,

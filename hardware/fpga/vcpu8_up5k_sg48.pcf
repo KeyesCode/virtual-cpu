@@ -1,0 +1,19 @@
+# Pin constraints for vcpu8_fpga_wrapper on an iCE40UP5K in the SG48 package, used by
+# `make -C hardware/rtl/vcpu8 synth` so that place and route sees a legal, fixed IO placement.
+#
+# The pins follow the iCEBreaker board's layout: its 12 MHz oscillator on pin 35 (a global-buffer
+# input), its user button on pin 10 and its PMOD1A connector for the eight outputs. No board has
+# been brought up with this file; it only makes the timing and utilisation run concrete. Note that
+# the iCEBreaker button is active-low while the wrapper's rst is active-high, so a real board
+# build would invert it in a board-level top.
+
+set_io clk       35
+set_io rst       10
+set_io status[0]  4
+set_io status[1]  2
+set_io status[2] 47
+set_io retire    45
+set_io pc_lo[0]   3
+set_io pc_lo[1]  48
+set_io pc_lo[2]  46
+set_io pc_lo[3]  44

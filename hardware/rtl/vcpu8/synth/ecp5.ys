@@ -1,0 +1,14 @@
+# ECP5 synthesis of vcpu8_fpga_wrapper, the optional second FPGA data point (nextpnr-ecp5).
+#
+# Run like ice40.ys (mk/synth.mk), and only when nextpnr-ecp5 is installed.
+
+hierarchy -check -top vcpu8_fpga_wrapper
+proc
+check -assert
+select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$_DLATCH_* t:$_DLATCHSR_*
+
+synth_ecp5 -top vcpu8_fpga_wrapper
+check -assert
+tee -q -o ecp5.stat.txt stat -width
+tee -q -o ecp5.stat.json stat -json
+write_json ecp5.json

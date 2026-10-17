@@ -17,7 +17,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
 | `verification-strategy.md`                               | planned | Unit tests, fixtures, differential and random testing, formal properties                                        |
 | `simulation-guide.md`                                    | planned | Running simulations, waveforms and GTKWave                                                                      |
-| `synthesis-guide.md`                                     | planned | Yosys and nextpnr flows and their reports                                                                       |
+| [synthesis-guide.md](synthesis-guide.md)                 | written | Yosys and nextpnr flows and their reports                                                                       |
 | `performance-analysis.md`                                | planned | RTL cycle counts and CPI, compared with the instructional timing model                                          |
 | `fpga-readiness.md`                                      | planned | What remains before the design runs on an FPGA                                                                  |
 
@@ -29,6 +29,7 @@ Each planned document is written by the ticket that builds the part it describes
 hardware/
 ├── toolchain.env              pinned OSS CAD Suite release and per-platform sha256
 ├── scripts/setup-toolchain.sh the installer behind `pnpm hardware:setup`
+├── fpga/                      vcpu8_fpga_wrapper.sv and its iCE40 pin constraints, for the synthesis flows
 └── rtl/vcpu8/
     ├── Makefile               includes mk/*.mk; `make help` lists the targets
     ├── mk/                    one make fragment per topic (isa.mk, …)
@@ -42,9 +43,12 @@ hardware/
     ├── tb/                    testbenches and probes (simulation only)
     │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
     │   └── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
+    ├── synth/                 Yosys scripts (generic, iCE40, ECP5) and the reviewed warning allowlist
     ├── scripts/               helper scripts for the make targets
     └── build/                 all outputs (git-ignored)
-packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble and the fixture check
+packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble, the fixture check
+                               and the synthesis summary
+research/cpu/                  small committed research summaries (synth/baseline.*); raw logs stay in build/
 ```
 
 ## Toolchain setup
@@ -104,21 +108,25 @@ The `apt-get` line installs only build prerequisites. The hardware tools themsel
 
 Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `make -C hardware/rtl/vcpu8 help` prints the current list, including the targets that later fragments add.
 
-| Target            | Does                                                                                                                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`            | Lists the targets and shows which toolchain is in use                                                                                                                                                                     |
-| `tools-check`     | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                 |
-| `lint`            | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                               |
-| `gen-isa`         | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                 |
-| `check-isa`       | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                 |
-| `test`            | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                |
-| `sim`             | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                        |
-| `simulate`        | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                      |
-| `fixtures`        | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                         |
-| `fixtures-tamper` | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step) |
-| `clean`           | Removes `build/`                                                                                                                                                                                                          |
+| Target              | Does                                                                                                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `help`              | Lists the targets and shows which toolchain is in use                                                                                                                                                                     |
+| `tools-check`       | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                 |
+| `lint`              | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                               |
+| `gen-isa`           | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                 |
+| `check-isa`         | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                 |
+| `test`              | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                |
+| `sim`               | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                        |
+| `simulate`          | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                      |
+| `fixtures`          | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                         |
+| `fixtures-tamper`   | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step) |
+| `synth`             | Yosys and nextpnr synthesis reports in `build/synth/`; fails on a latch, loop, multiple driver, undriven net or unreviewed warning ([synthesis-guide.md](synthesis-guide.md))                                             |
+| `synth-baseline`    | `synth`, then rewrites the committed `research/cpu/synth/baseline.{json,md}`                                                                                                                                              |
+| `synth-compare`     | `synth`, then prints the deltas against the committed baseline                                                                                                                                                            |
+| `synth-latch-check` | Proves the synthesis gate fails on scratch copies of `core/` with a latch added                                                                                                                                           |
+| `clean`             | Removes `build/`                                                                                                                                                                                                          |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test` and `pnpm hardware:simulate PROGRAM=…`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…` and `pnpm hardware:synth`.
 
 ### Adding targets and unit tests
 

@@ -15,7 +15,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [alu.md](alu.md)                                         | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification                                       |
 | [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
 | [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
-| `verification-strategy.md`                               | planned | Unit tests, fixtures, differential and random testing, formal properties                                        |
+| [verification-strategy.md](verification-strategy.md)     | written | Verification layers; live differential verification, random programs, coverage, mutants, failure replay         |
 | `simulation-guide.md`                                    | planned | Running simulations, waveforms and GTKWave                                                                      |
 | `synthesis-guide.md`                                     | planned | Yosys and nextpnr flows and their reports                                                                       |
 | `performance-analysis.md`                                | planned | RTL cycle counts and CPI, compared with the instructional timing model                                          |
@@ -41,10 +41,13 @@ hardware/
     │   └── vcpu8_top.sv       the core plus vcpu8_memory: the whole CPU
     ├── tb/                    testbenches and probes (simulation only)
     │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
-    │   └── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
-    ├── scripts/               helper scripts for the make targets
+    │   ├── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
+    │   ├── programs/          directed programs for `make verify` (nested calls, overflow, faults, full stack)
+    │   └── regressions/       promoted failing cases, replayed by every `make verify`
+    ├── scripts/               helper scripts for the make targets; mutants.txt for `make verify-mutants`
     └── build/                 all outputs (git-ignored)
-packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble and the fixture check
+packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble, the fixture check,
+                               the differential verification (verify), the random program generator and the mutant runner
 ```
 
 ## Toolchain setup
@@ -104,21 +107,26 @@ The `apt-get` line installs only build prerequisites. The hardware tools themsel
 
 Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `make -C hardware/rtl/vcpu8 help` prints the current list, including the targets that later fragments add.
 
-| Target            | Does                                                                                                                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`            | Lists the targets and shows which toolchain is in use                                                                                                                                                                     |
-| `tools-check`     | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                 |
-| `lint`            | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                               |
-| `gen-isa`         | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                 |
-| `check-isa`       | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                 |
-| `test`            | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                |
-| `sim`             | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                        |
-| `simulate`        | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                      |
-| `fixtures`        | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                         |
-| `fixtures-tamper` | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step) |
-| `clean`           | Removes `build/`                                                                                                                                                                                                          |
+| Target            | Does                                                                                                                                                                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `help`            | Lists the targets and shows which toolchain is in use                                                                                                                                                                                             |
+| `tools-check`     | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                                         |
+| `lint`            | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                                                       |
+| `gen-isa`         | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                                         |
+| `check-isa`       | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                                         |
+| `test`            | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                                        |
+| `sim`             | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                                                |
+| `simulate`        | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                                              |
+| `fixtures`        | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                                                 |
+| `fixtures-tamper` | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step)                         |
+| `verify`          | Runs fixtures, examples, `tb/programs`, `tb/regressions` and `COUNT` random programs from `SEED` (default 1000 from 1) on the TypeScript CPU and the RTL, compared after every instruction ([verification-strategy.md](verification-strategy.md)) |
+| `verify-long`     | `verify` with `LONG_COUNT` (100,000) random programs                                                                                                                                                                                              |
+| `replay`          | `CASE=build/failures/<name>`: reruns a saved failing case with the runner it failed on and checks the report is the same                                                                                                                          |
+| `promote`         | `CASE=build/failures/<name>`: copies a saved failing case into `tb/regressions/`                                                                                                                                                                  |
+| `verify-mutants`  | Builds every mutant in `scripts/mutants.txt` into `build/mutants/<id>/` and fails unless `verify` catches each one (`MUTANT=<id>` for one)                                                                                                        |
+| `clean`           | Removes `build/`                                                                                                                                                                                                                                  |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test` and `pnpm hardware:simulate PROGRAM=…`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:verify` and `pnpm hardware:verify:long`.
 
 ### Adding targets and unit tests
 

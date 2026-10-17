@@ -18,6 +18,8 @@
     "hardware:lint": "make -C hardware/rtl/vcpu8 lint",
     "hardware:test": "make -C hardware/rtl/vcpu8 test",
     "hardware:simulate": "make -C hardware/rtl/vcpu8 simulate",
+    "hardware:verify": "make -C hardware/rtl/vcpu8 verify",
+    "hardware:verify:long": "make -C hardware/rtl/vcpu8 verify-long",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

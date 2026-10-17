@@ -2,10 +2,20 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { assembleToHex } from './assemble.js';
 import { FIXTURES_DEFAULTS, type FixturesOptions, runFixtures } from './commands/fixtures.js';
+import { MUTANTS_DEFAULTS, runMutants } from './commands/mutants.js';
 import { writeTamperedFixtures } from './commands/tamper-fixtures.js';
+import {
+  defaultVerifyOptions,
+  promoteCase,
+  replayCase,
+  VERIFY_DEFAULTS,
+  type VerifyOptions,
+  runVerify,
+} from './commands/verify.js';
 import { ALU_VECTORS_PATH, renderAluVectors } from './gen/alu-vectors.js';
 import { writeDecoderVectors } from './gen/decoder-vectors.js';
 import { ISA_PKG_PATH, renderIsaPackage } from './gen/isa-pkg.js';
+import { CORPORA } from './verify/corpora.js';
 
 // `pnpm --filter @vcpu/rtl-tools …` runs this from packages/rtl-tools; INIT_CWD is the directory
 // pnpm was started in, so a relative --out resolves where the user typed it.
@@ -26,9 +36,22 @@ Commands:
   tamper-fixtures --dir <dir> --out <dir>
                                          Write tampered copies of op-add and op-push-full-stack for
                                          \`make fixtures-tamper\`
+  verify [--all] [--fixtures] [--examples] [--programs [<dir>]] [--regressions] [--random]
+         [--seed S] [--count N] [--sim <bin>] [--work <dir>] [--failures <dir>] [--reports <dir>]
+         [--jobs N]
+                                         Run each program on @vcpu/cpu-core (live) and on the RTL
+                                         runner and compare them in lock-step and at the end. No
+                                         corpus flag, or --all, runs every corpus and requires full
+                                         opcode and fault coverage (default seeds ${String(VERIFY_DEFAULTS.seed)}…${String(VERIFY_DEFAULTS.count)})
+  verify --replay <case-dir> [--sim <bin>]
+                                         Rerun a saved failure or a regression and print its report
+  verify --promote <case-dir>            Copy a saved failure into tb/regressions/
+  mutants --verilator <bin> [--list <file>] [--only <id>] [--seed S] [--count N] [--jobs N]
+                                         Build each mutant of core/ (scripts/mutants.txt) into
+                                         build/mutants/<id>/ and require verify to catch it
 `;
 
-type Command = (args: readonly string[]) => number;
+type Command = (args: readonly string[]) => number | Promise<number>;
 
 /** `[--out <file>]`, resolved against the user's directory; undefined after a usage error. */
 function parseOut(command: string, args: readonly string[], fallback: string): string | undefined {
@@ -143,6 +166,132 @@ function tamperFixtures(args: readonly string[]): number {
   return 0;
 }
 
+/** `--flag value` pairs and bare flags, or a usage error. */
+function parseFlags(
+  command: string,
+  args: readonly string[],
+  valued: readonly string[],
+  bare: readonly string[],
+): Map<string, string> | undefined {
+  const flags = new Map<string, string>();
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i] ?? '';
+    const value = args[i + 1];
+    if (bare.includes(flag)) {
+      // `--programs` may be followed by a directory.
+      if (flag === '--programs' && value !== undefined && !value.startsWith('--')) {
+        flags.set(flag, value);
+        i += 1;
+      } else {
+        flags.set(flag, '');
+      }
+    } else if (valued.includes(flag) && value !== undefined) {
+      flags.set(flag, value);
+      i += 1;
+    } else {
+      process.stderr.write(`${command}: unexpected argument ${flag}\n${USAGE}`);
+      return undefined;
+    }
+  }
+  return flags;
+}
+
+function count(flags: Map<string, string>, flag: string, fallback: number): number {
+  const text = flags.get(flag);
+  if (text === undefined) return fallback;
+  const value = Number(text);
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(`${flag} must be a non-negative integer, got ${text}`);
+  }
+  return value;
+}
+
+function verifyOptions(flags: Map<string, string>): VerifyOptions {
+  const defaults = defaultVerifyOptions();
+  const selected = CORPORA.filter((corpus) => flags.has(`--${corpus}`));
+  const all = flags.has('--all') || selected.length === 0;
+  const path = (flag: string, fallback: string) => {
+    const value = flags.get(flag);
+    return value === undefined || value === '' ? fallback : resolve(cwd, value);
+  };
+  return {
+    ...defaults,
+    corpora: all ? CORPORA : selected,
+    requireCoverage: all,
+    seed: count(flags, '--seed', defaults.seed),
+    count: count(flags, '--count', defaults.count),
+    jobs: Math.max(1, count(flags, '--jobs', defaults.jobs)),
+    sim: path('--sim', defaults.sim),
+    work: path('--work', defaults.work),
+    failures: path('--failures', defaults.failures),
+    reports: path('--reports', defaults.reports),
+    programs: path('--programs', defaults.programs),
+  };
+}
+
+const VERIFY_VALUED = [
+  '--seed',
+  '--count',
+  '--sim',
+  '--work',
+  '--failures',
+  '--reports',
+  '--jobs',
+  '--replay',
+  '--promote',
+];
+const VERIFY_BARE = ['--all', ...CORPORA.map((corpus) => `--${corpus}`)];
+
+async function verify(args: readonly string[]): Promise<number> {
+  const flags = parseFlags('verify', args, VERIFY_VALUED, VERIFY_BARE);
+  if (flags === undefined) return 2;
+  const write = (text: string) => process.stdout.write(text);
+  const replay = flags.get('--replay');
+  if (replay !== undefined) {
+    const sim = flags.get('--sim');
+    return replayCase(
+      resolve(cwd, replay),
+      sim === undefined ? undefined : resolve(cwd, sim),
+      VERIFY_DEFAULTS.work,
+      write,
+    );
+  }
+  const promote = flags.get('--promote');
+  if (promote !== undefined) {
+    return promoteCase(resolve(cwd, promote), VERIFY_DEFAULTS.regressions, write);
+  }
+  return (await runVerify(verifyOptions(flags), write)).exitCode;
+}
+
+async function mutants(args: readonly string[]): Promise<number> {
+  const flags = parseFlags(
+    'mutants',
+    args,
+    ['--verilator', '--list', '--only', '--seed', '--count', '--jobs', '--out', '--report'],
+    [],
+  );
+  if (flags === undefined) return 2;
+  const verilator = flags.get('--verilator');
+  if (verilator === undefined) {
+    process.stderr.write(`mutants: --verilator <bin> is required\n${USAGE}`);
+    return 2;
+  }
+  return runMutants(
+    {
+      ...MUTANTS_DEFAULTS,
+      list: flags.has('--list') ? resolve(cwd, flags.get('--list') ?? '') : MUTANTS_DEFAULTS.list,
+      out: flags.has('--out') ? resolve(cwd, flags.get('--out') ?? '') : MUTANTS_DEFAULTS.out,
+      report: flags.has('--report')
+        ? resolve(cwd, flags.get('--report') ?? '')
+        : MUTANTS_DEFAULTS.report,
+      verilator,
+      only: flags.get('--only'),
+      verify: verifyOptions(flags),
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-isa': genIsa,
   'gen-alu-vectors': genAluVectors,
@@ -150,6 +299,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   assemble: assembleCommand,
   fixtures,
   'tamper-fixtures': tamperFixtures,
+  verify,
+  mutants,
 };
 
 const [name, ...rest] = process.argv.slice(2);
@@ -158,5 +309,17 @@ if (command === undefined) {
   process.stderr.write(name === undefined ? USAGE : `Unknown command ${name}\n${USAGE}`);
   process.exitCode = 2;
 } else {
-  process.exitCode = command(rest);
+  Promise.resolve()
+    .then(() => command(rest))
+    .then(
+      (code) => {
+        process.exitCode = code;
+      },
+      (error: unknown) => {
+        process.stderr.write(
+          `${name ?? ''}: ${error instanceof Error ? error.message : String(error)}\n`,
+        );
+        process.exitCode = 2;
+      },
+    );
 }

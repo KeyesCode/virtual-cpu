@@ -1,0 +1,12 @@
+{
+  "format": "vcpu8-verify-case/1",
+  "name": "regressions/random-s262",
+  "corpus": "regressions",
+  "seed": 262,
+  "shape": "fault",
+  "maxSteps": 2000,
+  "origin": "generateProgram(262)",
+  "firstMismatch": "step 14 status: expected FAULTED, actual READY",
+  "promotedFrom": "random/s262",
+  "foundOn": "build/mutants/field-b-unchecked/sim/vcpu8_sim"
+}

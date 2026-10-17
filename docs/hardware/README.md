@@ -104,18 +104,19 @@ The `apt-get` line installs only build prerequisites. The hardware tools themsel
 
 Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `make -C hardware/rtl/vcpu8 help` prints the current list, including the targets that later fragments add.
 
-| Target        | Does                                                                                                                                                                                                 |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`        | Lists the targets and shows which toolchain is in use                                                                                                                                                |
-| `tools-check` | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                            |
-| `lint`        | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                          |
-| `gen-isa`     | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                            |
-| `check-isa`   | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                            |
-| `test`        | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                           |
-| `sim`         | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                   |
-| `simulate`    | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl)) |
-| `fixtures`    | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                    |
-| `clean`       | Removes `build/`                                                                                                                                                                                     |
+| Target            | Does                                                                                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `help`            | Lists the targets and shows which toolchain is in use                                                                                                                                                                     |
+| `tools-check`     | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                 |
+| `lint`            | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                               |
+| `gen-isa`         | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                 |
+| `check-isa`       | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                 |
+| `test`            | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                |
+| `sim`             | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                        |
+| `simulate`        | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                      |
+| `fixtures`        | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                         |
+| `fixtures-tamper` | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step) |
+| `clean`           | Removes `build/`                                                                                                                                                                                                          |
 
 Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test` and `pnpm hardware:simulate PROGRAM=…`.
 

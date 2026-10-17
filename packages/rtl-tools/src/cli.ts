@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { assembleToHex } from './assemble.js';
 import { FIXTURES_DEFAULTS, type FixturesOptions, runFixtures } from './commands/fixtures.js';
+import { writeTamperedFixtures } from './commands/tamper-fixtures.js';
 import { ALU_VECTORS_PATH, renderAluVectors } from './gen/alu-vectors.js';
 import { writeDecoderVectors } from './gen/decoder-vectors.js';
 import { ISA_PKG_PATH, renderIsaPackage } from './gen/isa-pkg.js';
@@ -22,6 +23,9 @@ Commands:
                                          Run the fixtures on the RTL runner and compare the end state
                                          and the trace in lock-step (default: every fixture in
                                          ${FIXTURES_DEFAULTS.dir})
+  tamper-fixtures --dir <dir> --out <dir>
+                                         Write tampered copies of op-add and op-push-full-stack for
+                                         \`make fixtures-tamper\`
 `;
 
 type Command = (args: readonly string[]) => number;
@@ -123,12 +127,29 @@ function fixtures(args: readonly string[]): number {
   return runFixtures(options, (text) => process.stdout.write(text));
 }
 
+function tamperFixtures(args: readonly string[]): number {
+  const [dirFlag, dir, outFlag, out, ...extra] = args;
+  if (
+    dirFlag !== '--dir' ||
+    dir === undefined ||
+    outFlag !== '--out' ||
+    out === undefined ||
+    extra.length > 0
+  ) {
+    process.stderr.write(`tamper-fixtures: expected --dir <dir> --out <dir>\n${USAGE}`);
+    return 2;
+  }
+  process.stdout.write(`${writeTamperedFixtures(resolve(cwd, dir), resolve(cwd, out))}\n`);
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-isa': genIsa,
   'gen-alu-vectors': genAluVectors,
   'gen-decoder-vectors': genDecoderVectors,
   assemble: assembleCommand,
   fixtures,
+  'tamper-fixtures': tamperFixtures,
 };
 
 const [name, ...rest] = process.argv.slice(2);

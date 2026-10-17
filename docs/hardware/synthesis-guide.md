@@ -121,7 +121,7 @@ These are the figures in the committed baseline, [`research/cpu/synth/baseline.m
 
 The memory's 2,056 flip-flops are its 2,048 storage bits and the 8-bit registered read. The core's 182 are the register file (64), FLAGS (4) and the control unit (114: the FSM state, PC, SP, SD, IR, status, the fault code and PC, the retirement outputs and the 32-bit `instret`, less any bit Yosys found to be constant).
 
-Flattened and remapped to simple gates, the design is **7,013 cells: 2,238 flip-flops and 4,775 gates**. The longest combinational path is **83 gates**. It runs from the FSM state register, through the register-byte select (`dec_rb`), a register-file read port (`rb_data`) and the ALU result (`alu_r`), to the register file's write data (`wd`).
+Flattened and remapped to simple gates, the design is **7,012 cells: 2,238 flip-flops and 4,774 gates**. The longest combinational path is **82 gates**. It runs from the FSM state register, through the register-byte select (`dec_rb`), a register-file read port (`rb_data`) and the ALU result (`alu_r`), to the register file's write data (`wd`).
 
 ### Memory inference
 
@@ -137,10 +137,10 @@ Both arrays were inferred as Yosys memories. The register file stays in flip-flo
 
 | Flow  | Device                      | LUT4 | Carry | Flip-flops | Block RAM | DSP | Logic cells used              | Fmax estimate | Target | Met    |
 | ----- | --------------------------- | ---: | ----: | ---------: | --------: | --: | ----------------------------- | ------------: | -----: | ------ |
-| iCE40 | iCE40UP5K SG48              |  719 |   142 |        150 |         1 |   0 | 896 / 5,280 (`ICESTORM_LC`)   |     10.63 MHz | 12 MHz | **no** |
-| ECP5  | LFE5U-25F CABGA256, speed 6 |  511 |    91 |        124 |         1 |   1 | 771 / 24,288 (`TRELLIS_COMB`) |     27.11 MHz | 12 MHz | yes    |
+| iCE40 | iCE40UP5K SG48              |  727 |   143 |        150 |         1 |   0 | 906 / 5,280 (`ICESTORM_LC`)   |     10.48 MHz | 12 MHz | **no** |
+| ECP5  | LFE5U-25F CABGA256, speed 6 |  507 |    91 |        124 |         1 |   1 | 767 / 24,288 (`TRELLIS_COMB`) |     28.21 MHz | 12 MHz | yes    |
 
-The iCE40 also uses 10 of 39 `SB_IO` pins and 2 of 8 global buffers. ECP5 also uses 74 `PFUMX` and 4 `L6MUX21` wide-multiplexer cells, 10 IO and one clock buffer (`DCCA`). The logic-cell column counts `ICESTORM_LC` on iCE40 and `TRELLIS_COMB` on ECP5, which are different structures, so the two are not directly comparable.
+The iCE40 also uses 10 of 39 `SB_IO` pins and 2 of 8 global buffers. ECP5 also uses 73 `PFUMX` wide-multiplexer cells, 10 IO and one clock buffer (`DCCA`). The logic-cell column counts `ICESTORM_LC` on iCE40 and `TRELLIS_COMB` on ECP5, which are different structures, so the two are not directly comparable.
 
 **Each Fmax holds only for its named device and speed grade, as estimated by nextpnr after placement and routing, with seed 1.** It is not a measurement on a board. The iCE40UP5K is a low-power part, and nextpnr-ice40 has no speed-grade option for it. On it the design misses the 12 MHz target. The ECP5 estimate meets it with room to spare.
 
@@ -148,10 +148,12 @@ The iCE40 also uses 10 of 39 `SB_IO` pins and 2 of 8 global buffers. ECP5 also u
 
 On both FPGAs the critical path ends at a register-file flip-flop and runs through the ALU's divider.
 
-- **iCE40:** 94.09 ns: 37.56 ns of logic in 70 stages and 53.91 ns of routing (the rest is clock-to-out and setup). Of its nets, 47 come from `hardware/rtl/vcpu8/core/vcpu8_alu.sv:31`, the `a / b` of the combinational divider, and 1 from line 29, the subtractor.
-- **ECP5:** 36.89 ns, with 11.18 ns of logic in 61 stages and 20.10 ns of routing. 16 of its nets come from the same divider line.
+- **iCE40:** 95.43 ns: 38.37 ns of logic in 73 stages and 54.65 ns of routing (the rest is clock-to-out and setup). Of its nets, 50 come from `hardware/rtl/vcpu8/core/vcpu8_alu.sv:39`, the `a / b` of the combinational divider.
+- **ECP5:** 35.45 ns, with 11.25 ns of logic in 60 stages and 18.58 ns of routing. 16 of its nets come from the same divider line.
 
-The path starts at the RAM's read data, which in OPERAND1 is the register byte that selects the register-file read ports. A register is written only in WRITEBACK, when that select comes from IR.rb instead. Static timing analysis does not know the FSM, so it times the structural path. The functional path in WRITEBACK still passes through the same register read and the same divider. The combinational divider is the brief's "simplest correct implementation first", and these numbers are the input for the divider experiment, which compares it with an iterative divider. This ticket reports them as measured and does not change the RTL.
+The path starts at the RAM's read data, which in OPERAND1 is the register byte that selects the register-file read ports. A register is written only in WRITEBACK, when that select comes from IR.rb instead. Static timing analysis does not know the FSM, so it times the structural path. The functional path in WRITEBACK still passes through the same register read and the same divider. The combinational divider is the brief's "simplest correct implementation first". The [div-impl experiment](../../research/cpu/experiments/div-impl/README.md) compares it with an iterative divider (`make synth DIV_IMPL=ITER`): without it the critical path leaves the ALU, and the estimated Fmax rises to 18.09 MHz on the iCE40 and 41.53 MHz on the ECP5.
+
+These figures are from the baseline rewritten when the `DIV_ITER` parameter was added. That change added no logic to the default design, but the ALU became a parameterised module, and ABC maps the renamed netlist slightly differently. The per-module generic counts did not move. The flattened figures did: 7,013 → 7,012 gates, iCE40 719 → 727 LUTs and 10.63 → 10.48 MHz, ECP5 511 → 507 LUTs and 27.11 → 28.21 MHz. Differences of this size between two builds are not evidence of a better or worse design.
 
 ## Reading the reports
 

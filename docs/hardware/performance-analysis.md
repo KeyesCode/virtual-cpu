@@ -1,6 +1,6 @@
 # Performance analysis
 
-This document reports how many clock cycles the VCPU-8 RTL (revision `vcpu8-mc-r1`) spends on the Project 1 benchmark programs. It compares those cycles with the emulator's instructional timing model, and it turns them into an estimated run time from the synthesis Fmax. Every number below comes from the committed report [research/cpu/reports/2026-10-17-4620822-default.md](../../research/cpu/reports/2026-10-17-4620822-default.md) (JSON beside it). That report was written by `make -C hardware/rtl/vcpu8 benchmark-baseline` at commit `4620822`, from a clean working tree.
+This document reports how many clock cycles the VCPU-8 RTL (revision `vcpu8-mc-r1`) spends on the Project 1 benchmark programs. It compares those cycles with the emulator's instructional timing model, and it turns them into an estimated run time from the synthesis Fmax. Every number below comes from the committed report [research/cpu/reports/2026-10-17-937d447-default.md](../../research/cpu/reports/2026-10-17-937d447-default.md) (JSON beside it). That report was written by `make -C hardware/rtl/vcpu8 benchmark-baseline` at commit `937d447`, from a clean working tree. Its cycle figures are identical to those of the first report, `2026-10-17-4620822-default`. Only its synthesis section and time estimates differ, because the synthesis baseline was rewritten when the divider parameter was added ([below](#the-divider-experiment)). The [divider experiment](#the-divider-experiment) at the end compares this design with the iterative-divider variant.
 
 ```sh
 make -C hardware/rtl/vcpu8 benchmark            # build/reports/benchmark.{json,md}
@@ -119,25 +119,25 @@ Branch outcomes are still reported per program. They describe the program's beha
 estimated time (µs) = RTL cycles / Fmax (MHz)
 ```
 
-The Fmax comes from the committed synthesis baseline, [research/cpu/synth/baseline.json](../../research/cpu/synth/baseline.json) (synthesised at `f6f9ef7`). There, nextpnr placed and routed the CPU in `hardware/fpga/vcpu8_fpga_wrapper.sv` for two devices:
+The Fmax comes from the committed synthesis baseline, [research/cpu/synth/baseline.json](../../research/cpu/synth/baseline.json) (synthesised at `cb05946`). There, nextpnr placed and routed the CPU in `hardware/fpga/vcpu8_fpga_wrapper.sv` for two devices:
 
 | FPGA flow | Device and timing model                                                          | Fmax (MHz) | Suite (3,245 cycles) |
 | --------- | -------------------------------------------------------------------------------- | ---------: | -------------------: |
-| iCE40     | iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade) |      10.63 |            305.27 µs |
-| ECP5      | LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model                     |      27.11 |            119.70 µs |
+| iCE40     | iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade) |      10.48 |            309.64 µs |
+| ECP5      | LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model                     |      28.21 |            115.03 µs |
 
-Per-program estimates are in the report (`14-fibonacci`: 428 cycles, 40.26 µs on the iCE40 and 15.79 µs on the ECP5). Caveats:
+Per-program estimates are in the report (`14-fibonacci`: 428 cycles, 40.84 µs on the iCE40 and 15.17 µs on the ECP5). Caveats:
 
-- **It is an estimate, not a measurement.** Fmax is nextpnr's static timing analysis of one placement (seed 1), with its device timing model. Nothing ran on hardware. Another seed, another nextpnr version or a small RTL change moves it. The iCE40 build does not meet its 12 MHz constraint, so the design as it stands cannot run at 12 MHz on that part.
+- **It is an estimate, not a measurement.** Fmax is nextpnr's static timing analysis of one placement (seed 1), with its device timing model. Nothing ran on hardware. Another seed, another nextpnr version or a small RTL change moves it. The iCE40 build does not meet its 12 MHz constraint, so the default design cannot run at 12 MHz on that part; the iterative-divider variant can ([below](#the-divider-experiment)). Even a change that adds no logic moves the estimate: adding the divider parameter only renamed modules, and it moved the iCE40 Fmax from 10.63 to 10.48 MHz and the ECP5's from 27.11 to 28.21 MHz.
 - **Cycles are exact; the time inherits the estimate's error.** The cycle counts are deterministic. The time is only as good as the Fmax, and it is labelled with the device and timing model it came from.
 - **It covers the CPU alone.** It leaves out loading the program, I/O, and anything a board would add. The synthesised design is the FPGA wrapper with the demo program in its RAM, not exactly the design the runner simulates (the runner loads the RAM through DPI).
 - **No synthesis, no time.** Without a synthesis summary (`BENCH_SYNTH=none`, or a missing or failing summary), the report says why and leaves the time estimates out. The run does not fail.
 
-The critical path (in the baseline, through the ALU into the register file) sets Fmax. A design that trades cycles for a shorter path can therefore be faster in time while being slower in cycles. Comparing that trade is what the experiment framework is for.
+The critical path (in the baseline, through the ALU's divider into the register file) sets Fmax. A design that trades cycles for a shorter path can therefore be faster in time while being slower in cycles. Comparing that trade is what the experiment framework is for, and the [divider experiment](#the-divider-experiment) is the first such comparison.
 
 ## Host runtime is not processor performance
 
-Every report has a separate `host` section. It records how long this machine took to simulate each program: the live `@vcpu/cpu-core` reference and the RTL runner process. It also records the runtime and the CPU model. For the committed report the suite took 125 ms of wall-clock time on an Apple M2 Pro. Three runs measured 125, 133 and 139 ms. That is simulator speed. It says nothing about the processor, it varies from run to run, and it is never mixed into the modelled numbers. The Markdown report prints it last, under its own heading.
+Every report has a separate `host` section. It records how long this machine took to simulate each program: the live `@vcpu/cpu-core` reference and the RTL runner process. It also records the runtime and the CPU model. For the committed report the suite took 133 ms of wall-clock time on an Apple M2 Pro. The first report measured 125 ms on the same machine, and three runs then gave 125, 133 and 139 ms. That is simulator speed. It says nothing about the processor, it varies from run to run, and it is never mixed into the modelled numbers. The Markdown report prints it last, under its own heading.
 
 ## Reproducibility
 
@@ -161,10 +161,29 @@ A microarchitecture change is evaluated as an experiment. It compares variants o
 make -C hardware/rtl/vcpu8 experiment NAME=smoke
 ```
 
-[research/cpu/experiments/README.md](../../research/cpu/experiments/README.md) documents `experiment.json`, the stages and what gets committed. The `smoke` experiment runs the committed design as its only variant. Its result, [research/cpu/experiments/smoke/results/2026-10-17-4620822.md](../../research/cpu/experiments/smoke/results/2026-10-17-4620822.md), shows the variant passing verify on 331 cases (fixtures, examples, directed programs, regressions and 200 random programs). Its benchmark gives 3,245 cycles at CPI 5.110, with 53 cycles for the DIV-heavy program `04-division`. Synthesis gives 7,480 generic cells, 2,238 flip-flops, 719 iCE40 LUTs at 10.63 MHz and 511 ECP5 LUTs at 27.11 MHz. These match the baseline report and the synthesis baseline.
+[research/cpu/experiments/README.md](../../research/cpu/experiments/README.md) documents `experiment.json`, the stages and what gets committed. The `smoke` experiment runs the committed design as its only variant. Its result, [research/cpu/experiments/smoke/results/2026-10-17-4620822.md](../../research/cpu/experiments/smoke/results/2026-10-17-4620822.md), shows the variant passing verify on 331 cases (fixtures, examples, directed programs, regressions and 200 random programs). Its benchmark gives 3,245 cycles at CPI 5.110, with 53 cycles for the DIV-heavy program `04-division`. Synthesis gives 7,480 generic cells, 2,238 flip-flops, 719 iCE40 LUTs at 10.63 MHz and 511 ECP5 LUTs at 27.11 MHz. These matched the benchmark report and the synthesis baseline of that commit; the baseline has since been rewritten (below).
+
+## The divider experiment
+
+[research/cpu/experiments/div-impl/](../../research/cpu/experiments/div-impl/README.md) is the first real experiment. It compares the default combinational divider (`div-comb`) with `vcpu8_divider`, an iterative restoring divider that finds one quotient bit per clock (`div-iter`, `DIV_IMPL=ITER`), [documented in alu.md](alu.md#iterative-divider). Both passed `verify` on the same 1,132 cases before anything was measured. From the committed result, [results/2026-10-17-6028b98.md](../../research/cpu/experiments/div-impl/results/2026-10-17-6028b98.md) (commit `6028b98`, clean tree):
+
+| Metric                           |      `div-comb` |      `div-iter` |
+| -------------------------------- | --------------: | --------------: |
+| Suite cycles / CPI               |   3,245 / 5.110 |   3,253 / 5.123 |
+| `04-division` cycles             |              53 |              61 |
+| Generic cells / flip-flops       |   7,480 / 2,238 |   7,399 / 2,267 |
+| Logic depth (gates)              |              82 |              57 |
+| iCE40 LUTs / Fmax                | 727 / 10.48 MHz | 744 / 18.09 MHz |
+| iCE40 suite time (cycles / Fmax) |        309.6 µs |        179.8 µs |
+| ECP5 LUTs / Fmax                 | 507 / 28.21 MHz | 646 / 41.53 MHz |
+| ECP5 suite time (cycles / Fmax)  |        115.0 µs |         78.3 µs |
+
+DIV costs 8 more cycles (13 clocks instead of 5), and nothing else changes. With the array divider gone, the critical path leaves the ALU, so the estimated Fmax rises by 73 % on the iCE40UP5K, which now meets 12 MHz, and by 47 % on the ECP5. The suite therefore finishes 42 % and 32 % sooner, and even `04-division` is faster in time. The area moves by a few percent: fewer generic cells and iCE40 logic cells, 29 more flip-flops, and more ECP5 LUTs because the array divider had ridden on the carry chains. The Fmax gains are far above the few-percent noise that a pure renaming produced (see [Estimated execution time](#estimated-execution-time)); the area differences are not.
+
+**Recommendation:** a future revision (`vcpu8-mc-r2`, since DIV's cycle count changes) should make the iterative divider the default. Only a workload in which DIV is more than about 30 % (ECP5) to 46 % (iCE40) of the instructions executed would run slower. The default stays combinational for now, and `REVISION` stays `vcpu8-mc-r1` because the variant is recorded in the result, not in the revision. The experiment's README has the full analysis.
 
 ## Limits of these numbers
 
-- **The suite is small.** It has 20 teaching programs and 635 retired instructions. DIV retires once, JC once and LOAD `[addr8]` once. The per-class CPI reflects this program mix, not a representative workload.
+- **The suite is small.** It has 20 teaching programs and 635 retired instructions. DIV retires once, JC once and LOAD `[addr8]` once, so the divider experiment's 0.25 % cycle cost would be larger for code that divides more. The per-class CPI reflects this program mix, not a representative workload.
 - **Cycle counts are from simulation.** They are the cycles of the RTL as Verilated. They hold for the same RTL on an FPGA only if timing closes at the chosen clock.
 - **Generic cells are not transistors.** The cell counts in the reports are generic Yosys cells and FPGA LUTs ([synthesis-guide.md](synthesis-guide.md)). They are not silicon area, and nothing here measures power.

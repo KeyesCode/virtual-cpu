@@ -16,18 +16,18 @@ make -C hardware/rtl/vcpu8 formal DIV_IMPL=ITER   # the same tasks on the iterat
 `make formal` prints one line per task, with its proof kind, depth and engine, and exits non-zero if any task ends in FAIL, ERROR or UNKNOWN. These are the lines from the run on this commit:
 
 ```text
-PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (1s)
+PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (0s)
 PASS    core_prove                 k-induction, depth 20, smtbmc boolector; induction closed at k = 3 (7s)
-PASS    core_bmc                   BMC, depth 40, smtbmc boolector (33s)
+PASS    core_bmc                   BMC, depth 40, smtbmc boolector (30s)
 ```
 
 `make formal DIV_IMPL=ITER` proves the same properties on the [iterative-divider variant](alu.md#iterative-divider). It copies `core/` and `formal/` into `build/formal-div-iter/` and adds `chparam -set DIV_ITER 1 formal_core_top` before `hierarchy` in the copies of `core_prove.sby` and `core_bmc.sby`, so the harness, the core and the properties are elaborated with `DIV_ITER = 1` and include `vcpu8_divider`. `alu_prove` is the same task in both: it proves `vcpu8_alu` with its default parameter. With the divider's state added, induction needs more steps to close:
 
 ```text
 formal: DIV_IMPL=ITER, core tasks with DIV_ITER = 1 (build/formal-div-iter/)
-PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (1s)
-PASS    core_prove                 k-induction, depth 20, smtbmc boolector; induction closed at k = 10 (7s)
-PASS    core_bmc                   BMC, depth 40, smtbmc boolector (35s)
+PASS    alu_prove                  k-induction, depth 1, smtbmc boolector; induction closed at k = 1 (0s)
+PASS    core_prove                 k-induction, depth 20, smtbmc boolector; induction closed at k = 10 (8s)
+PASS    core_bmc                   BMC, depth 40, smtbmc boolector (37s)
 ```
 
 The tools come from the pinned OSS CAD Suite (SBY v0.70-9, Yosys 0.70+145, Boolector 3.2.4). If `sby`, `yosys` or `boolector` is missing, the target stops before running anything and points to `pnpm hardware:setup`. Every task uses the `smtbmc boolector` engine. With Yices 2.7.0 from the same suite, `core_bmc` took 281 s, against 30 s with Boolector, both measured on the same machine.

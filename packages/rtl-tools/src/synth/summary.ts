@@ -914,7 +914,7 @@ export function renderSummaryMarkdown(summary: SynthSummary): string {
     out.push(
       `### ${family}: ${flow.device}`,
       '',
-      `Top ${code(flow.top)}, RAM initialised from ${code(flow.initFile)}, nextpnr seed ${String(flow.seed)}. ` +
+      `Top ${code(flow.top)}, RAM initialised with ${code(flow.initFile)}, nextpnr seed ${String(flow.seed)}. ` +
         `Fmax ${flow.pnr.fmaxMHz.toFixed(2)} MHz is an estimate for ${flow.timingLabel} only.`,
       '',
       `Utilisation: ${Object.entries(flow.pnr.utilisation)

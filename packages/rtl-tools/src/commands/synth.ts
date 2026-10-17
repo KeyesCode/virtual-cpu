@@ -34,7 +34,7 @@ export interface SynthSummaryOptions {
   /** The Makefile's TOOLCHAIN: the pinned OSS CAD Suite's directory, or `PATH`. */
   readonly toolchain: string;
   readonly toolchainVersion: string;
-  /** The program built into the FPGA RAM. */
+  /** The program built into the FPGA RAM (its source, as the summary reports it). */
   readonly initFile: string;
   readonly seed: number;
   readonly targets: readonly FpgaTarget[];

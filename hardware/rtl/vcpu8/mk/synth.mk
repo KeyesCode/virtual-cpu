@@ -18,8 +18,10 @@ SYNTH_BASELINE := $(REPO_ROOT)/research/cpu/synth/baseline
 
 FPGA_DIR       := $(REPO_ROOT)/hardware/fpga
 FPGA_WRAPPER   := $(FPGA_DIR)/vcpu8_fpga_wrapper.sv
-# The program built into the FPGA RAM: a Project 1 example, so the CPU has real work to keep.
-FPGA_INIT_FILE := $(REPO_ROOT)/fixtures/v1/example-14-fibonacci.mem.hex
+# The program built into the FPGA RAM: the demonstration program, assembled into build/synth/ by
+# the TypeScript assembler, so the CPU has real work to keep.
+FPGA_PROGRAM   := $(HW_DIR)/tb/programs/wave-demo.asm
+FPGA_INIT_FILE := $(SYNTH_DIR)/wave-demo.mem.hex
 
 # Place-and-route targets. Both runs use one fixed seed, so their results are reproducible.
 SYNTH_FREQ_MHZ := 12
@@ -46,7 +48,7 @@ NEXTPNR_COMMON = --json $(1).json --freq $(SYNTH_FREQ_MHZ) --seed $(SYNTH_SEED) 
   --report nextpnr-$(1).report.json -l nextpnr-$(1).log -q
 
 SYNTH_SUMMARY_ARGS := --dir $(SYNTH_DIR) --allow $(SYNTH_ALLOW) --toolchain '$(TOOLCHAIN)' \
-  --toolchain-version $(OSS_CAD_SUITE_VERSION) --init-file $(FPGA_INIT_FILE) \
+  --toolchain-version $(OSS_CAD_SUITE_VERSION) --init-file $(FPGA_PROGRAM) \
   --seed $(SYNTH_SEED) --ice40 $(ICE40_DEVICE):$(ICE40_PACKAGE) --ecp5 $(ECP5_DEVICE):$(ECP5_PACKAGE):$(ECP5_SPEED)
 
 .PHONY: synth synth-baseline synth-compare synth-latch-check
@@ -55,6 +57,7 @@ synth: ## Yosys + nextpnr synthesis reports in build/synth/; fails on any gate
 	$(call need,$(YOSYS))
 	$(call need,$(NEXTPNR_ICE40))
 	@rm -rf $(SYNTH_DIR) && mkdir -p $(SYNTH_DIR)
+	cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/rtl-tools cli assemble $(FPGA_PROGRAM) --out $(FPGA_INIT_FILE)
 	$(call synth_generic,$(RTL_SRCS),$(SYNTH_DIR))
 	cd $(SYNTH_DIR) && $(YOSYS) -q -l ice40.log -p '$(call synth_fpga_read,$(RTL_SRCS)); script $(SYNTH_SCRIPTS)/ice40.ys'
 	cd $(SYNTH_DIR) && $(NEXTPNR_ICE40) --$(ICE40_DEVICE) --package $(ICE40_PACKAGE) --pcf $(ICE40_PCF) \

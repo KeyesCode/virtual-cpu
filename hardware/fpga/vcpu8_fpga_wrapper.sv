@@ -17,8 +17,12 @@
 // The synthesis flow sets it to an absolute path (mk/synth.mk); a relative path would be resolved
 // from the tool's working directory. rst comes from a pin, so it is passed through a two-flop
 // synchronizer before it reaches the core's synchronous reset.
+//
+// DIV_ITER is passed to vcpu8_top (0: combinational divider, 1: iterative); the synthesis flow
+// sets it with chparam for `make synth DIV_IMPL=ITER` and experiment variants.
 module vcpu8_fpga_wrapper #(
-  parameter INIT_FILE = ""
+  parameter     INIT_FILE = "",
+  parameter int DIV_ITER  = 0
 ) (
   input  logic       clk,
   input  logic       rst,      // active-high, asynchronous to clk
@@ -37,7 +41,8 @@ module vcpu8_fpga_wrapper #(
   // The debug taps are left unconnected on purpose, so synthesis removes the logic only they use.
   /* verilator lint_off PINCONNECTEMPTY */
   vcpu8_top #(
-    .INIT_FILE (INIT_FILE)
+    .INIT_FILE (INIT_FILE),
+    .DIV_ITER  (DIV_ITER)
   ) u_cpu (
     .clk        (clk),
     .rst        (rst_sync[1]),

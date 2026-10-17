@@ -134,6 +134,7 @@ stateDiagram-v2
   OPERAND1 --> EXECUTE: len = 2
   OPERAND2 --> EXECUTE
   EXECUTE --> WRITEBACK
+  EXECUTE --> EXECUTE: DIV waiting for the iterative divider (DIV_ITER = 1 only)
   WRITEBACK --> FETCH: next instruction
   WRITEBACK --> HALTED: HLT
   WRITEBACK --> FAULTED: post-commit PC_OVERFLOW
@@ -145,7 +146,7 @@ stateDiagram-v2
   FAULTED --> FAULTED
 ```
 
-The states are `fsm_state_t` in `core/vcpu8_types_pkg.sv`, and `dbg_state` shows the current one. Reset puts the FSM in FETCH. HALTED and FAULTED are terminal: the FSM stays there, and nothing changes, until the next reset.
+The states are `fsm_state_t` in `core/vcpu8_types_pkg.sv`, and `dbg_state` shows the current one. In the default design every state lasts one cycle. The iterative-divider variant (`DIV_ITER = 1`, [below](#div-with-the-iterative-divider)) is the one exception: a DIV stays in EXECUTE until the divider is done. Reset puts the FSM in FETCH. HALTED and FAULTED are terminal: the FSM stays there, and nothing changes, until the next reset.
 
 | State     | RAM address                                                                         | Decoder sees                       | Does                                                                                                                                                                               |
 | --------- | ----------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -159,6 +160,16 @@ The states are `fsm_state_t` in `core/vcpu8_types_pkg.sv`, and `dbg_state` shows
 | FAULTED   | PC                                                                                  | —                                  | Nothing. `fault_code` and `fault_pc` hold the fault.                                                                                                                               |
 
 The decoder is combinational and needs its inputs in the same cycle the bytes arrive. So the FSM routes them: in DECODE the opcode comes straight from `mem_rdata`, before IR.op is latched, and in OPERAND1 the register byte comes from `mem_rdata`. In every other state the decoder reads the latched IR. That keeps DECODE and OPERAND1 to one cycle each instead of adding a cycle to latch the byte first.
+
+### DIV with the iterative divider
+
+`vcpu8_control` takes the same `DIV_ITER` parameter as `vcpu8_core`, and the three handshake signals of [`vcpu8_divider`](alu.md#iterative-divider): `div_start` out, `div_busy` and `div_done` in.
+
+- **In the first EXECUTE cycle of a DIV**, the divide-by-zero check runs exactly as in the default design. Only if `fault_now` is `FAULT_NONE` does `div_start` pulse, so a DIV by zero goes straight to FAULTED and never starts the divider.
+- **In the following EXECUTE cycles** the divider is busy, `div_wait` (DIV and not `div_done`) is high, and the FSM stays in EXECUTE. Nothing is written in these cycles, because every write enable is gated by WRITEBACK as always. The operands cannot change under the divider either, since the register file is written only in WRITEBACK.
+- **In the cycle `div_done` is high**, the FSM goes to WRITEBACK, where the ALU passes the divider's quotient to the register write and to FLAGS. WRITEBACK, and the post-commit `PC_OVERFLOW` of a DIV at `0xFE` (`tb/programs/div-pc-overflow.asm`), are unchanged.
+
+So DIV spends 9 cycles in EXECUTE instead of 1 and takes 13 clocks instead of 5. With `DIV_ITER = 0` the parameter removes `div_wait` and `div_start` outright, the handshake inputs are ignored, and EXECUTE always lasts one cycle. The formal properties `fsm_t_execute` and `div_wait_bounded` ([formal-verification.md](formal-verification.md#2-legal-fsm)) allow EXECUTE → EXECUTE only for a DIV still waiting, and for at most 8 extra cycles.
 
 ### WRITEBACK, the commit point
 
@@ -231,5 +242,5 @@ The FSM is the one hardware-porting.md describes, with these details settled:
 - **Two named operand states.** "OPERANDS ×2" is two states, OPERAND1 and OPERAND2, so `dbg_state` says which byte is being read.
 - **Byte 1 goes into both IR.rb and IR.tb, and byte 2 overwrites IR.tb.** IR.rb is then the register byte and IR.tb the instruction's last byte for every format, with no format-dependent mux on the latch. For the A format (JMP … CALL) the copy in IR.rb is unused: those opcodes have no register fields, so the decoder never reports it malformed and nothing reads it.
 - **The register byte is checked once every byte is in.** For a 3-byte instruction the check is in OPERAND2, after byte 2 is latched, so a faulting step's IR holds all its bytes, as the emulator's does. The priority is unchanged: `INSTRUCTION_OVERRUN` has already been ruled out in DECODE, and nothing is written before EXECUTE.
-- **DIV is combinational**, so it takes 5 clocks, not the 12 of the iterative divider hardware-porting.md describes ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#clocks-per-instruction)).
+- **DIV is combinational**, so it takes 5 clocks, not the 12 of the iterative divider hardware-porting.md describes ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#clocks-per-instruction)). The optional iterative divider (`DIV_IMPL=ITER`) takes 13: its first iteration happens at the start edge and `done` is registered, so DIV holds EXECUTE for 8 extra cycles.
 - **`retire` is registered**: it is high in the cycle after the WRITEBACK edge, when the committed state is visible, rather than during WRITEBACK.

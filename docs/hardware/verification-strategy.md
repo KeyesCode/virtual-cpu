@@ -71,7 +71,7 @@ The default `make verify` runs all five corpora. The counts below are from the r
 | ------------- | -------------------------------------- | --------------: | ------------------------------------ |
 | `fixtures`    | `fixtures/v1/*.json`                   |              98 | the fixture's `maxInstructions`      |
 | `examples`    | `examples/*.asm`, assembled fresh      |              20 | the `.expect.json` `maxInstructions` |
-| `programs`    | `hardware/rtl/vcpu8/tb/programs/*.asm` |              11 | `; max-steps: N` header, else 10,000 |
+| `programs`    | `hardware/rtl/vcpu8/tb/programs/*.asm` |              12 | `; max-steps: N` header, else 10,000 |
 | `regressions` | `hardware/rtl/vcpu8/tb/regressions/*/` |               2 | `case.json` `maxSteps`               |
 | `random`      | `generateProgram(seed)`, seeds `SEED`… | `COUNT` (1,000) | 2,000                                |
 
@@ -283,6 +283,7 @@ The long run's 100,131 cases ended 76,331 halted, 22,253 faulted and 1,547 at th
 pnpm hardware:verify                       # make -C hardware/rtl/vcpu8 verify
 pnpm hardware:verify:long                  # make -C hardware/rtl/vcpu8 verify-long
 make -C hardware/rtl/vcpu8 verify SEED=5000 COUNT=200
+make -C hardware/rtl/vcpu8 verify DIV_IMPL=ITER          # the iterative-divider variant, same corpora
 make -C hardware/rtl/vcpu8 verify-mutants [MUTANT=<id>]
 make -C hardware/rtl/vcpu8 replay CASE=build/failures/<name> [SIM=<runner>]
 make -C hardware/rtl/vcpu8 promote CASE=build/failures/<name>

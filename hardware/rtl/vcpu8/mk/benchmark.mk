@@ -18,10 +18,22 @@
 #
 # BENCH_SYNTH is the synthesis summary the Fmax comes from: the committed baseline by default,
 # BENCH_SYNTH=build/synth/summary.json after a fresh make synth, or BENCH_SYNTH=none.
+#
+# DIV_IMPL=ITER benchmarks the iterative-divider runner (build/sim-div-iter/) and labels the report
+# with the variant div-iter. Its Fmax comes from build/synth-div-iter/summary.json, which
+# `make synth DIV_IMPL=ITER` writes (the report says so if it is absent), never from the committed
+# baseline, which is the default design's. benchmark-baseline and benchmark-compare are for the
+# default design only.
 
 # Named here rather than through sim.mk's SIM_BIN, which is defined after this fragment is read.
-BENCH_SIM       := $(BUILD_DIR)/sim/vcpu8_sim
+BENCH_SIM       := $(BUILD_DIR)/sim$(VARIANT_SUFFIX)/vcpu8_sim
+ifeq ($(DIV_ITER),1)
+BENCH_SYNTH     ?= $(BUILD_DIR)/synth$(VARIANT_SUFFIX)/summary.json
+BENCH_VARIANT   := --variant '{"name":"div-iter","description":"Iterative divider (DIV_IMPL=ITER).","parameters":{"DIV_ITER":1}}'
+else
 BENCH_SYNTH     ?= $(REPO_ROOT)/research/cpu/synth/baseline.json
+BENCH_VARIANT   :=
+endif
 BENCH_REPORT    := $(BUILD_DIR)/reports/benchmark.json
 BENCH_PUBLISHED := $(REPO_ROOT)/research/cpu/reports
 BENCH_MUTANT    ?= alu-shr-carry
@@ -29,7 +41,9 @@ BENCH_MUTANT_OUT = $(BUILD_DIR)/benchmark-mutant
 EXPERIMENTS_DIR := $(REPO_ROOT)/research/cpu/experiments
 
 BENCH_TOOLS = cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/rtl-tools cli
-BENCH_ARGS  = --synth $(if $(filter none,$(BENCH_SYNTH)),none,$(abspath $(BENCH_SYNTH)))
+BENCH_ARGS  = --synth $(if $(filter none,$(BENCH_SYNTH)),none,$(abspath $(BENCH_SYNTH))) $(BENCH_VARIANT)
+# `$(call bench_default_only,<target>)`: refuse a non-default DIV_IMPL.
+bench_default_only = @test '$(DIV_IMPL)' = COMB || { echo "$(1): only for the default design (DIV_IMPL=COMB)" >&2; exit 2; }
 # Tool versions for the report's provenance. tools-check writes the file before it checks that
 # every required tool is present, so a machine without (say) nextpnr still benchmarks.
 bench_tool_versions = @$(MAKE) --no-print-directory tools-check > /dev/null 2>&1 || true
@@ -41,11 +55,13 @@ benchmark: $(BENCH_SIM) ## Cycles, CPI and branches of the benchmark programs on
 	$(BENCH_TOOLS) benchmark --sim $(BENCH_SIM) $(BENCH_ARGS) --out $(BENCH_REPORT)
 
 benchmark-baseline: $(BENCH_SIM) ## make benchmark, and write research/cpu/reports/<date>-<sha>-default.*
+	$(call bench_default_only,benchmark-baseline)
 	$(bench_tool_versions)
 	$(BENCH_TOOLS) benchmark --sim $(BENCH_SIM) $(BENCH_ARGS) --out $(BENCH_REPORT) --publish $(BENCH_PUBLISHED)
 	cd $(REPO_ROOT) && pnpm --silent exec prettier --log-level warn --write $(BENCH_PUBLISHED)
 
 benchmark-compare: benchmark ## make benchmark, then diff its modelled sections against the committed report
+	$(call bench_default_only,benchmark-compare)
 	@latest='$(lastword $(sort $(wildcard $(BENCH_PUBLISHED)/*-default.json)))'; \
 	  test -n "$$latest" || { echo "benchmark-compare: no research/cpu/reports/*-default.json; run make benchmark-baseline" >&2; exit 2; }; \
 	  $(BENCH_TOOLS) benchmark-compare --baseline "$$latest" --report $(BENCH_REPORT)

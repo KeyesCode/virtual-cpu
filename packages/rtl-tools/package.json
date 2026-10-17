@@ -11,6 +11,7 @@
     "gen:isa": "tsx src/cli.ts gen-isa",
     "gen:alu-vectors": "tsx src/cli.ts gen-alu-vectors",
     "gen:decoder-vectors": "tsx src/cli.ts gen-decoder-vectors",
+    "gen:div-vectors": "tsx src/cli.ts gen-div-vectors",
     "assemble": "tsx src/cli.ts assemble",
     "fixtures": "tsx src/cli.ts fixtures",
     "verify": "tsx src/cli.ts verify",

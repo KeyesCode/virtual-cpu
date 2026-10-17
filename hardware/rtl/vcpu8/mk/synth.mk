@@ -11,7 +11,7 @@
 # run, on a missing nextpnr-ice40, and on any warning not in synth/warnings.allow. Each run starts
 # from an empty build/synth/, so no report can be left over from an earlier run.
 
-SYNTH_DIR      := $(BUILD_DIR)/synth
+SYNTH_DIR      := $(BUILD_DIR)/synth$(VARIANT_SUFFIX)
 SYNTH_SCRIPTS  := $(HW_DIR)/synth
 SYNTH_ALLOW    := $(SYNTH_SCRIPTS)/warnings.allow
 SYNTH_BASELINE := $(REPO_ROOT)/research/cpu/synth/baseline
@@ -39,9 +39,10 @@ NEXTPNR_ECP5  ?= $(TOOL_BIN)nextpnr-ecp5
 # A design variant (research/cpu/experiments/README.md): `rtl-tools experiment` sets
 # SYNTH_DIR=build/variants/<hash>/synth, SYNTH_DEFINES to `-DNAME[=value]` flags for read_verilog
 # and SYNTH_PARAMS to `NAME=value` top-level parameters, set with chparam on each top. Both are
-# empty for the committed design.
+# empty for the committed design. DIV_IMPL=ITER sets SYNTH_PARAMS to DIV_ITER=1 (and SYNTH_DIR to
+# build/synth-div-iter/); synth-baseline is for the default design only.
 SYNTH_DEFINES ?=
-SYNTH_PARAMS  ?=
+SYNTH_PARAMS  ?= $(if $(filter 1,$(DIV_ITER)),DIV_ITER=1)
 # `$(call synth_chparam,<top>)`: `; chparam -set NAME value <top>` for each SYNTH_PARAMS entry.
 synth_chparam = $(foreach p,$(SYNTH_PARAMS),; chparam -set $(subst =, ,$(p)) $(1))
 
@@ -83,6 +84,7 @@ synth: ## Yosys + nextpnr synthesis reports in build/synth/; fails on any gate
 	cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/rtl-tools cli synth-summary $(SYNTH_SUMMARY_ARGS)
 
 synth-baseline: synth ## Rewrite research/cpu/synth/baseline.{json,md} from a fresh make synth
+	@test '$(DIV_IMPL)' = COMB || { echo "synth-baseline: only for the default design (DIV_IMPL=COMB)" >&2; exit 2; }
 	@mkdir -p $(dir $(SYNTH_BASELINE))
 	cp $(SYNTH_DIR)/summary.json $(SYNTH_BASELINE).json
 	cp $(SYNTH_DIR)/summary.md $(SYNTH_BASELINE).md

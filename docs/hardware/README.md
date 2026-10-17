@@ -150,6 +150,8 @@ Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `m
 | `experiment`             | `NAME=<dir>`: verifies, benchmarks and synthesises every variant of `research/cpu/experiments/<dir>/experiment.json` and writes the comparison to its `results/` ([experiments/README.md](../../research/cpu/experiments/README.md))                                       |
 | `clean`                  | Removes `build/`                                                                                                                                                                                                                                                           |
 
+`DIV_IMPL=ITER` builds the iterative-divider variant ([alu.md](alu.md#iterative-divider)) instead of the default `DIV_IMPL=COMB`: `sim`, `simulate`, `fixtures`, `verify`, `verify-long`, `benchmark`, `sim-trace`, `wave`, `lint`, `synth` and `formal` accept it, and put their builds in directories of their own (`build/sim-div-iter/`, `build/synth-div-iter/`, `build/formal-div-iter/`, …). `synth-baseline`, `benchmark-baseline` and `benchmark-compare` are for the default design only. `test-divider` is the iterative divider's exhaustive unit test.
+
 Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:wave [PROGRAM=…]`, `pnpm hardware:formal`, `pnpm hardware:synth`, `pnpm hardware:verify`, `pnpm hardware:verify:long` and `pnpm hardware:benchmark`.
 
 ### Adding targets and unit tests

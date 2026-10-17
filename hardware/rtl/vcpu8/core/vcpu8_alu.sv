@@ -8,12 +8,20 @@
 //
 // MUL and DIV are combinational in v1. DIV by zero is a fault the control unit raises before any
 // write, so its result is never used; the ALU gives the defined, X-free value r = 0, C = V = 0.
+//
+// DIV_ITER = 1 removes the combinational divider: ALU_DIV then passes through div_q, the quotient
+// vcpu8_core's iterative vcpu8_divider computed, with the same flags (Z and N from it, C = V = 0).
+// The default, 0, is the v1 design and ignores div_q; research/cpu/experiments/div-impl/ compares
+// the two.
 
-module vcpu8_alu (
+module vcpu8_alu #(
+  parameter int DIV_ITER = 0
+) (
   input  logic [7:0]               a,
   input  logic [7:0]               b,
   input  vcpu8_types_pkg::alu_op_t op,
   input  logic                     c_in,
+  input  logic [7:0]               div_q,  // DIV_ITER = 1 only
   output logic [7:0]               r,
   output logic                     z,
   output logic                     c,
@@ -28,7 +36,7 @@ module vcpu8_alu (
   assign sum  = {1'b0, a} + {1'b0, b};
   assign diff = {1'b0, a} - {1'b0, b};
   assign prod = {8'h00, a} * {8'h00, b};
-  assign quot = (b == 8'h00) ? 8'h00 : a / b;
+  assign quot = (DIV_ITER != 0) ? div_q : (b == 8'h00) ? 8'h00 : a / b;
 
   always_comb begin
     r = 8'h00;

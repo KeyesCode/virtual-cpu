@@ -8,9 +8,11 @@ make -C hardware/rtl/vcpu8 experiment NAME=smoke
 
 [smoke/](smoke/experiment.json) is the smallest experiment: the committed design as its only variant. It proves that the plumbing works and that its numbers equal the committed baseline's.
 
+[div-impl/](div-impl/README.md) is the first real one: the combinational divider against the iterative `vcpu8_divider` (parameter `DIV_ITER`), with the results and a recommendation.
+
 ## Adding an experiment
 
-1. Make the alternative selectable in the RTL. Either use a define (`` `ifdef VCPU8_DIV_ITERATIVE ``), or use a parameter. The default must be today's design, so nothing changes for a build without the flag. A parameter is set on each top-level module the flows build, so it must be declared on all three and passed down: `vcpu8_sim_top` (the runner), `vcpu8_top` (generic synthesis) and `vcpu8_fpga_wrapper` (the FPGA flows). A define needs no plumbing.
+1. Make the alternative selectable in the RTL. Either use a define (`` `ifdef VCPU8_SOMETHING ``), or use an integer parameter, as `DIV_ITER` does. The default must be today's design, so nothing changes for a build without the flag. A parameter is set on each top-level module the flows build, so it must be declared on all three and passed down: `vcpu8_sim_top` (the runner), `vcpu8_top` (generic synthesis) and `vcpu8_fpga_wrapper` (the FPGA flows). A define needs no plumbing.
 2. Create `research/cpu/experiments/<name>/experiment.json` (below).
 3. Run `make -C hardware/rtl/vcpu8 experiment NAME=<name>` from a clean working tree.
 4. Commit `experiment.json` and the `results/<date>-<shortsha>.{json,md}` it wrote. Nothing else from the run belongs in git.
@@ -28,14 +30,16 @@ Never change the ISA in an experiment. Every variant runs the same programs and 
   "variants": [
     { "name": "div-comb", "description": "Combinational divider (the default)." },
     {
-      "name": "div-iterative",
+      "name": "div-iter",
       "description": "One quotient bit per clock.",
-      "defines": { "VCPU8_DIV_ITERATIVE": true },
-      "parameters": {}
+      "defines": {},
+      "parameters": { "DIV_ITER": 1 }
     }
   ]
 }
 ```
+
+This is, apart from the descriptions, [div-impl/experiment.json](div-impl/experiment.json).
 
 | Field                    | Meaning                                                                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,6 +65,6 @@ For each variant, in order:
 
 The full per-variant reports and logs go to `hardware/rtl/vcpu8/build/experiments/<name>/<variant>/` (`verify.log`, `benchmark.{json,md}` with the variant's own synthesis, `benchmark.log`) and `build/variants/<hash>/` (`synth.log`, `synth/summary.{json,md}`).
 
-The comparison goes to `results/<date>-<shortsha>.json` and `.md` beside `experiment.json`. The JSON follows `ExperimentResultSchema` (`schemaVersion` 1, `kind` `vcpu8-experiment`). It records the experiment, the architecture revision, the git commit and dirty flag, the ISA version, the toolchain and tool versions, the verify and benchmark configuration and, per variant, its defines and parameters and hash, the stage it failed at (if any), the verify result, the suite's cycles, instructions and CPI, the DIV-heavy program (the one retiring the most DIV instructions) and its cycles, cycles per program, generic cells and flip-flops, and per FPGA flow the LUTs, flip-flops, Fmax and the suite's cycles / Fmax. The Markdown has the same comparison as tables, with deltas against the baseline variant.
+The comparison goes to `results/<date>-<shortsha>.json` and `.md` beside `experiment.json`. The JSON follows `ExperimentResultSchema` (`schemaVersion` 1, `kind` `vcpu8-experiment`). It records the experiment, the architecture revision, the git commit and dirty flag, the ISA version, the toolchain and tool versions, the verify and benchmark configuration and, per variant, its defines and parameters and hash, the stage it failed at (if any), the verify result, the suite's cycles, instructions and CPI, the DIV-heavy program (the one retiring the most DIV instructions) and its cycles, cycles per program, generic cells and flip-flops, and the generic logic depth (gates on the longest path, `ltp -noff`), and per FPGA flow the LUTs, flip-flops, Fmax and the suite's cycles / Fmax. The Markdown has the same comparison as tables, with deltas against the baseline variant.
 
 `make experiment` exits 0 only when every variant passed every stage.

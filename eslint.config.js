@@ -21,7 +21,14 @@ export default defineConfig(
     },
   },
   {
-    files: ['*.js', '*.ts', 'scripts/**/*.ts', 'apps/cli/**/*.ts', 'apps/web/vite.config.ts'],
+    files: [
+      '*.js',
+      '*.ts',
+      'scripts/**/*.ts',
+      'apps/cli/**/*.ts',
+      'apps/web/vite.config.ts',
+      'packages/rtl-tools/**/*.ts',
+    ],
     languageOptions: { globals: globals.node },
   },
   {

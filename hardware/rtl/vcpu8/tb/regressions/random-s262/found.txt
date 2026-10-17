@@ -1,0 +1,61 @@
+FAIL random/s262: lock-step trace, step 14
+  corpus random · seed 262 · shape fault · max steps 2000
+  from generateProgram(262)
+  instruction: PC 0x29, opcode 0x22 MUL, bytes [22 39] = .byte 0x22; .byte 0x39
+  field         expected → actual
+  status        FAULTED → READY
+  fault         MALFORMED_OPERAND → null
+  regs[3]       0x19 (25) → 0x80 (128)
+  flags         0x04 (4) → 0x07 (7)
+  nextPc        0x29 (41) → 0x2B (43)
+  stopReason    faulted → halted
+  status        FAULTED → HALTED
+  fault         MALFORMED_OPERAND at 0x29 → null
+  instructions  0x0E (14) → 0x10 (16)
+  registers[3]  0x19 (25) → 0x80 (128)
+  pc            0x29 (41) → 0x2B (43)
+  flags         0x04 (4) → 0x07 (7)
+  registers and flags after step 14
+    expected  R0=19 R1=80 R2=44 R3=19 R4=00 R5=BC R6=FE R7=FE  FLAGS=04 (C)  SP=FF SD=0 PC=29
+    actual    R0=19 R1=80 R2=44 R3=80 R4=00 R5=BC R6=FE R7=FE  FLAGS=07 (C N V)  SP=FF SD=0 PC=2B
+  memory near 0x29 (final contents)
+    expected  0x10: 00 19 40 1A 20 62 41 1A 36 35 43 25 36 53 41 22
+    actual    0x10: 00 19 40 1A 20 62 41 1A 36 35 43 25 36 53 41 22
+    expected  0x20: 30 57 40 25 00 10 30 34 20 22 39 01 00 00 00 00
+    actual    0x20: 30 57 40 25 00 10 30 34 20 22 39 01 00 00 00 00
+    expected  0x30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+    actual    0x30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  stack empty on both sides at the end (SP = 0xFF)
+  recent emulator steps (last 15)
+    step    0  pc 0x00  LDI        [11 60 FE]  R0=00 R1=00 R2=00 R3=00 R4=00 R5=00 R6=FE R7=00  FLAGS=00 SP=FF SD=0  next=0x03  READY
+    step    1  pc 0x03  LDI        [11 50 BD]  R0=00 R1=00 R2=00 R3=00 R4=00 R5=BD R6=FE R7=00  FLAGS=00 SP=FF SD=0  next=0x06  READY
+    step    2  pc 0x06  LDI        [11 10 80]  R0=00 R1=80 R2=00 R3=00 R4=00 R5=BD R6=FE R7=00  FLAGS=00 SP=FF SD=0  next=0x09  READY
+    step    3  pc 0x09  LDI        [11 70 FE]  R0=00 R1=80 R2=00 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x0C  READY
+    step    4  pc 0x0C  LDI        [11 20 A2]  R0=00 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x0F  READY
+    step    5  pc 0x0F  LDI        [11 00 19]  R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x12  READY
+    step    6  pc 0x12  JMP        [40 1A]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x1A  READY
+    step    7  pc 0x1A  JC         [43 25]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x1C  READY
+    step    8  pc 0x1C  CMP        [36 53]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x1E  READY
+    step    9  pc 0x1E  JZ         [41 22]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x20  READY
+    step   10  pc 0x20  AND        [30 57]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BC R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x22  READY
+    step   11  pc 0x22  JMP        [40 25]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BC R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x25  READY
+    step   12  pc 0x25  MOV        [10 30]     R0=19 R1=80 R2=A2 R3=19 R4=00 R5=BC R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x27  READY
+    step   13  pc 0x27  SHL        [34 20]     R0=19 R1=80 R2=44 R3=19 R4=00 R5=BC R6=FE R7=FE  FLAGS=04 SP=FF SD=0  next=0x29  READY
+    step   14  pc 0x29  MUL        [22 39]     R0=19 R1=80 R2=44 R3=19 R4=00 R5=BC R6=FE R7=FE  FLAGS=04 SP=FF SD=0  next=0x29  FAULTED  MALFORMED_OPERAND
+  recent RTL steps (last 15)
+    step    0  pc 0x00  LDI        [11 60 FE]  R0=00 R1=00 R2=00 R3=00 R4=00 R5=00 R6=FE R7=00  FLAGS=00 SP=FF SD=0  next=0x03  READY
+    step    1  pc 0x03  LDI        [11 50 BD]  R0=00 R1=00 R2=00 R3=00 R4=00 R5=BD R6=FE R7=00  FLAGS=00 SP=FF SD=0  next=0x06  READY
+    step    2  pc 0x06  LDI        [11 10 80]  R0=00 R1=80 R2=00 R3=00 R4=00 R5=BD R6=FE R7=00  FLAGS=00 SP=FF SD=0  next=0x09  READY
+    step    3  pc 0x09  LDI        [11 70 FE]  R0=00 R1=80 R2=00 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x0C  READY
+    step    4  pc 0x0C  LDI        [11 20 A2]  R0=00 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x0F  READY
+    step    5  pc 0x0F  LDI        [11 00 19]  R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x12  READY
+    step    6  pc 0x12  JMP        [40 1A]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x1A  READY
+    step    7  pc 0x1A  JC         [43 25]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=00 SP=FF SD=0  next=0x1C  READY
+    step    8  pc 0x1C  CMP        [36 53]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x1E  READY
+    step    9  pc 0x1E  JZ         [41 22]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BD R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x20  READY
+    step   10  pc 0x20  AND        [30 57]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BC R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x22  READY
+    step   11  pc 0x22  JMP        [40 25]     R0=19 R1=80 R2=A2 R3=00 R4=00 R5=BC R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x25  READY
+    step   12  pc 0x25  MOV        [10 30]     R0=19 R1=80 R2=A2 R3=19 R4=00 R5=BC R6=FE R7=FE  FLAGS=02 SP=FF SD=0  next=0x27  READY
+    step   13  pc 0x27  SHL        [34 20]     R0=19 R1=80 R2=44 R3=19 R4=00 R5=BC R6=FE R7=FE  FLAGS=04 SP=FF SD=0  next=0x29  READY
+    step   14  pc 0x29  MUL        [22 39]     R0=19 R1=80 R2=44 R3=80 R4=00 R5=BC R6=FE R7=FE  FLAGS=07 SP=FF SD=0  next=0x2B  READY
+  replay: make -C hardware/rtl/vcpu8 replay CASE=build/mutants/field-b-unchecked/failures/random-s262

@@ -1,0 +1,82 @@
+# Mutants for `make verify-mutants`: each block plants one bug in a copy of core/ under
+# build/mutants/<id>/core/, builds its own RTL runner and requires `verify` to report at least
+# one mismatching case. `from` must occur exactly once in `file`, or the run fails: a mutant
+# that no longer applies is an error, never a skip. core/ itself is never modified.
+#
+#   [id]
+#   file: <file in core/>
+#   what: <the bug, in words>
+#   from: <text that occurs exactly once>
+#   to:   <its replacement>
+
+[alu-add-carry]
+file: vcpu8_alu.sv
+what: ADD's carry out is inverted
+from: c = sum[8];
+to:   c = ~sum[8];
+
+[alu-sub-overflow]
+file: vcpu8_alu.sv
+what: SUB's V uses ADD's sign rule
+from: v = (a[7] != b[7]) && (diff[7] != a[7]);
+to:   v = (a[7] == b[7]) && (diff[7] != a[7]);
+
+[alu-shr-carry]
+file: vcpu8_alu.sv
+what: SHR shifts bit 1 into C instead of bit 0
+from: c = a[0];
+to:   c = a[1];
+
+[branch-inverted]
+file: vcpu8_control.sv
+what: every conditional branch takes the opposite decision
+from: : flags[vcpu8_isa_pkg::FLAG_Z]) == cond_bits[0];
+to:   : flags[vcpu8_isa_pkg::FLAG_Z]) != cond_bits[0];
+
+[branch-c-reads-z]
+file: vcpu8_control.sv
+what: JC and JNC test Z instead of C
+from: assign taken = (cond_bits[1] ? flags[vcpu8_isa_pkg::FLAG_C]
+to:   assign taken = (cond_bits[1] ? flags[vcpu8_isa_pkg::FLAG_Z]
+
+[sd-unchecked]
+file: vcpu8_control.sv
+what: PUSH and CALL do not check SD against the stack capacity
+from: is_push && sd == 7'(vcpu8_isa_pkg::STACK_CAPACITY)
+to:   1'b0 && is_push && sd == 7'(vcpu8_isa_pkg::STACK_CAPACITY)
+
+[div-zero-unchecked]
+file: vcpu8_control.sv
+what: DIV by zero does not fault
+from: dec_is_div && rb_data == 8'h00
+to:   1'b0 && dec_is_div && rb_data == 8'h00
+
+[pc-overflow-ignored]
+file: vcpu8_control.sv
+what: a sequential next PC of 0x100 does not raise PC_OVERFLOW
+from: assign pc_overflow_now = state == vcpu8_types_pkg::FSM_WRITEBACK && sequential && seq[8];
+to:   assign pc_overflow_now = 1'b0 && state == vcpu8_types_pkg::FSM_WRITEBACK && sequential && seq[8];
+
+[pop-sp-step]
+file: vcpu8_control.sv
+what: POP and RET move SP up by 2
+from: sp <= sp + 8'd1;
+to:   sp <= sp + 8'd2;
+
+[call-return-address]
+file: vcpu8_core.sv
+what: CALL pushes PC + 1 instead of PC + 2
+from: vcpu8_types_pkg::MEM_WDATA_RET_ADDR: mem_wdata = pc + 8'd2;
+to:   vcpu8_types_pkg::MEM_WDATA_RET_ADDR: mem_wdata = pc + 8'd1;
+
+[store-ind-data]
+file: vcpu8_decoder.sv
+what: STORE [Rp], Rs writes the pointer instead of Rs
+from: mem_wdata_sel = vcpu8_types_pkg::MEM_WDATA_RB;
+to:   mem_wdata_sel = vcpu8_types_pkg::MEM_WDATA_RA;
+
+[field-b-unchecked]
+file: vcpu8_decoder.sv
+what: an RR register byte with field b = 8–15 is not malformed
+from: ISA_FIELDS_AB: rb_malformed = rb[7] | rb[3];
+to:   ISA_FIELDS_AB: rb_malformed = rb[7];

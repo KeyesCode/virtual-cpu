@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { FixtureSchemaV1, type FixtureV1, parseTraceJsonl } from '@vcpu/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  compareEnd,
   compareEndState,
   compareTrace,
+  fixtureEndState,
   formatFailureReport,
   parseRtlState,
   parseRtlTraceJsonl,
@@ -85,6 +87,28 @@ describe('compareEndState', () => {
     expect(mismatches.slice(0, 2)).toMatchObject([
       { field: 'stopReason', expected: 'halted', actual: 'max_steps' },
       { field: 'status', expected: 'HALTED', actual: 'READY' },
+    ]);
+  });
+});
+
+describe('compareEnd', () => {
+  it('compares a run cut off at the step limit like any other end', () => {
+    const { fixture, state } = load('op-add');
+    const end = {
+      ...fixtureEndState(fixture.expected),
+      stopReason: 'max_steps',
+      status: 'READY',
+    } as const;
+    const atLimit = { ...state, status: 'READY', stopReason: 'max_steps' } as const;
+    expect(compareEnd(end, atLimit)).toEqual([]);
+    expect(compareEnd(end, { ...atLimit, pc: state.pc ^ 1 })).toMatchObject([{ field: 'pc' }]);
+    expect(compareEnd(end, state).map((m) => m.field)).toEqual(['stopReason', 'status']);
+  });
+
+  it('names an SD past the stack capacity, which only the RTL format can carry', () => {
+    const { fixture, state } = load('op-add');
+    expect(compareEndState(fixture.expected, { ...state, sd: 65 })).toMatchObject([
+      { field: 'sd', expected: fixture.expected.sd, actual: 65 },
     ]);
   });
 });
@@ -175,6 +199,46 @@ describe('formatFailureReport', () => {
     );
     expect(report).toContain(`memory near 0x${hex(write.address)}`);
     expect(report).toContain('recent RTL steps');
+  });
+
+  it('shows the disassembly, both histories, the stack, the details and the replay command', () => {
+    const { fixture, trace, state } = load('op-call-ret');
+    const index = trace.findIndex((step) => step.ir[0] === 0x45);
+    const actual = trace.map((s, i) => (i === index ? { ...s, sp: s.sp - 1 } : s));
+    const report = formatFailureReport('random/s7', compareTrace(trace, actual), {
+      expectedTrace: trace,
+      actualTrace: actual,
+      expected: fixture.expected,
+      actual: state,
+      details: ['corpus random · seed 7'],
+      replay: 'make -C hardware/rtl/vcpu8 replay CASE=build/failures/random-s7',
+    });
+    const lines = report.split('\n');
+    expect(lines[1]).toBe('  corpus random · seed 7');
+    expect(report).toMatch(/opcode 0x45 CALL, bytes \[45 [0-9A-F]{2}\] = CALL 0x[0-9A-F]{2}/);
+    expect(report).toContain(`registers and flags after step ${String(index)}`);
+    expect(report).toMatch(/FLAGS=[0-9A-F]{2} \([ZCNV -]+\)\s+SP=FD SD=1/);
+    expect(report).toContain('stack from 0x');
+    expect(report).toContain(`recent emulator steps (last ${String(index + 1)})`);
+    expect(report).toContain(`recent RTL steps (last ${String(index + 1)})`);
+    expect(lines.at(-2)).toBe(
+      '  replay: make -C hardware/rtl/vcpu8 replay CASE=build/failures/random-s7',
+    );
+  });
+
+  it('lists at most 16 steps of history from each side', () => {
+    const { fixture, trace, state } = load('example-14-fibonacci');
+    const last = trace.length - 1;
+    const actual = trace.map((s, i) => (i === last ? { ...s, flags: s.flags ^ 1 } : s));
+    const report = formatFailureReport('fib', compareTrace(trace, actual), {
+      expectedTrace: trace,
+      actualTrace: actual,
+      expected: fixture.expected,
+      actual: state,
+    });
+    expect(trace.length).toBeGreaterThan(16);
+    expect(report).toContain('recent emulator steps (last 16)');
+    expect(report.match(/^ {4}step /gm)).toHaveLength(32);
   });
 });
 

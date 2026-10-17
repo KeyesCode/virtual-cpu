@@ -1,0 +1,12 @@
+{
+  "format": "vcpu8-verify-case/1",
+  "name": "regressions/random-s6",
+  "corpus": "regressions",
+  "seed": 6,
+  "shape": "memory",
+  "maxSteps": 2000,
+  "origin": "generateProgram(6)",
+  "firstMismatch": "step 36 flags: expected 4, actual 0",
+  "promotedFrom": "random/s6",
+  "foundOn": "build/mutants/alu-shr-carry/sim/vcpu8_sim"
+}

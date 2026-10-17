@@ -7,6 +7,7 @@ import {
   resetFixtureState,
 } from '@vcpu/shared';
 import { createCpu } from './cpu.js';
+import type { CpuState } from './state.js';
 
 /** What running a fixture's initial state produces: its expected final state and step trace. */
 export interface FixtureExecution {
@@ -30,26 +31,28 @@ function sameRegisters(state: FixtureInitialState, reset: FixtureInitialState): 
   );
 }
 
+/** A program run step by step from reset: its step trace and the CPU's state when it stopped. */
+export interface TracedRun {
+  /** One entry per `step()`, a faulting step included. */
+  readonly trace: readonly FixtureTraceStep[];
+  /** HALTED, FAULTED, or READY when the step limit came first. */
+  readonly state: CpuState;
+  /** Retired instructions. */
+  readonly instructions: number;
+}
+
 /**
- * Runs a fixture on a fresh CPU, one `step()` at a time, for at most `maxInstructions` steps.
- * The CPU can only start from reset (as an RTL core does), so the initial registers must be the
- * reset values; only the memory image varies. Throws `FixtureExecutionError` when they are not,
- * or when the program is still running at the limit.
+ * Loads `memory` into a fresh CPU (reset registers) and runs it one `step()` at a time until it
+ * halts or faults, or for at most `maxSteps` steps, recording each step as a fixture trace line.
+ * Never throws for a program that is still running at the limit: the caller decides what that
+ * means. `executeFixture` and the RTL differential verification (`@vcpu/rtl-tools`) share it.
  */
-export function executeFixture(
-  initial: FixtureInitialState,
-  maxInstructions: number,
-): FixtureExecution {
-  if (!sameRegisters(initial, resetFixtureState(initial.memory))) {
-    throw new FixtureExecutionError(
-      'The initial registers must be the reset state (R0–R7 = 0, PC = 0x00, SP = 0xFF, SD = 0, FLAGS = 0)',
-    );
-  }
+export function traceRun(memory: ArrayLike<number>, maxSteps: number): TracedRun {
   const cpu = createCpu({ traceCapacity: 0 });
-  cpu.loadProgram(initial.memory);
+  cpu.loadProgram(Array.from(memory));
 
   const trace: FixtureTraceStep[] = [];
-  for (let step = 0; step < maxInstructions; step += 1) {
+  for (let step = 0; step < maxSteps; step += 1) {
     const { status, entry } = cpu.step();
     if (entry === null) break;
     const state = cpu.getState();
@@ -68,8 +71,25 @@ export function executeFixture(
     });
     if (status === CpuStatus.HALTED || status === CpuStatus.FAULTED) break;
   }
+  return { trace, state: cpu.getState(), instructions: cpu.getMetrics().instructions };
+}
 
-  const state = cpu.getState();
+/**
+ * Runs a fixture on a fresh CPU, one `step()` at a time, for at most `maxInstructions` steps.
+ * The CPU can only start from reset (as an RTL core does), so the initial registers must be the
+ * reset values; only the memory image varies. Throws `FixtureExecutionError` when they are not,
+ * or when the program is still running at the limit.
+ */
+export function executeFixture(
+  initial: FixtureInitialState,
+  maxInstructions: number,
+): FixtureExecution {
+  if (!sameRegisters(initial, resetFixtureState(initial.memory))) {
+    throw new FixtureExecutionError(
+      'The initial registers must be the reset state (R0–R7 = 0, PC = 0x00, SP = 0xFF, SD = 0, FLAGS = 0)',
+    );
+  }
+  const { trace, state, instructions } = traceRun(initial.memory, maxInstructions);
   const final = {
     registers: [...state.registers],
     pc: state.pc,
@@ -77,7 +97,7 @@ export function executeFixture(
     sd: state.sd,
     flags: state.flags,
     memory: [...state.memory],
-    instructions: cpu.getMetrics().instructions,
+    instructions,
   };
   if (state.status === CpuStatus.HALTED) {
     return { expected: { status: CpuStatus.HALTED, fault: null, ...final }, trace };

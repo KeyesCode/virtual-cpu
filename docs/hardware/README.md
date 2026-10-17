@@ -16,7 +16,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
 | [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
 | [formal-verification.md](formal-verification.md)         | written | SymbiYosys properties: reset, FSM, writes, halt, retirement, memory access, ALU; their scope and limits         |
-| `verification-strategy.md`                               | planned | Unit tests, fixtures, differential and random testing, formal properties                                        |
+| [verification-strategy.md](verification-strategy.md)     | written | Verification layers; live differential verification, random programs, coverage, mutants, failure replay         |
 | [simulation-guide.md](simulation-guide.md)               | written | Running programs on the RTL, waveforms and GTKWave, a cycle-by-cycle walkthrough of the demo program            |
 | [synthesis-guide.md](synthesis-guide.md)                 | written | Yosys and nextpnr flows and their reports                                                                       |
 | `performance-analysis.md`                                | planned | RTL cycle counts and CPI, compared with the instructional timing model                                          |
@@ -45,12 +45,14 @@ hardware/
     ├── tb/                    testbenches and probes (simulation only)
     │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
     │   ├── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
-    │   ├── programs/          wave-demo.asm, the demonstration program for waveforms
+    │   ├── programs/          wave-demo.asm (the waveform demo) and the directed programs for `make verify`
+    │   ├── regressions/       promoted failing cases, replayed by every `make verify`
     │   └── wave/              vcpu8.gtkw (the GTKWave view) and its translate filter files
     ├── synth/                 Yosys scripts (generic, iCE40, ECP5) and the reviewed warning allowlist
-    ├── scripts/               helper scripts for the make targets
+    ├── scripts/               helper scripts for the make targets; mutants.txt for `make verify-mutants`
     └── build/                 all outputs (git-ignored)
-packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble, the fixture check
+packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble, the fixture check,
+                               the differential verification (verify), the random program generator, the mutant runner
                                and the synthesis summary
 research/cpu/                  small committed research summaries (synth/baseline.*); raw logs stay in build/
 ```
@@ -112,31 +114,36 @@ The `apt-get` line installs only build prerequisites. The hardware tools themsel
 
 Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `make -C hardware/rtl/vcpu8 help` prints the current list, including the targets that later fragments add.
 
-| Target              | Does                                                                                                                                                                                                                      |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`              | Lists the targets and shows which toolchain is in use                                                                                                                                                                     |
-| `tools-check`       | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                 |
-| `lint`              | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                               |
-| `gen-isa`           | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                 |
-| `check-isa`         | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                 |
-| `test`              | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                |
-| `sim`               | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                        |
-| `simulate`          | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                      |
-| `fixtures`          | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                         |
-| `fixtures-tamper`   | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step) |
-| `sim-trace`         | Builds the tracing runner `build/sim-trace/vcpu8_sim` (Verilator `--trace`), used only by `wave`                                                                                                                          |
-| `wave`              | `PROGRAM=…` (default the demo), `WAVE_FORMAT=fst\|vcd`, `MAX_CYCLES=N`: runs the program on the tracing runner and writes `build/waves/<name>.fst` ([simulation-guide.md](simulation-guide.md#generating-waveforms))      |
-| `wave-check`        | Checks the demo's waveform: every required signal and every signal of `tb/wave/vcpu8.gtkw` present, filter files current, `retire` count equal to the emulator's                                                          |
-| `formal`            | Runs the SymbiYosys tasks `alu_prove`, `core_prove` and `core_bmc` and prints PASS or FAIL with the proof kind and depth of each ([formal-verification.md](formal-verification.md))                                       |
-| `formal-selftest`   | Proves the formal setup is not vacuous: a deliberately false property must FAIL with a counterexample trace                                                                                                               |
-| `formal-mutant`     | Proves `core_prove` catches a broken write enable: a copy of the RTL in `build/` with `rf_we` outside WRITEBACK must fail `we_rf`                                                                                         |
-| `synth`             | Yosys and nextpnr synthesis reports in `build/synth/`; fails on a latch, loop, multiple driver, undriven net or unreviewed warning ([synthesis-guide.md](synthesis-guide.md))                                             |
-| `synth-baseline`    | `synth`, then rewrites the committed `research/cpu/synth/baseline.{json,md}`                                                                                                                                              |
-| `synth-compare`     | `synth`, then prints the deltas against the committed baseline                                                                                                                                                            |
-| `synth-latch-check` | Proves the synthesis gate fails on scratch copies of `core/` with a latch added                                                                                                                                           |
-| `clean`             | Removes `build/`                                                                                                                                                                                                          |
+| Target              | Does                                                                                                                                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `help`              | Lists the targets and shows which toolchain is in use                                                                                                                                                                                             |
+| `tools-check`       | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                                                                         |
+| `lint`              | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                                                                       |
+| `gen-isa`           | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                                                                         |
+| `check-isa`         | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                                                                         |
+| `test`              | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                                                                        |
+| `sim`               | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                                                                |
+| `simulate`          | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                                              |
+| `fixtures`          | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                                                 |
+| `fixtures-tamper`   | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step)                         |
+| `sim-trace`         | Builds the tracing runner `build/sim-trace/vcpu8_sim` (Verilator `--trace`), used only by `wave`                                                                                                                                                  |
+| `wave`              | `PROGRAM=…` (default the demo), `WAVE_FORMAT=fst\|vcd`, `MAX_CYCLES=N`: runs the program on the tracing runner and writes `build/waves/<name>.fst` ([simulation-guide.md](simulation-guide.md#generating-waveforms))                              |
+| `wave-check`        | Checks the demo's waveform: every required signal and every signal of `tb/wave/vcpu8.gtkw` present, filter files current, `retire` count equal to the emulator's                                                                                  |
+| `formal`            | Runs the SymbiYosys tasks `alu_prove`, `core_prove` and `core_bmc` and prints PASS or FAIL with the proof kind and depth of each ([formal-verification.md](formal-verification.md))                                                               |
+| `formal-selftest`   | Proves the formal setup is not vacuous: a deliberately false property must FAIL with a counterexample trace                                                                                                                                       |
+| `formal-mutant`     | Proves `core_prove` catches a broken write enable: a copy of the RTL in `build/` with `rf_we` outside WRITEBACK must fail `we_rf`                                                                                                                 |
+| `synth`             | Yosys and nextpnr synthesis reports in `build/synth/`; fails on a latch, loop, multiple driver, undriven net or unreviewed warning ([synthesis-guide.md](synthesis-guide.md))                                                                     |
+| `synth-baseline`    | `synth`, then rewrites the committed `research/cpu/synth/baseline.{json,md}`                                                                                                                                                                      |
+| `synth-compare`     | `synth`, then prints the deltas against the committed baseline                                                                                                                                                                                    |
+| `synth-latch-check` | Proves the synthesis gate fails on scratch copies of `core/` with a latch added                                                                                                                                                                   |
+| `verify`            | Runs fixtures, examples, `tb/programs`, `tb/regressions` and `COUNT` random programs from `SEED` (default 1000 from 1) on the TypeScript CPU and the RTL, compared after every instruction ([verification-strategy.md](verification-strategy.md)) |
+| `verify-long`       | `verify` with `LONG_COUNT` (100,000) random programs                                                                                                                                                                                              |
+| `replay`            | `CASE=build/failures/<name>`: reruns a saved failing case with the runner it failed on and checks the report is the same                                                                                                                          |
+| `promote`           | `CASE=build/failures/<name>`: copies a saved failing case into `tb/regressions/`                                                                                                                                                                  |
+| `verify-mutants`    | Builds every mutant in `scripts/mutants.txt` into `build/mutants/<id>/` and fails unless `verify` catches each one (`MUTANT=<id>` for one)                                                                                                        |
+| `clean`             | Removes `build/`                                                                                                                                                                                                                                  |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:wave [PROGRAM=…]`, `pnpm hardware:formal` and `pnpm hardware:synth`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:wave [PROGRAM=…]`, `pnpm hardware:formal`, `pnpm hardware:synth`, `pnpm hardware:verify` and `pnpm hardware:verify:long`.
 
 ### Adding targets and unit tests
 

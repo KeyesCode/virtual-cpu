@@ -163,6 +163,47 @@ Write a `## description` comment after a target so `make help` lists it. New `co
 
 `pnpm check` (Project 1) must keep passing on a machine without the hardware toolchain. Tests that need Verilator or Yosys therefore run only from `make` targets. The vitest tests in `@vcpu/rtl-tools` are pure TypeScript. One of them checks byte for byte that the committed `vcpu8_isa_pkg.sv` matches the generator.
 
+## CI
+
+Two GitHub Actions workflows run on every push to `master`, on every pull request and on demand (`workflow_dispatch`). A newer push to a pull request cancels its older runs.
+
+- **`ci`** (`.github/workflows/ci.yml`): Project 1 on `ubuntu-24.04`. It installs pnpm from the `packageManager` field and Node from `.nvmrc`, then runs `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` and `pnpm --filter @vcpu/web build`. It needs no hardware toolchain.
+- **`hardware`** (`.github/workflows/hardware.yml`): the RTL gates on `ubuntu-24.04`, with a 60-minute timeout. It follows the [Ubuntu setup](#ubuntu-2204--2404-x86-64-or-arm64) above, so CI exercises those instructions: `pnpm install`, then `pnpm hardware:setup` installs the OSS CAD Suite pinned in `hardware/toolchain.env`, the same release a developer gets. The extracted suite in `~/.cache/vcpu8` is cached under a key made of the toolchain version, the runner OS and architecture, and a hash of `toolchain.env`. The cache is saved right after the install, so a later failing gate still keeps it. Each gate is then its own step, so a red step names the gate that failed:
+
+  | Step             | Runs                                                                                       |
+  | ---------------- | ------------------------------------------------------------------------------------------ |
+  | `tools-check`    | `make tools-check`: tool versions, `build/tool-versions.json`                              |
+  | `check-isa`      | `make check-isa`                                                                           |
+  | `lint`           | `make lint`                                                                                |
+  | `test`           | `make test`: every unit test, then the 98 fixtures                                         |
+  | `verify`         | `make verify`: fixtures, examples, `tb/programs`, `tb/regressions` and random seeds 1–1000 |
+  | `verify-mutants` | `make verify-mutants`: every mutant in `scripts/mutants.txt` must be caught                |
+  | `synth`          | `make synth`                                                                               |
+  | `synth-compare`  | `make -o synth synth-compare`: the deltas of that synthesis against the committed baseline |
+  | `formal`         | `make formal`                                                                              |
+  | `wave-check`     | `make wave-check`                                                                          |
+
+Every `run` step uses `bash --noprofile --norc -euo pipefail`, and no step has `continue-on-error`, so any failing command fails the job. The scripts behind the gates do not swallow errors either. The two places that ignore an exit status say why in a comment: `scripts/formal.sh` takes each task's verdict from the `DONE` line of the sby log, and treats a log without one as `ERROR`; `hardware/scripts/setup-toolchain.sh` ignores `xattr` on macOS, which exits non-zero when nothing is quarantined.
+
+### Artifacts
+
+The `hardware` job uploads its outputs on every run, whether it passes or fails. Download them from the run's summary page on GitHub (**Actions** → the run → **Artifacts**):
+
+- **`hardware-reports`**: `build/reports/`, including `fixtures.json`, `verify.json`, `verify.md` and `mutants.json`. The upload fails if this directory is missing.
+- **`hardware-build`**: `build/synth/` (with `summary.json` and `summary.md`), the logs and any counterexample traces under `build/formal/`, the failing cases in `build/failures/`, `build/tool-versions.json` and the demo waveform `build/waves/wave-demo.fst`. Paths a run did not reach are skipped with a warning.
+
+A failing verify case can be replayed locally: download `hardware-build`, copy its `failures/<name>/` into `hardware/rtl/vcpu8/build/failures/`, and run `make replay CASE=build/failures/<name>` ([verification-strategy.md](verification-strategy.md)).
+
+### verify-long
+
+`verify-long` (100,000 random programs by default) is too slow for every pull request, so it runs only when started by hand. Go to **Actions** → **hardware** → **Run workflow**, choose the branch, and set **count** (`LONG_COUNT`). From a terminal:
+
+```sh
+gh workflow run hardware.yml --ref <branch> -f count=100000
+```
+
+This starts the `verify-long` job, with a 6-hour timeout, alongside the normal gates. It uploads `build/reports/verify-long/` and `build/failures-long/` as the `hardware-verify-long` artifact.
+
 ## Using the ISA package in RTL
 
 Opcode, fault, status and reset numbers come only from `vcpu8_isa_pkg.sv`, so RTL never contains a hand-typed opcode byte. Yosys 0.70 imposes a few rules that the [audit](isa-compatibility.md#tool-constraints-found-during-setup) records:

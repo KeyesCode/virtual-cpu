@@ -1,0 +1,189 @@
+# Project 2: the RTL gates on the pinned OSS CAD Suite (hardware/toolchain.env), installed by the
+# same `pnpm hardware:setup` a developer runs. Each make target is its own step, so a red step names
+# its gate. docs/hardware/README.md#ci describes the jobs and the artifacts.
+name: hardware
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Random programs for the verify-long job (LONG_COUNT)
+        required: true
+        default: '100000'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Every step fails on any error, unset variable or failing pipeline stage.
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+env:
+  HW: hardware/rtl/vcpu8
+
+jobs:
+  rtl:
+    name: RTL gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      # The verification tooling (@vcpu/rtl-tools) is TypeScript.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read the toolchain version
+        id: toolchain
+        run: |
+          version="$(sed -n 's/^OSS_CAD_SUITE_VERSION=//p' hardware/toolchain.env)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      # The extracted suite only: the setup script skips an install it finds, so the tarball in
+      # downloads/ would double the cache for nothing.
+      - name: Restore the toolchain cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/vcpu8
+            !~/.cache/vcpu8/downloads
+          key: oss-cad-suite-${{ steps.toolchain.outputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('hardware/toolchain.env') }}
+
+      - name: Install the pinned toolchain
+        run: pnpm hardware:setup
+
+      # Saved straight after the install, so a failing gate later in the job still keeps the cache.
+      - name: Save the toolchain cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/vcpu8
+            !~/.cache/vcpu8/downloads
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: tools-check
+        run: make -C "${HW}" tools-check
+
+      - name: check-isa
+        run: make -C "${HW}" check-isa
+
+      - name: lint
+        run: make -C "${HW}" lint
+
+      - name: test (unit tests and the 98 fixtures)
+        run: make -C "${HW}" test
+
+      - name: verify (fixtures, examples, directed and fixed-seed random programs)
+        run: make -C "${HW}" verify
+
+      - name: verify-mutants
+        run: make -C "${HW}" verify-mutants
+
+      - name: synth
+        run: make -C "${HW}" synth
+
+      # -o synth: compare the reports the synth step just wrote instead of synthesizing again.
+      - name: synth-compare
+        run: make -C "${HW}" -o synth synth-compare
+
+      - name: formal
+        run: make -C "${HW}" formal
+
+      - name: wave-check
+        run: make -C "${HW}" wave-check
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardware-reports
+          path: ${{ env.HW }}/build/reports/
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Upload synthesis, formal, failures, tool versions and the waveform
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardware-build
+          path: |
+            ${{ env.HW }}/build/synth/
+            ${{ env.HW }}/build/formal/**/*.log
+            ${{ env.HW }}/build/formal/**/*.vcd
+            ${{ env.HW }}/build/failures/
+            ${{ env.HW }}/build/tool-versions.json
+            ${{ env.HW }}/build/waves/wave-demo.fst
+          if-no-files-found: warn
+          overwrite: true
+
+  verify-long:
+    name: verify-long
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      LONG_COUNT: ${{ inputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read the toolchain version
+        id: toolchain
+        run: |
+          version="$(sed -n 's/^OSS_CAD_SUITE_VERSION=//p' hardware/toolchain.env)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Restore the toolchain cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/vcpu8
+            !~/.cache/vcpu8/downloads
+          key: oss-cad-suite-${{ steps.toolchain.outputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('hardware/toolchain.env') }}
+
+      - name: Install the pinned toolchain
+        run: pnpm hardware:setup
+
+      - name: verify-long
+        run: |
+          [[ "${LONG_COUNT}" =~ ^[1-9][0-9]*$ ]] || { echo "count must be a positive integer, not '${LONG_COUNT}'" >&2; exit 2; }
+          make -C "${HW}" verify-long LONG_COUNT="${LONG_COUNT}"
+
+      - name: Upload the verify-long reports and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hardware-verify-long
+          path: |
+            ${{ env.HW }}/build/reports/verify-long/
+            ${{ env.HW }}/build/failures-long/
+          if-no-files-found: error
+          overwrite: true

@@ -40,6 +40,8 @@ for sby_file in "$@"; do
   esac
   start="$(date +%s)"
   # sby resolves the [files] paths from the working directory, so run it beside the .sby file.
+  # Its exit status is not the verdict: the DONE line of its log is, and a run that wrote none
+  # (sby missing, crashed, killed) reads as ERROR below and fails the script.
   (cd "$(dirname "${sby_file}")" && sby -f -d "${out}/${task}" "$(basename "${sby_file}")") \
     > "${out}/${task}.log" 2>&1 || true
   secs="$(( $(date +%s) - start ))"

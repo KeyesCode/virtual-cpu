@@ -232,4 +232,33 @@ module vcpu8_core (
   assign dbg_ir_rb  = ir_rb;
   assign dbg_ir_tb  = ir_tb;
   assign dbg_ir_len = ir_len;
+
+`ifdef FORMAL
+  // The formal properties (formal/vcpu8_core_props.sv), attached here because the pinned Yosys
+  // has no `bind`. Only `make formal` defines FORMAL; lint, simulation and synthesis skip this.
+  vcpu8_core_props u_props (
+    .clk          (clk),
+    .rst          (rst),
+    .state        (state),
+    .rf_we        (rf_we),
+    .mem_we       (mem_we),
+    .flags_mask   (flags_mask),
+    .bus_addr_sel (bus_addr_sel),
+    .mem_addr     (mem_addr),
+    .pc           (pc),
+    .sp           (sp),
+    .sd           (sd),
+    .ir_len       (ir_len),
+    .dec_len      (dec_len),
+    .dec_valid    (dec_valid),
+    .dec_stack_op (dec_stack_op),
+    .flags        (flags),
+    .dbg_regs     (dbg_regs),
+    .status       (status),
+    .fault_code   (fault_code),
+    .fault_pc     (fault_pc),
+    .retire       (retire),
+    .instret      (instret)
+  );
+`endif
 endmodule

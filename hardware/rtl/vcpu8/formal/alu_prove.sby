@@ -1,0 +1,23 @@
+# alu_prove: the ALU properties (vcpu8_alu_props.sv) for every input. The ALU is combinational,
+# so the depth-1 proof covers every input combination and is complete. proc -norom keeps case
+# tables as logic, as in core_prove.sby.
+[options]
+mode prove
+depth 1
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal vcpu8_isa_pkg.sv vcpu8_types_pkg.sv
+read -formal vcpu8_alu.sv
+read -formal vcpu8_alu_props.sv
+hierarchy -top vcpu8_alu_props
+proc -norom
+prep -top vcpu8_alu_props
+
+[files]
+../core/vcpu8_isa_pkg.sv
+../core/vcpu8_types_pkg.sv
+../core/vcpu8_alu.sv
+vcpu8_alu_props.sv

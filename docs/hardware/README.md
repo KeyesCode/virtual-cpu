@@ -15,6 +15,7 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [alu.md](alu.md)                                         | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification                                       |
 | [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
 | [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
+| [formal-verification.md](formal-verification.md)         | written | SymbiYosys properties: reset, FSM, writes, halt, retirement, memory access, ALU; their scope and limits         |
 | `verification-strategy.md`                               | planned | Unit tests, fixtures, differential and random testing, formal properties                                        |
 | [simulation-guide.md](simulation-guide.md)               | written | Running programs on the RTL, waveforms and GTKWave, a cycle-by-cycle walkthrough of the demo program            |
 | `synthesis-guide.md`                                     | planned | Yosys and nextpnr flows and their reports                                                                       |
@@ -39,6 +40,7 @@ hardware/
     │   ├── vcpu8_control.sv   the multicycle FSM: PC, SP, SD, IR, faults, retirement
     │   ├── vcpu8_core.sv      control, decoder, registers, FLAGS and ALU, and the datapath muxes
     │   └── vcpu8_top.sv       the core plus vcpu8_memory: the whole CPU
+    ├── formal/                SymbiYosys tasks (*.sby), property files and the formal self-test
     ├── tb/                    testbenches and probes (simulation only)
     │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
     │   ├── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
@@ -121,9 +123,12 @@ Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `m
 | `sim-trace`       | Builds the tracing runner `build/sim-trace/vcpu8_sim` (Verilator `--trace`), used only by `wave`                                                                                                                          |
 | `wave`            | `PROGRAM=…` (default the demo), `WAVE_FORMAT=fst\|vcd`, `MAX_CYCLES=N`: runs the program on the tracing runner and writes `build/waves/<name>.fst` ([simulation-guide.md](simulation-guide.md#generating-waveforms))      |
 | `wave-check`      | Checks the demo's waveform: every required signal and every signal of `tb/wave/vcpu8.gtkw` present, filter files current, `retire` count equal to the emulator's                                                          |
+| `formal`          | Runs the SymbiYosys tasks `alu_prove`, `core_prove` and `core_bmc` and prints PASS or FAIL with the proof kind and depth of each ([formal-verification.md](formal-verification.md))                                       |
+| `formal-selftest` | Proves the formal setup is not vacuous: a deliberately false property must FAIL with a counterexample trace                                                                                                               |
+| `formal-mutant`   | Proves `core_prove` catches a broken write enable: a copy of the RTL in `build/` with `rf_we` outside WRITEBACK must fail `we_rf`                                                                                         |
 | `clean`           | Removes `build/`                                                                                                                                                                                                          |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…` and `pnpm hardware:wave [PROGRAM=…]`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:wave [PROGRAM=…]` and `pnpm hardware:formal`.
 
 ### Adding targets and unit tests
 

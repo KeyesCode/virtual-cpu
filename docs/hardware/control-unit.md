@@ -114,6 +114,8 @@ The testbench prints the first mismatches with the opcode's name and exits non-z
 tb_vcpu8_decoder: 256 opcode records (30 valid), 65536 register-byte records, 30 directed rows, 0 mismatches
 ```
 
+`make -C hardware/rtl/vcpu8 test-decoder-mutant` shows that the testbench has teeth. It copies the decoder into `build/` with PUSH's `stack_op` changed to `STACK_NONE`, and passes only if the testbench then fails with a mismatch that names PUSH's `stack_op`. The source in `core/` is never modified.
+
 To regenerate the vectors by hand, run `make -C hardware/rtl/vcpu8 gen-decoder-vectors`, or `pnpm --filter @vcpu/rtl-tools gen:decoder-vectors --out-dir <dir>`.
 
 ## Control FSM

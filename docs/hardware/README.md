@@ -13,8 +13,8 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | `datapath.md`                                | planned | Registers, multiplexers and how an instruction moves through them                 |
 | `control-unit.md`                            | planned | The multicycle FSM, fault detection and priority                                  |
 | [alu.md](alu.md)                             | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification         |
-| `register-file.md`                           | planned | Read ports, write port and read-during-write behaviour                            |
-| `memory-interface.md`                        | planned | The 256 × 8 synchronous RAM, timing, program loading                              |
+| [register-file.md](register-file.md)         | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset              |
+| [memory-interface.md](memory-interface.md)   | written | The 256 × 8 synchronous RAM: timing, read-first, loading, debug and FPGA memory   |
 | `verification-strategy.md`                   | planned | Unit tests, fixtures, differential and random testing, formal properties          |
 | `simulation-guide.md`                        | planned | Running simulations, waveforms and GTKWave                                        |
 | `synthesis-guide.md`                         | planned | Yosys and nextpnr flows and their reports                                         |
@@ -36,6 +36,7 @@ hardware/
     │   ├── vcpu8_isa_pkg.sv   GENERATED from @vcpu/shared, committed, drift-checked
     │   └── vcpu8_types_pkg.sv microarchitecture types (alu_op_t), hand-written
     ├── tb/                    testbenches and probes (simulation only)
+    │   └── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
     ├── scripts/               helper scripts for the make targets
     └── build/                 all outputs (git-ignored)
 packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator and, later, the RTL runners

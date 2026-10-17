@@ -183,8 +183,8 @@ function tamperFixtures(args: readonly string[]): number {
   return 0;
 }
 
-/** `--flag value` pairs and bare flags, or a usage error. */
-function parseFlags(
+/** `--flag value` pairs and bare flags (verify, mutants), or a usage error. */
+function parseOptionFlags(
   command: string,
   args: readonly string[],
   valued: readonly string[],
@@ -260,7 +260,7 @@ const VERIFY_VALUED = [
 const VERIFY_BARE = ['--all', ...CORPORA.map((corpus) => `--${corpus}`)];
 
 async function verify(args: readonly string[]): Promise<number> {
-  const flags = parseFlags('verify', args, VERIFY_VALUED, VERIFY_BARE);
+  const flags = parseOptionFlags('verify', args, VERIFY_VALUED, VERIFY_BARE);
   if (flags === undefined) return 2;
   const write = (text: string) => process.stdout.write(text);
   const replay = flags.get('--replay');
@@ -281,7 +281,7 @@ async function verify(args: readonly string[]): Promise<number> {
 }
 
 async function mutants(args: readonly string[]): Promise<number> {
-  const flags = parseFlags(
+  const flags = parseOptionFlags(
     'mutants',
     args,
     ['--verilator', '--list', '--only', '--seed', '--count', '--jobs', '--out', '--report'],

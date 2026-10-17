@@ -1,9 +1,14 @@
 // Simulation wrapper for the RTL runner (vcpu8_sim.cpp): vcpu8_top plus two DPI functions that
 // reach the RAM array hierarchically, so the runner can load an image before it releases reset
 // and dump the memory at the end. Simulation only; nothing here is synthesized.
+//
+// `cycle` counts the rising edges since reset was released, exactly as the runner counts cycles:
+// it reads N during the clock cycle that follows edge N. Waveforms show it so that a cycle number
+// in the runner's trace (its `cycle` field) can be found on the time axis.
 module vcpu8_sim_top (
   input  logic        clk,
   input  logic        rst,
+  output logic [31:0] cycle,
 
   output logic [2:0]  status,
   output logic [2:0]  fault_code,
@@ -30,6 +35,11 @@ module vcpu8_sim_top (
   output logic [7:0]  mem_rdata
 );
   vcpu8_top u_top (.*);
+
+  always_ff @(posedge clk) begin
+    if (rst) cycle <= 32'd0;
+    else     cycle <= cycle + 32'd1;
+  end
 
   export "DPI-C" function vcpu8_mem_write;
   export "DPI-C" function vcpu8_mem_read;

@@ -27,7 +27,7 @@ describe('corpora', () => {
     for (const pending of programs) {
       const c = pending.load();
       expect(c.source).toMatch(/^; \S+\.asm — /);
-      expect(c.source).toMatch(/^; Targets: /m);
+      expect(c.source).toMatch(/^; (Targets|Purpose): /m);
       expect(c.source).toMatch(/^; Expected: /m);
       expect(runReference(c.image, c.maxSteps).end.stopReason, c.name).not.toBe('max_steps');
     }

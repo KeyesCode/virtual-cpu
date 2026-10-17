@@ -15,8 +15,9 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 | [alu.md](alu.md)                                         | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification                                       |
 | [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
 | [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
+| [formal-verification.md](formal-verification.md)         | written | SymbiYosys properties: reset, FSM, writes, halt, retirement, memory access, ALU; their scope and limits         |
 | [verification-strategy.md](verification-strategy.md)     | written | Verification layers; live differential verification, random programs, coverage, mutants, failure replay         |
-| `simulation-guide.md`                                    | planned | Running simulations, waveforms and GTKWave                                                                      |
+| [simulation-guide.md](simulation-guide.md)               | written | Running programs on the RTL, waveforms and GTKWave, a cycle-by-cycle walkthrough of the demo program            |
 | `synthesis-guide.md`                                     | planned | Yosys and nextpnr flows and their reports                                                                       |
 | `performance-analysis.md`                                | planned | RTL cycle counts and CPI, compared with the instructional timing model                                          |
 | `fpga-readiness.md`                                      | planned | What remains before the design runs on an FPGA                                                                  |
@@ -39,11 +40,13 @@ hardware/
     │   ├── vcpu8_control.sv   the multicycle FSM: PC, SP, SD, IR, faults, retirement
     │   ├── vcpu8_core.sv      control, decoder, registers, FLAGS and ALU, and the datapath muxes
     │   └── vcpu8_top.sv       the core plus vcpu8_memory: the whole CPU
+    ├── formal/                SymbiYosys tasks (*.sby), property files and the formal self-test
     ├── tb/                    testbenches and probes (simulation only)
     │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
     │   ├── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
-    │   ├── programs/          directed programs for `make verify` (nested calls, overflow, faults, full stack)
-    │   └── regressions/       promoted failing cases, replayed by every `make verify`
+    │   ├── programs/          wave-demo.asm (the waveform demo) and the directed programs for `make verify`
+    │   ├── regressions/       promoted failing cases, replayed by every `make verify`
+    │   └── wave/              vcpu8.gtkw (the GTKWave view) and its translate filter files
     ├── scripts/               helper scripts for the make targets; mutants.txt for `make verify-mutants`
     └── build/                 all outputs (git-ignored)
 packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble, the fixture check,
@@ -119,6 +122,12 @@ Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `m
 | `simulate`        | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl))                                              |
 | `fixtures`        | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                                                                 |
 | `fixtures-tamper` | Proves the fixture check fails with a precise report: a copy of `op-add` with expected R0 changed and a copy of `op-push-full-stack` with one trace `memWrites` value changed must both fail, naming the field (and step)                         |
+| `sim-trace`       | Builds the tracing runner `build/sim-trace/vcpu8_sim` (Verilator `--trace`), used only by `wave`                                                                                                                                                  |
+| `wave`            | `PROGRAM=…` (default the demo), `WAVE_FORMAT=fst\|vcd`, `MAX_CYCLES=N`: runs the program on the tracing runner and writes `build/waves/<name>.fst` ([simulation-guide.md](simulation-guide.md#generating-waveforms))                              |
+| `wave-check`      | Checks the demo's waveform: every required signal and every signal of `tb/wave/vcpu8.gtkw` present, filter files current, `retire` count equal to the emulator's                                                                                  |
+| `formal`          | Runs the SymbiYosys tasks `alu_prove`, `core_prove` and `core_bmc` and prints PASS or FAIL with the proof kind and depth of each ([formal-verification.md](formal-verification.md))                                                               |
+| `formal-selftest` | Proves the formal setup is not vacuous: a deliberately false property must FAIL with a counterexample trace                                                                                                                                       |
+| `formal-mutant`   | Proves `core_prove` catches a broken write enable: a copy of the RTL in `build/` with `rf_we` outside WRITEBACK must fail `we_rf`                                                                                                                 |
 | `verify`          | Runs fixtures, examples, `tb/programs`, `tb/regressions` and `COUNT` random programs from `SEED` (default 1000 from 1) on the TypeScript CPU and the RTL, compared after every instruction ([verification-strategy.md](verification-strategy.md)) |
 | `verify-long`     | `verify` with `LONG_COUNT` (100,000) random programs                                                                                                                                                                                              |
 | `replay`          | `CASE=build/failures/<name>`: reruns a saved failing case with the runner it failed on and checks the report is the same                                                                                                                          |
@@ -126,7 +135,7 @@ Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `m
 | `verify-mutants`  | Builds every mutant in `scripts/mutants.txt` into `build/mutants/<id>/` and fails unless `verify` catches each one (`MUTANT=<id>` for one)                                                                                                        |
 | `clean`           | Removes `build/`                                                                                                                                                                                                                                  |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:verify` and `pnpm hardware:verify:long`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test`, `pnpm hardware:simulate PROGRAM=…`, `pnpm hardware:wave [PROGRAM=…]` `pnpm hardware:formal`, `pnpm hardware:verify` and `pnpm hardware:verify:long`.
 
 ### Adding targets and unit tests
 

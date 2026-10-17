@@ -19,6 +19,7 @@
     "hardware:test": "make -C hardware/rtl/vcpu8 test",
     "hardware:simulate": "make -C hardware/rtl/vcpu8 simulate",
     "hardware:wave": "make -C hardware/rtl/vcpu8 wave",
+    "hardware:formal": "make -C hardware/rtl/vcpu8 formal",
     "hardware:synth": "make -C hardware/rtl/vcpu8 synth",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",

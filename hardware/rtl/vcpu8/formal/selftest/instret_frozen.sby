@@ -1,0 +1,28 @@
+# selftest_instret_frozen: a deliberately false property (instret never changes), which must FAIL
+# with a counterexample trace. `make formal-selftest` expects exactly that.
+[options]
+mode bmc
+depth 12
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal vcpu8_isa_pkg.sv vcpu8_types_pkg.sv
+read -formal vcpu8_alu.sv vcpu8_control.sv vcpu8_decoder.sv vcpu8_flags.sv vcpu8_registers.sv vcpu8_core.sv
+read -formal vcpu8_core_props.sv instret_frozen.sv
+hierarchy -top selftest_instret_frozen
+proc -norom
+prep -top selftest_instret_frozen
+
+[files]
+../../core/vcpu8_isa_pkg.sv
+../../core/vcpu8_types_pkg.sv
+../../core/vcpu8_alu.sv
+../../core/vcpu8_control.sv
+../../core/vcpu8_decoder.sv
+../../core/vcpu8_flags.sv
+../../core/vcpu8_registers.sv
+../../core/vcpu8_core.sv
+../vcpu8_core_props.sv
+instret_frozen.sv

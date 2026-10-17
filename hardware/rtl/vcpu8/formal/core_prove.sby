@@ -1,0 +1,32 @@
+# core_prove: every vcpu8_core property (vcpu8_core_props.sv) by k-induction, for any program:
+# RAM read data is anyseq (formal_core_top.sv). The basecase is BMC to the same depth.
+#
+# proc -norom keeps the decoder's case tables as logic: proc_rom would make them ROMs, and the SMT
+# model constrains a memory's contents only in the initial state, so under induction they could
+# hold anything.
+[options]
+mode prove
+depth 20
+
+[engines]
+smtbmc boolector
+
+[script]
+read -formal vcpu8_isa_pkg.sv vcpu8_types_pkg.sv
+read -formal vcpu8_alu.sv vcpu8_control.sv vcpu8_decoder.sv vcpu8_flags.sv vcpu8_registers.sv vcpu8_core.sv
+read -formal vcpu8_core_props.sv formal_core_top.sv
+hierarchy -top formal_core_top
+proc -norom
+prep -top formal_core_top
+
+[files]
+../core/vcpu8_isa_pkg.sv
+../core/vcpu8_types_pkg.sv
+../core/vcpu8_alu.sv
+../core/vcpu8_control.sv
+../core/vcpu8_decoder.sv
+../core/vcpu8_flags.sv
+../core/vcpu8_registers.sv
+../core/vcpu8_core.sv
+vcpu8_core_props.sv
+formal_core_top.sv

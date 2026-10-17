@@ -1,0 +1,477 @@
+{
+  "format": "vcpu8-synth-summary/1",
+  "provenance": {
+    "gitSha": "f6f9ef73eb1b8d0ae21fd91b2d43f1cd68458fca",
+    "gitDirty": false,
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0)",
+      "nextpnr-ice40": "nextpnr-0.11.1-63-g44a6c739",
+      "nextpnr-ecp5": "nextpnr-0.11.1-63-g44a6c739"
+    }
+  },
+  "generic": {
+    "top": "vcpu8_top",
+    "total": {
+      "cells": 7480,
+      "flipFlops": 2238,
+      "combinational": 5242,
+      "memories": 0,
+      "byType": {
+        "$_ANDNOT_": 115,
+        "$_AND_": 1179,
+        "$_DFFE_PP_": 2048,
+        "$_DFF_P_": 8,
+        "$_MUX_": 1657,
+        "$_NAND_": 1216,
+        "$_NOR_": 103,
+        "$_NOT_": 37,
+        "$_ORNOT_": 304,
+        "$_OR_": 411,
+        "$_SDFFCE_PN0P_": 64,
+        "$_SDFFE_PP0P_": 89,
+        "$_SDFFE_PP1P_": 8,
+        "$_SDFF_PP0_": 21,
+        "$_XNOR_": 75,
+        "$_XOR_": 145
+      }
+    },
+    "subtrees": {
+      "vcpu8_core": {
+        "cells": 1981,
+        "flipFlops": 182,
+        "combinational": 1799,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 98,
+          "$_AND_": 461,
+          "$_MUX_": 154,
+          "$_NAND_": 522,
+          "$_NOR_": 57,
+          "$_NOT_": 29,
+          "$_ORNOT_": 102,
+          "$_OR_": 156,
+          "$_SDFFCE_PN0P_": 64,
+          "$_SDFFE_PP0P_": 89,
+          "$_SDFFE_PP1P_": 8,
+          "$_SDFF_PP0_": 21,
+          "$_XNOR_": 75,
+          "$_XOR_": 145
+        }
+      },
+      "vcpu8_top": {
+        "cells": 7480,
+        "flipFlops": 2238,
+        "combinational": 5242,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 115,
+          "$_AND_": 1179,
+          "$_DFFE_PP_": 2048,
+          "$_DFF_P_": 8,
+          "$_MUX_": 1657,
+          "$_NAND_": 1216,
+          "$_NOR_": 103,
+          "$_NOT_": 37,
+          "$_ORNOT_": 304,
+          "$_OR_": 411,
+          "$_SDFFCE_PN0P_": 64,
+          "$_SDFFE_PP0P_": 89,
+          "$_SDFFE_PP1P_": 8,
+          "$_SDFF_PP0_": 21,
+          "$_XNOR_": 75,
+          "$_XOR_": 145
+        }
+      }
+    },
+    "modules": {
+      "vcpu8_alu": {
+        "cells": 826,
+        "flipFlops": 0,
+        "combinational": 826,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 32,
+          "$_AND_": 214,
+          "$_MUX_": 23,
+          "$_NAND_": 267,
+          "$_NOR_": 15,
+          "$_NOT_": 5,
+          "$_ORNOT_": 59,
+          "$_OR_": 65,
+          "$_XNOR_": 51,
+          "$_XOR_": 95
+        }
+      },
+      "vcpu8_control": {
+        "cells": 492,
+        "flipFlops": 114,
+        "combinational": 378,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 22,
+          "$_AND_": 107,
+          "$_MUX_": 36,
+          "$_NAND_": 60,
+          "$_NOR_": 16,
+          "$_NOT_": 14,
+          "$_ORNOT_": 12,
+          "$_OR_": 51,
+          "$_SDFFE_PP0P_": 89,
+          "$_SDFFE_PP1P_": 8,
+          "$_SDFF_PP0_": 17,
+          "$_XNOR_": 17,
+          "$_XOR_": 43
+        }
+      },
+      "vcpu8_core": {
+        "cells": 251,
+        "flipFlops": 0,
+        "combinational": 251,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 10,
+          "$_AND_": 77,
+          "$_MUX_": 9,
+          "$_NAND_": 120,
+          "$_NOR_": 2,
+          "$_ORNOT_": 7,
+          "$_OR_": 13,
+          "$_XNOR_": 7,
+          "$_XOR_": 6
+        }
+      },
+      "vcpu8_decoder": {
+        "cells": 134,
+        "flipFlops": 0,
+        "combinational": 134,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 14,
+          "$_AND_": 32,
+          "$_MUX_": 2,
+          "$_NAND_": 43,
+          "$_NOR_": 8,
+          "$_NOT_": 7,
+          "$_ORNOT_": 8,
+          "$_OR_": 19,
+          "$_XOR_": 1
+        }
+      },
+      "vcpu8_flags": {
+        "cells": 8,
+        "flipFlops": 4,
+        "combinational": 4,
+        "memories": 0,
+        "byType": {
+          "$_MUX_": 4,
+          "$_SDFF_PP0_": 4
+        }
+      },
+      "vcpu8_memory": {
+        "cells": 5499,
+        "flipFlops": 2056,
+        "combinational": 3443,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 17,
+          "$_AND_": 718,
+          "$_DFFE_PP_": 2048,
+          "$_DFF_P_": 8,
+          "$_MUX_": 1503,
+          "$_NAND_": 694,
+          "$_NOR_": 46,
+          "$_NOT_": 8,
+          "$_ORNOT_": 202,
+          "$_OR_": 255
+        }
+      },
+      "vcpu8_registers": {
+        "cells": 270,
+        "flipFlops": 64,
+        "combinational": 206,
+        "memories": 0,
+        "byType": {
+          "$_ANDNOT_": 20,
+          "$_AND_": 31,
+          "$_MUX_": 80,
+          "$_NAND_": 32,
+          "$_NOR_": 16,
+          "$_NOT_": 3,
+          "$_ORNOT_": 16,
+          "$_OR_": 8,
+          "$_SDFFCE_PN0P_": 64
+        }
+      },
+      "vcpu8_top": {
+        "cells": 0,
+        "flipFlops": 0,
+        "combinational": 0,
+        "memories": 0,
+        "byType": {}
+      }
+    },
+    "gates": {
+      "cells": 7013,
+      "flipFlops": 2238,
+      "combinational": 4775,
+      "memories": 0,
+      "byType": {
+        "$_AND_": 973,
+        "$_DFFE_PP_": 2048,
+        "$_DFF_P_": 8,
+        "$_MUX_": 1922,
+        "$_NAND_": 1185,
+        "$_NOR_": 82,
+        "$_NOT_": 131,
+        "$_OR_": 279,
+        "$_SDFFCE_PN0P_": 64,
+        "$_SDFFE_PP0P_": 89,
+        "$_SDFFE_PP1P_": 8,
+        "$_SDFF_PP0_": 21,
+        "$_XNOR_": 97,
+        "$_XOR_": 106
+      },
+      "logicDepth": {
+        "length": 83,
+        "from": "u_core.u_control.state[2]",
+        "to": "u_core.u_registers.wd[0]",
+        "endFlipFlop": "u_core.u_registers.r[2][0]",
+        "through": [
+          "u_core.u_control.state[2]",
+          "u_core.u_control.dec_rb[0]",
+          "u_core.rb_data[7]",
+          "u_core.alu_r[0]",
+          "u_core.u_registers.wd[0]"
+        ]
+      }
+    }
+  },
+  "memories": [
+    {
+      "module": "vcpu8_memory",
+      "name": "mem",
+      "kind": "ram",
+      "count": 1,
+      "words": 256,
+      "width": 8,
+      "readPorts": 1,
+      "syncReadPorts": 1,
+      "writePorts": 1,
+      "generic": "flip-flops and logic (memory_map)",
+      "fpga": {
+        "ice40": "block RAM ($__ICE40_RAM4K_)",
+        "ecp5": "block RAM ($__DP16KD_)"
+      }
+    },
+    {
+      "module": "vcpu8_registers",
+      "name": "r",
+      "kind": "ram",
+      "count": 1,
+      "words": 8,
+      "width": 8,
+      "readPorts": 10,
+      "syncReadPorts": 0,
+      "writePorts": 9,
+      "generic": "flip-flops and logic (memory_map)",
+      "fpga": {
+        "ice40": "flip-flops and logic (FF mapping)",
+        "ecp5": "flip-flops and logic (FF mapping)"
+      }
+    },
+    {
+      "module": "vcpu8_decoder",
+      "name": "8 ROMs",
+      "kind": "rom",
+      "count": 8,
+      "words": 128,
+      "width": 17,
+      "readPorts": 8,
+      "syncReadPorts": 0,
+      "writePorts": 0,
+      "generic": "logic (memory_map)",
+      "fpga": {
+        "ice40": "logic (FF mapping)",
+        "ecp5": "logic (FF mapping)"
+      }
+    }
+  ],
+  "fpga": {
+    "ice40": {
+      "status": "ran",
+      "device": "iCE40UP5K SG48",
+      "package": "sg48",
+      "speedGrade": null,
+      "timingLabel": "iCE40UP5K SG48, nextpnr-ice40 timing model (the device has a single speed grade)",
+      "top": "vcpu8_fpga_wrapper",
+      "initFile": "hardware/rtl/vcpu8/tb/programs/wave-demo.asm",
+      "seed": 1,
+      "synth": {
+        "luts": 719,
+        "carry": 142,
+        "flipFlops": 150,
+        "blockRam": 1,
+        "dsp": 0,
+        "wideMux": 0,
+        "other": 0,
+        "byType": {
+          "SB_CARRY": 142,
+          "SB_DFF": 34,
+          "SB_DFFESR": 89,
+          "SB_DFFESS": 8,
+          "SB_DFFSR": 19,
+          "SB_LUT4": 719,
+          "SB_RAM40_4K": 1
+        }
+      },
+      "pnr": {
+        "clock": "clk$SB_IO_IN_$glb_clk",
+        "fmaxMHz": 10.63,
+        "constraintMHz": 12,
+        "meetsConstraint": false,
+        "utilisation": {
+          "ICESTORM_LC": {
+            "used": 896,
+            "available": 5280
+          },
+          "ICESTORM_RAM": {
+            "used": 1,
+            "available": 30
+          },
+          "SB_GB": {
+            "used": 2,
+            "available": 8
+          },
+          "SB_IO": {
+            "used": 10,
+            "available": 39
+          }
+        },
+        "criticalPath": {
+          "from": "u_cpu.u_mem.mem.0.0_RDATA_7_SB_DFF_Q_DFFLC",
+          "to": "u_cpu.u_core.u_registers.r[0]_SB_DFFESR_Q_1_DFFLC",
+          "delayNs": 94.09,
+          "logicNs": 37.56,
+          "routingNs": 53.91,
+          "logicStages": 70,
+          "rtlSources": [
+            {
+              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:31",
+              "nets": 47
+            },
+            {
+              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:29",
+              "nets": 1
+            }
+          ]
+        }
+      }
+    },
+    "ecp5": {
+      "status": "ran",
+      "device": "LFE5U-25F CABGA256",
+      "package": "CABGA256",
+      "speedGrade": "6",
+      "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+      "top": "vcpu8_fpga_wrapper",
+      "initFile": "hardware/rtl/vcpu8/tb/programs/wave-demo.asm",
+      "seed": 1,
+      "synth": {
+        "luts": 511,
+        "carry": 91,
+        "flipFlops": 124,
+        "blockRam": 1,
+        "dsp": 1,
+        "wideMux": 78,
+        "other": 0,
+        "byType": {
+          "CCU2C": 91,
+          "DP16KD": 1,
+          "L6MUX21": 4,
+          "LUT4": 511,
+          "MULT18X18D": 1,
+          "PFUMX": 74,
+          "TRELLIS_FF": 124
+        }
+      },
+      "pnr": {
+        "clock": "$glbnet$clk$TRELLIS_IO_IN",
+        "fmaxMHz": 27.11,
+        "constraintMHz": 12,
+        "meetsConstraint": true,
+        "utilisation": {
+          "DCCA": {
+            "used": 1,
+            "available": 56
+          },
+          "DP16KD": {
+            "used": 1,
+            "available": 56
+          },
+          "MULT18X18D": {
+            "used": 1,
+            "available": 28
+          },
+          "TRELLIS_COMB": {
+            "used": 771,
+            "available": 24288
+          },
+          "TRELLIS_FF": {
+            "used": 124,
+            "available": 24288
+          },
+          "TRELLIS_IO": {
+            "used": 10,
+            "available": 197
+          }
+        },
+        "criticalPath": {
+          "from": "u_cpu.u_mem.mem.0.0",
+          "to": "u_cpu.u_core.u_registers.r[5]_TRELLIS_FF_Q_7",
+          "delayNs": 36.89,
+          "logicNs": 11.18,
+          "routingNs": 20.1,
+          "logicStages": 61,
+          "rtlSources": [
+            {
+              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:31",
+              "nets": 16
+            }
+          ]
+        }
+      }
+    }
+  },
+  "warnings": [
+    {
+      "source": "generic.log",
+      "message": "ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\").",
+      "count": 555,
+      "allowedBy": "^ABC: Warning: The network is combinational"
+    },
+    {
+      "source": "ice40.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational"
+    },
+    {
+      "source": "nextpnr-ice40.log",
+      "message": "Warning: Max frequency for clock 'clk$SB_IO_IN_$glb_clk': 10.63 MHz (FAIL at 12.00 MHz)",
+      "count": 1,
+      "allowedBy": "^Warning: Max frequency for clock '[^']+': [0-9.]+ MHz \\(FAIL at [0-9.]+ MHz\\)$"
+    },
+    {
+      "source": "ecp5.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational"
+    }
+  ],
+  "gate": {
+    "passed": true,
+    "failures": [],
+    "unusedAllowEntries": []
+  }
+}

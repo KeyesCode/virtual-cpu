@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { assembleToHex } from './assemble.js';
 import { FIXTURES_DEFAULTS, type FixturesOptions, runFixtures } from './commands/fixtures.js';
+import { parseTarget, runSynthCompare, runSynthSummary } from './commands/synth.js';
 import { writeTamperedFixtures } from './commands/tamper-fixtures.js';
 import { type WaveCheckOptions, waveCheck, waveTable } from './commands/wave.js';
 import { ALU_VECTORS_PATH, renderAluVectors } from './gen/alu-vectors.js';
@@ -36,6 +37,12 @@ Commands:
                                          signals present, filters current, retire count = emulator's
   wave-table --vcd <file> --cycles <first>-<last>
                                          Print a Markdown table of those clock cycles of a waveform
+  synth-summary --dir <dir> --allow <file> --toolchain <dir|PATH> --toolchain-version <v>
+                --init-file <file> --seed <n> --ice40 <device>:<package> --ecp5 <device>:<package>:<speed>
+                                         Parse the outputs of \`make synth\` in <dir>, write summary.json
+                                         and summary.md there, and exit 1 on a warning not in <file>
+  synth-compare --baseline <file> --summary <file>
+                                         Print the deltas between a synthesis summary and the baseline
 `;
 
 type Command = (args: readonly string[]) => number;
@@ -214,6 +221,78 @@ function waveTableCommand(args: readonly string[]): number {
   return 0;
 }
 
+/** `--flag value` pairs into a record, or undefined (after a usage message) on anything else. */
+function parseFlags(
+  command: string,
+  args: readonly string[],
+  flags: readonly string[],
+): Record<string, string> | undefined {
+  const values: Record<string, string> = {};
+  for (let i = 0; i < args.length; i += 2) {
+    const flag = args[i] ?? '';
+    const value = args[i + 1];
+    if (!flags.includes(flag) || value === undefined) {
+      process.stderr.write(`${command}: unexpected argument ${flag}\n${USAGE}`);
+      return undefined;
+    }
+    values[flag] = value;
+  }
+  const missing = flags.filter((flag) => !(flag in values));
+  if (missing.length > 0) {
+    process.stderr.write(`${command}: missing ${missing.join(', ')}\n${USAGE}`);
+    return undefined;
+  }
+  return values;
+}
+
+function synthSummary(args: readonly string[]): number {
+  const flags = [
+    '--dir',
+    '--allow',
+    '--toolchain',
+    '--toolchain-version',
+    '--init-file',
+    '--seed',
+    '--ice40',
+    '--ecp5',
+  ] as const;
+  const v = parseFlags('synth-summary', args, flags);
+  if (v === undefined) {
+    return 2;
+  }
+  const ice40 = parseTarget('ice40', v['--ice40'] ?? '');
+  const ecp5 = parseTarget('ecp5', v['--ecp5'] ?? '');
+  const seed = Number(v['--seed']);
+  if (ice40 === undefined || ecp5 === undefined || !Number.isInteger(seed)) {
+    process.stderr.write(`synth-summary: bad --ice40, --ecp5 or --seed\n${USAGE}`);
+    return 2;
+  }
+  return runSynthSummary(
+    {
+      dir: resolve(cwd, v['--dir'] ?? ''),
+      allow: resolve(cwd, v['--allow'] ?? ''),
+      toolchain: v['--toolchain'] ?? 'PATH',
+      toolchainVersion: v['--toolchain-version'] ?? '',
+      initFile: resolve(cwd, v['--init-file'] ?? ''),
+      seed,
+      targets: [ice40, ecp5],
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
+function synthCompare(args: readonly string[]): number {
+  const v = parseFlags('synth-compare', args, ['--baseline', '--summary']);
+  if (v === undefined) {
+    return 2;
+  }
+  return runSynthCompare(
+    resolve(cwd, v['--baseline'] ?? ''),
+    resolve(cwd, v['--summary'] ?? ''),
+    (text) => process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-isa': genIsa,
   'gen-alu-vectors': genAluVectors,
@@ -224,6 +303,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-wave-filters': genWaveFilters,
   'wave-check': waveCheckCommand,
   'wave-table': waveTableCommand,
+  'synth-summary': synthSummary,
+  'synth-compare': synthCompare,
 };
 
 const [name, ...rest] = process.argv.slice(2);

@@ -1,0 +1,37 @@
+# Generic, technology-independent synthesis of vcpu8_top (docs/hardware/synthesis-guide.md).
+#
+# `make synth` runs this from build/synth/ after reading the sources:
+#   yosys -p 'read_verilog -sv -D SYNTHESIS <packages> <modules>; script synth/generic.ys'
+# so the sources are listed in one place (RTL_SRCS in the Makefile) and every output below lands
+# in build/synth/. Any failed check stops Yosys with a non-zero exit, which fails `make synth`.
+
+# Structural gates, on the design exactly as written: every module and port resolves, and after
+# proc there is no latch, no combinational loop, no net with two drivers and no used net without
+# a driver. Nothing is optimised before these run, so a latch on an unused signal is caught too.
+hierarchy -check -top vcpu8_top
+proc
+check -assert
+select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$_DLATCH_* t:$_DLATCHSR_*
+
+# Memory inference: which arrays became a Yosys memory ($mem_v2) rather than loose flip-flops.
+opt_clean
+memory -nomap
+select t:$mem_v2
+write_json -selected generic.memories.json
+select -clear
+
+# Generic synthesis. With no target library, synth ends with memory_map, so the inferred memories
+# become flip-flops and multiplexers here; the iCE40 flow maps the RAM to block RAM instead.
+synth -top vcpu8_top
+check -assert
+tee -q -o generic.stat.txt stat -width
+tee -q -o generic.stat.json stat -json
+write_json generic.json
+
+# Abstract gates: flatten, remap all combinational logic to seven simple two-input gates and the
+# 2:1 mux, count them, and measure the longest gate path between flip-flops and ports.
+flatten
+abc -g AND,NAND,OR,NOR,XOR,XNOR,MUX
+opt_clean
+tee -q -o generic.gates.stat.json stat -json
+tee -q -o generic.ltp.txt ltp -noff

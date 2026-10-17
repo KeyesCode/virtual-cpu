@@ -1,7 +1,7 @@
 {
   "format": "vcpu8-synth-summary/1",
   "provenance": {
-    "gitSha": "f6f9ef73eb1b8d0ae21fd91b2d43f1cd68458fca",
+    "gitSha": "cb05946064e3b1df921c58ced049b8d4cc70829b",
     "gitDirty": false,
     "toolchain": "OSS CAD Suite 2026-10-16",
     "tools": {
@@ -212,19 +212,19 @@
       }
     },
     "gates": {
-      "cells": 7013,
+      "cells": 7012,
       "flipFlops": 2238,
-      "combinational": 4775,
+      "combinational": 4774,
       "memories": 0,
       "byType": {
-        "$_AND_": 973,
+        "$_AND_": 957,
         "$_DFFE_PP_": 2048,
         "$_DFF_P_": 8,
-        "$_MUX_": 1922,
-        "$_NAND_": 1185,
-        "$_NOR_": 82,
-        "$_NOT_": 131,
-        "$_OR_": 279,
+        "$_MUX_": 1925,
+        "$_NAND_": 1188,
+        "$_NOR_": 77,
+        "$_NOT_": 136,
+        "$_OR_": 288,
         "$_SDFFCE_PN0P_": 64,
         "$_SDFFE_PP0P_": 89,
         "$_SDFFE_PP1P_": 8,
@@ -233,10 +233,10 @@
         "$_XOR_": 106
       },
       "logicDepth": {
-        "length": 83,
+        "length": 82,
         "from": "u_core.u_control.state[2]",
         "to": "u_core.u_registers.wd[0]",
-        "endFlipFlop": "u_core.u_registers.r[2][0]",
+        "endFlipFlop": "u_core.u_registers.r[3][0]",
         "through": [
           "u_core.u_control.state[2]",
           "u_core.u_control.dec_rb[0]",
@@ -308,31 +308,31 @@
       "initFile": "hardware/rtl/vcpu8/tb/programs/wave-demo.asm",
       "seed": 1,
       "synth": {
-        "luts": 719,
-        "carry": 142,
+        "luts": 727,
+        "carry": 143,
         "flipFlops": 150,
         "blockRam": 1,
         "dsp": 0,
         "wideMux": 0,
         "other": 0,
         "byType": {
-          "SB_CARRY": 142,
+          "SB_CARRY": 143,
           "SB_DFF": 34,
           "SB_DFFESR": 89,
           "SB_DFFESS": 8,
           "SB_DFFSR": 19,
-          "SB_LUT4": 719,
+          "SB_LUT4": 727,
           "SB_RAM40_4K": 1
         }
       },
       "pnr": {
         "clock": "clk$SB_IO_IN_$glb_clk",
-        "fmaxMHz": 10.63,
+        "fmaxMHz": 10.48,
         "constraintMHz": 12,
         "meetsConstraint": false,
         "utilisation": {
           "ICESTORM_LC": {
-            "used": 896,
+            "used": 906,
             "available": 5280
           },
           "ICESTORM_RAM": {
@@ -349,20 +349,16 @@
           }
         },
         "criticalPath": {
-          "from": "u_cpu.u_mem.mem.0.0_RDATA_7_SB_DFF_Q_DFFLC",
-          "to": "u_cpu.u_core.u_registers.r[0]_SB_DFFESR_Q_1_DFFLC",
-          "delayNs": 94.09,
-          "logicNs": 37.56,
-          "routingNs": 53.91,
-          "logicStages": 70,
+          "from": "u_cpu.u_mem.mem.0.0_RAM",
+          "to": "u_cpu.u_core.u_registers.r[7]_SB_DFFESR_Q_1_DFFLC",
+          "delayNs": 95.43,
+          "logicNs": 38.37,
+          "routingNs": 54.65,
+          "logicStages": 73,
           "rtlSources": [
             {
-              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:31",
-              "nets": 47
-            },
-            {
-              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:29",
-              "nets": 1
+              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:39",
+              "nets": 50
             }
           ]
         }
@@ -378,26 +374,25 @@
       "initFile": "hardware/rtl/vcpu8/tb/programs/wave-demo.asm",
       "seed": 1,
       "synth": {
-        "luts": 511,
+        "luts": 507,
         "carry": 91,
         "flipFlops": 124,
         "blockRam": 1,
         "dsp": 1,
-        "wideMux": 78,
+        "wideMux": 73,
         "other": 0,
         "byType": {
           "CCU2C": 91,
           "DP16KD": 1,
-          "L6MUX21": 4,
-          "LUT4": 511,
+          "LUT4": 507,
           "MULT18X18D": 1,
-          "PFUMX": 74,
+          "PFUMX": 73,
           "TRELLIS_FF": 124
         }
       },
       "pnr": {
         "clock": "$glbnet$clk$TRELLIS_IO_IN",
-        "fmaxMHz": 27.11,
+        "fmaxMHz": 28.21,
         "constraintMHz": 12,
         "meetsConstraint": true,
         "utilisation": {
@@ -414,7 +409,7 @@
             "available": 28
           },
           "TRELLIS_COMB": {
-            "used": 771,
+            "used": 767,
             "available": 24288
           },
           "TRELLIS_FF": {
@@ -428,14 +423,14 @@
         },
         "criticalPath": {
           "from": "u_cpu.u_mem.mem.0.0",
-          "to": "u_cpu.u_core.u_registers.r[5]_TRELLIS_FF_Q_7",
-          "delayNs": 36.89,
-          "logicNs": 11.18,
-          "routingNs": 20.1,
-          "logicStages": 61,
+          "to": "u_cpu.u_core.u_registers.r[0]_TRELLIS_FF_Q_6",
+          "delayNs": 35.45,
+          "logicNs": 11.25,
+          "routingNs": 18.58,
+          "logicStages": 60,
           "rtlSources": [
             {
-              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:31",
+              "location": "hardware/rtl/vcpu8/core/vcpu8_alu.sv:39",
               "nets": 16
             }
           ]
@@ -458,7 +453,7 @@
     },
     {
       "source": "nextpnr-ice40.log",
-      "message": "Warning: Max frequency for clock 'clk$SB_IO_IN_$glb_clk': 10.63 MHz (FAIL at 12.00 MHz)",
+      "message": "Warning: Max frequency for clock 'clk$SB_IO_IN_$glb_clk': 10.48 MHz (FAIL at 12.00 MHz)",
       "count": 1,
       "allowedBy": "^Warning: Max frequency for clock '[^']+': [0-9.]+ MHz \\(FAIL at [0-9.]+ MHz\\)$"
     },
@@ -472,6 +467,8 @@
   "gate": {
     "passed": true,
     "failures": [],
-    "unusedAllowEntries": []
+    "unusedAllowEntries": [
+      "^ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and [0-9]+ carries\\.$"
+    ]
   }
 }

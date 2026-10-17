@@ -5,7 +5,7 @@ The control unit tells the datapath what to do for each instruction. It has two 
 - the **decoder**, `vcpu8_decoder`, a block of combinational logic. It turns the opcode byte and the register byte into control signals.
 - the **control FSM**, which steps each instruction through fetch, decode, operands, execute and writeback, and detects faults.
 
-The decoder is described here. The FSM section is written by the ticket that builds it.
+[The decoder](#decoder) is described first, then [the control FSM](#control-fsm).
 
 ## Decoder
 
@@ -120,4 +120,116 @@ To regenerate the vectors by hand, run `make -C hardware/rtl/vcpu8 gen-decoder-v
 
 ## Control FSM
 
-_To be written by the control-FSM ticket._
+`hardware/rtl/vcpu8/core/vcpu8_control.sv` is the sequential half of the control unit. It holds the FSM state and the CPU's control state (PC, SP, SD, IR, status, the fault record and `instret`), chooses the decoder's inputs, detects every fault, and drives the datapath's address select and write enables. It follows [hardware-porting.md](../hardware-porting.md#control-fsm-control_fsm); the few places where it differs are listed [at the end of this section](#differences-from-hardware-portingmd).
+
+### States
+
+```mermaid
+stateDiagram-v2
+  [*] --> FETCH: rst
+  FETCH --> DECODE
+  DECODE --> EXECUTE: len = 1
+  DECODE --> OPERAND1: len = 2 or 3
+  OPERAND1 --> OPERAND2: len = 3
+  OPERAND1 --> EXECUTE: len = 2
+  OPERAND2 --> EXECUTE
+  EXECUTE --> WRITEBACK
+  WRITEBACK --> FETCH: next instruction
+  WRITEBACK --> HALTED: HLT
+  WRITEBACK --> FAULTED: post-commit PC_OVERFLOW
+  DECODE --> FAULTED: INVALID_OPCODE, INSTRUCTION_OVERRUN
+  OPERAND1 --> FAULTED: MALFORMED_OPERAND (len 2)
+  OPERAND2 --> FAULTED: MALFORMED_OPERAND (len 3)
+  EXECUTE --> FAULTED: PC_OVERFLOW (CALL), DIVIDE_BY_ZERO, STACK_OVERFLOW, STACK_UNDERFLOW
+  HALTED --> HALTED
+  FAULTED --> FAULTED
+```
+
+The states are `fsm_state_t` in `core/vcpu8_types_pkg.sv`, and `dbg_state` shows the current one. Reset puts the FSM in FETCH. HALTED and FAULTED are terminal: the FSM stays there, and nothing changes, until the next reset.
+
+| State     | RAM address                                                                         | Decoder sees                       | Does                                                                                                                                                                               |
+| --------- | ----------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FETCH     | PC                                                                                  | IR (stale; ignored)                | Presents the opcode address. The RAM returns the byte at the end of the cycle.                                                                                                     |
+| DECODE    | PC + 1 if the instruction is longer than 1 byte and has no fault, else PC           | opcode = `mem_rdata`               | Latches IR.op and the fetched length. Checks `INVALID_OPCODE`, then `INSTRUCTION_OVERRUN` (`{1'b0, PC} + len > 9'h100`). Goes to OPERAND1, or to EXECUTE for a 1-byte instruction. |
+| OPERAND1  | PC + 2 for a 3-byte instruction, else PC                                            | IR.op, register byte = `mem_rdata` | Latches byte 1 into IR.rb and IR.tb. For a 2-byte instruction, checks `MALFORMED_OPERAND`. Goes to OPERAND2 or EXECUTE.                                                            |
+| OPERAND2  | PC                                                                                  | IR.op, IR.rb                       | Latches byte 2 into IR.tb. Checks `MALFORMED_OPERAND` for the 3-byte instruction.                                                                                                  |
+| EXECUTE   | the data address (LOAD, POP, RET read it; STORE, PUSH, CALL will write it), else PC | IR.op, IR.rb                       | Checks, in order, `PC_OVERFLOW` for a CALL at `0xFE`, then `DIVIDE_BY_ZERO`, `STACK_OVERFLOW` or `STACK_UNDERFLOW`. The ALU and the register reads settle.                         |
+| WRITEBACK | the data address, else PC                                                           | IR.op, IR.rb                       | The single commit point; see below.                                                                                                                                                |
+| HALTED    | PC                                                                                  | —                                  | Nothing. PC stays at the HLT.                                                                                                                                                      |
+| FAULTED   | PC                                                                                  | —                                  | Nothing. `fault_code` and `fault_pc` hold the fault.                                                                                                                               |
+
+The decoder is combinational and needs its inputs in the same cycle the bytes arrive. So the FSM routes them: in DECODE the opcode comes straight from `mem_rdata`, before IR.op is latched, and in OPERAND1 the register byte comes from `mem_rdata`. In every other state the decoder reads the latched IR. That keeps DECODE and OPERAND1 to one cycle each instead of adding a cycle to latch the byte first.
+
+### WRITEBACK, the commit point
+
+At the rising edge that ends WRITEBACK, and at no other time:
+
+- the register file writes field a, if the decoder's `rf_we` is set (data selected by `wsel`);
+- the RAM writes, if the decoder's `mem_write` is set (address and data selected as in [datapath.md](datapath.md));
+- FLAGS update through the decoder's `flag_mask` (the mask is 0 in every other state);
+- SP and SD move by the decoder's `stack_op`;
+- PC takes its next value;
+- `instret` increments and `retire` is set for the next cycle, with `retire_pc` = this instruction's PC and `retire_op` its opcode;
+- status becomes HALTED for HLT, or FAULTED for the post-commit `PC_OVERFLOW`, and otherwise the FSM returns to FETCH.
+
+The next PC is chosen by the decoder's `pc_sel`:
+
+| `pc_sel`  | Instructions     | Next PC                                                                                 |
+| --------- | ---------------- | --------------------------------------------------------------------------------------- |
+| `PC_HOLD` | HLT              | PC                                                                                      |
+| `PC_TB`   | JMP, CALL        | IR.tb                                                                                   |
+| `PC_MEM`  | RET              | `mem_rdata`, the byte popped from SP + 1                                                |
+| `PC_COND` | JZ, JNZ, JC, JNC | IR.tb if the condition holds, else as `PC_SEQ`                                          |
+| `PC_SEQ`  | everything else  | `seq[7:0]` = PC + len, or PC unchanged when `seq` = `0x100` (post-commit `PC_OVERFLOW`) |
+
+The branch condition is `cond = {flag is C, value}`: the branch is taken when `(cond[1] ? C : Z) == cond[0]`. It reads FLAGS as they were before the instruction, which is correct because branches never write FLAGS.
+
+### Faults
+
+Every fault is detected by combinational logic (`fault_now`) in the state where its inputs are first available. When `fault_now` is non-zero at a rising edge, the FSM goes to FAULTED, status becomes `STATUS_FAULTED`, `fault_code` takes the fault's number and `fault_pc` the instruction's PC.
+
+| Order | Fault                 | State                                | Condition                                                | Kind        | Fixtures                                                                      |
+| ----- | --------------------- | ------------------------------------ | -------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| 1     | `INVALID_OPCODE`      | DECODE                               | the decoder's `valid` is 0                               | precise     | `fault-invalid-opcode`, `-at-ff`                                              |
+| 2     | `INSTRUCTION_OVERRUN` | DECODE                               | `{1'b0, PC} + len > 9'h100`                              | precise     | `fault-instruction-overrun-at-fe`, `-at-ff`, `fault-overrun-before-malformed` |
+| 3     | `MALFORMED_OPERAND`   | OPERAND1 (len 2) or OPERAND2 (len 3) | the decoder's `rb_malformed`                             | precise     | `fault-malformed-register`, `-unused-field`, `-field-b`                       |
+| 4     | `PC_OVERFLOW`         | EXECUTE                              | CALL and `seq[8]` (a CALL at `0xFE`)                     | precise     | `fault-pc-overflow-call`                                                      |
+| 5     | `DIVIDE_BY_ZERO`      | EXECUTE                              | DIV and `rb_data == 0`                                   | precise     | `fault-divide-by-zero`                                                        |
+| 5     | `STACK_OVERFLOW`      | EXECUTE                              | `stack_op` = push and SD = 64                            | precise     | `fault-stack-overflow`, `-call`                                               |
+| 5     | `STACK_UNDERFLOW`     | EXECUTE                              | `stack_op` = pop and SD = 0                              | precise     | `fault-stack-underflow-pop`, `-ret`                                           |
+| 6     | `PC_OVERFLOW`         | WRITEBACK                            | `pc_sel` sequential (or a branch not taken) and `seq[8]` | post-commit | `fault-pc-overflow-nop`, `-inc`, `-branch-not-taken`                          |
+
+**Priority comes from the order of the states.** A fault can only be raised in the state where the FSM first has the information, and the FSM leaves for FAULTED as soon as one is found, so a later check never runs. An invalid opcode at `0xFF` is reported as `INVALID_OPCODE` because the validity test comes first in DECODE. `11 90` at `0xFE` is `INSTRUCTION_OVERRUN` because DECODE stops before OPERAND1 would examine the register byte. A CALL at `0xFE` with a full stack is `PC_OVERFLOW` because that test comes first in EXECUTE. The three faults of step 5 belong to different instructions (DIV, a push, a pop), so at most one can apply.
+
+**No address past `0xFF` is driven.** DECODE asks for byte 1 only when the instruction fits (no fault), and OPERAND1 asks for byte 2 only for a 3-byte instruction that has already passed the overrun check. So PC + 1 and PC + 2 never wrap.
+
+### Precise and post-commit faults
+
+A **precise** fault is found in DECODE, OPERAND1, OPERAND2 or EXECUTE, before WRITEBACK. The FSM goes straight to FAULTED, and since every write enable (`rf_we`, `mem_we`, `flags_mask`, the SP/SD/PC updates) is gated by the WRITEBACK state, nothing architectural is written: registers, FLAGS, memory, SP, SD and PC keep their values, PC still points at the faulting instruction, `retire` does not pulse and `instret` does not change. No undo logic exists or is needed; precision comes from the shape of the FSM.
+
+The **post-commit** `PC_OVERFLOW` is different. An instruction with a sequential next PC that ends at `0xFF` (a NOP at `0xFF`, an INC at `0xFE`, an LDI at `0xFD`, a branch at `0xFE` that is not taken) has nowhere to go: `seq` is `0x100`, which does not fit in PC. The instruction is otherwise fine, so its WRITEBACK commits as usual: the register, memory and flag writes happen, it retires (`retire` pulses, `instret` increments), and then status becomes FAULTED with `PC_OVERFLOW`. PC keeps the instruction's address, because `0x100` cannot be stored. A taken branch or a JMP at `0xFE` does not fault, because its next PC is the target.
+
+The two fixtures that show the difference both pass on the RTL:
+
+| Fixture                 | Final step                      | Steps | `instret` | Kind                                                             |
+| ----------------------- | ------------------------------- | ----- | --------- | ---------------------------------------------------------------- |
+| `fault-pc-overflow-nop` | NOP at `0xFF`, `PC_OVERFLOW`    | 2     | 2         | post-commit: the NOP retired, PC stays `0xFF`                    |
+| `fault-divide-by-zero`  | DIV at `0x0B`, `DIVIDE_BY_ZERO` | 5     | 4         | precise: the DIV is a step but not a retirement, nothing written |
+
+### Retirement
+
+`retire` is a registered one-cycle pulse. It rises at the edge that ends WRITEBACK, together with every write of the instruction, so during the pulse the debug taps (`dbg_regs`, `dbg_pc`, `dbg_sp`, `dbg_sd`, `dbg_flags`), `status`, `fault_code` and `instret` already show the state **after** the instruction. `retire_pc` and `retire_op` name the instruction that retired. This makes the pulse the natural place to compare with the emulator's trace: the RTL runner writes one trace line per pulse.
+
+A precise fault does not retire, but it is still a step (the emulator counts it toward `maxInstructions` and writes a trace line for it). Observers see it as the edge where `status` becomes FAULTED without a `retire` pulse; `fault_pc` gives the instruction's address. The post-commit `PC_OVERFLOW` is both: `retire` pulses and status is FAULTED in the same cycle.
+
+`instret` is 32 bits and counts every retirement, HLT and the post-commit `PC_OVERFLOW` instruction included. It is compared with the fixtures' `expected.instructions`.
+
+### Differences from hardware-porting.md
+
+The FSM is the one hardware-porting.md describes, with these details settled:
+
+- **Two named operand states.** "OPERANDS ×2" is two states, OPERAND1 and OPERAND2, so `dbg_state` says which byte is being read.
+- **Byte 1 goes into both IR.rb and IR.tb, and byte 2 overwrites IR.tb.** IR.rb is then the register byte and IR.tb the instruction's last byte for every format, with no format-dependent mux on the latch. For the A format (JMP … CALL) the copy in IR.rb is unused: those opcodes have no register fields, so the decoder never reports it malformed and nothing reads it.
+- **The register byte is checked once every byte is in.** For a 3-byte instruction the check is in OPERAND2, after byte 2 is latched, so a faulting step's IR holds all its bytes, as the emulator's does. The priority is unchanged: `INSTRUCTION_OVERRUN` has already been ruled out in DECODE, and nothing is written before EXECUTE.
+- **DIV is combinational**, so it takes 5 clocks, not the 12 of the iterative divider hardware-porting.md describes ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#clocks-per-instruction)).
+- **`retire` is registered**: it is high in the cycle after the WRITEBACK edge, when the committed state is visible, rather than during WRITEBACK.

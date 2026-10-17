@@ -6,20 +6,20 @@ Start with the Project 1 hand-off, [hardware-porting.md](../hardware-porting.md)
 
 ## Documents
 
-| Document                                     | Status  | Contents                                                                          |
-| -------------------------------------------- | ------- | --------------------------------------------------------------------------------- |
-| [isa-compatibility.md](isa-compatibility.md) | written | ISA version, opcode table, state, faults, doc-vs-code checks, brief discrepancies |
-| `vcpu8-microarchitecture.md`                 | planned | Module breakdown and how the RTL corresponds to physical logic                    |
-| `datapath.md`                                | planned | Registers, multiplexers and how an instruction moves through them                 |
-| [control-unit.md](control-unit.md)           | partial | The decoder (written); the multicycle FSM, fault detection and priority (planned) |
-| [alu.md](alu.md)                             | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification         |
-| [register-file.md](register-file.md)         | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset              |
-| [memory-interface.md](memory-interface.md)   | written | The 256 × 8 synchronous RAM: timing, read-first, loading, debug and FPGA memory   |
-| `verification-strategy.md`                   | planned | Unit tests, fixtures, differential and random testing, formal properties          |
-| `simulation-guide.md`                        | planned | Running simulations, waveforms and GTKWave                                        |
-| `synthesis-guide.md`                         | planned | Yosys and nextpnr flows and their reports                                         |
-| `performance-analysis.md`                    | planned | RTL cycle counts and CPI, compared with the instructional timing model            |
-| `fpga-readiness.md`                          | planned | What remains before the design runs on an FPGA                                    |
+| Document                                                 | Status  | Contents                                                                                                        |
+| -------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| [isa-compatibility.md](isa-compatibility.md)             | written | ISA version, opcode table, state, faults, doc-vs-code checks, brief discrepancies                               |
+| [vcpu8-microarchitecture.md](vcpu8-microarchitecture.md) | written | Module hierarchy, how the RTL maps to logic, clock and reset, measured clocks per instruction, running programs |
+| [datapath.md](datapath.md)                               | written | Registers, multiplexers and how an instruction moves through them                                               |
+| [control-unit.md](control-unit.md)                       | written | The decoder; the multicycle FSM, fault detection and priority, retirement                                       |
+| [alu.md](alu.md)                                         | written | ALU equations, flags, MUL and DIV implementation, exhaustive verification                                       |
+| [register-file.md](register-file.md)                     | written | Register file and FLAGS: flip-flops, ports, read-during-write, reset                                            |
+| [memory-interface.md](memory-interface.md)               | written | The 256 × 8 synchronous RAM: timing, port sharing, read-first, loading, debug and FPGA memory                   |
+| `verification-strategy.md`                               | planned | Unit tests, fixtures, differential and random testing, formal properties                                        |
+| `simulation-guide.md`                                    | planned | Running simulations, waveforms and GTKWave                                                                      |
+| `synthesis-guide.md`                                     | planned | Yosys and nextpnr flows and their reports                                                                       |
+| `performance-analysis.md`                                | planned | RTL cycle counts and CPI, compared with the instructional timing model                                          |
+| `fpga-readiness.md`                                      | planned | What remains before the design runs on an FPGA                                                                  |
 
 Each planned document is written by the ticket that builds the part it describes.
 
@@ -34,13 +34,17 @@ hardware/
     ├── mk/                    one make fragment per topic (isa.mk, …)
     ├── core/                  synthesizable RTL; *_pkg.sv packages first
     │   ├── vcpu8_isa_pkg.sv   GENERATED from @vcpu/shared, committed, drift-checked
-    │   ├── vcpu8_types_pkg.sv microarchitecture types (alu_op_t, decoder selects), hand-written
-    │   └── vcpu8_decoder.sv   combinational decoder: opcode and register byte → control signals
+    │   ├── vcpu8_types_pkg.sv microarchitecture types (alu_op_t, decoder selects, FSM states), hand-written
+    │   ├── vcpu8_decoder.sv   combinational decoder: opcode and register byte → control signals
+    │   ├── vcpu8_control.sv   the multicycle FSM: PC, SP, SD, IR, faults, retirement
+    │   ├── vcpu8_core.sv      control, decoder, registers, FLAGS and ALU, and the datapath muxes
+    │   └── vcpu8_top.sv       the core plus vcpu8_memory: the whole CPU
     ├── tb/                    testbenches and probes (simulation only)
-    │   └── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
+    │   ├── unit/              self-checking unit testbenches (tb_vcpu8_*.sv)
+    │   └── sim/               the RTL program runner: vcpu8_sim.cpp and its wrapper vcpu8_sim_top.sv
     ├── scripts/               helper scripts for the make targets
     └── build/                 all outputs (git-ignored)
-packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators and, later, the RTL runners
+packages/rtl-tools/            @vcpu/rtl-tools: the ISA generator, test-vector generators, assemble and the fixture check
 ```
 
 ## Toolchain setup
@@ -100,17 +104,20 @@ The `apt-get` line installs only build prerequisites. The hardware tools themsel
 
 Run them from the repository root with `make -C hardware/rtl/vcpu8 <target>`. `make -C hardware/rtl/vcpu8 help` prints the current list, including the targets that later fragments add.
 
-| Target        | Does                                                                                                                                                      |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `help`        | Lists the targets and shows which toolchain is in use                                                                                                     |
-| `tools-check` | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                 |
-| `lint`        | `verilator --lint-only -Wall` over every `core/*.sv`, packages first                                                                                      |
-| `gen-isa`     | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                 |
-| `check-isa`   | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys |
-| `test`        | Runs every registered unit test. Prints `0 unit tests registered` until the RTL tickets add some                                                          |
-| `clean`       | Removes `build/`                                                                                                                                          |
+| Target        | Does                                                                                                                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `help`        | Lists the targets and shows which toolchain is in use                                                                                                                                                |
+| `tools-check` | Prints the version of every tool, writes `build/tool-versions.json`, and fails if a required tool is missing or Verilator is older than 5                                                            |
+| `lint`        | `verilator --lint-only -Wall --top-module vcpu8_top` over every `core/*.sv`, packages first                                                                                                          |
+| `gen-isa`     | Regenerates `core/vcpu8_isa_pkg.sv` from `@vcpu/shared` (the same as `pnpm hardware:gen`)                                                                                                            |
+| `check-isa`   | Regenerates the package into `build/`, fails if it differs from the committed file, lints both packages, and synthesizes `tb/isa_pkg_probe.sv` with Yosys                                            |
+| `test`        | Runs every registered unit test (`UNIT_TESTS`), then every system test (`SYSTEM_TESTS`, so far `fixtures`)                                                                                           |
+| `sim`         | Builds the RTL program runner `build/sim/vcpu8_sim` with Verilator                                                                                                                                   |
+| `simulate`    | `PROGRAM=<file.asm\|file.mem.hex>`: assembles if needed, runs the program on the RTL and prints the end state ([vcpu8-microarchitecture.md](vcpu8-microarchitecture.md#running-programs-on-the-rtl)) |
+| `fixtures`    | Runs every `fixtures/v1` fixture on the RTL and compares the end state and the trace in lock-step; `FILTER=<glob>` picks a subset                                                                    |
+| `clean`       | Removes `build/`                                                                                                                                                                                     |
 
-Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint` and `pnpm hardware:test`.
+Root scripts: `pnpm hardware:setup`, `pnpm hardware:gen`, `pnpm hardware:lint`, `pnpm hardware:test` and `pnpm hardware:simulate PROGRAM=…`.
 
 ### Adding targets and unit tests
 
@@ -121,6 +128,8 @@ UNIT_TESTS += alu
 test-alu: ## Exhaustive ALU test against the TypeScript ALU
 	…
 ```
+
+A check of the whole CPU, run after the unit tests, appends its target name to `SYSTEM_TESTS` instead (`SYSTEM_TESTS += fixtures`).
 
 Write a `## description` comment after a target so `make help` lists it. New `core/*.sv` files are picked up by `lint` with no list edits.
 

@@ -11,13 +11,16 @@
     "gen:isa": "tsx src/cli.ts gen-isa",
     "gen:alu-vectors": "tsx src/cli.ts gen-alu-vectors",
     "gen:decoder-vectors": "tsx src/cli.ts gen-decoder-vectors",
+    "assemble": "tsx src/cli.ts assemble",
+    "fixtures": "tsx src/cli.ts fixtures",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
     "@vcpu/assembler": "workspace:*",
     "@vcpu/cpu-core": "workspace:*",
-    "@vcpu/shared": "workspace:*"
+    "@vcpu/shared": "workspace:*",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "catalog:",

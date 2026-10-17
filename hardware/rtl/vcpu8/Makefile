@@ -2,7 +2,9 @@
 #
 # Tickets add targets as fragments in mk/<topic>.mk, which are included below, and register unit
 # tests by appending to UNIT_TESTS (`UNIT_TESTS += regfile` plus a `test-regfile` target), so no
-# two tickets edit the same lines of this file. Outputs go to build/, which is git-ignored.
+# two tickets edit the same lines of this file. Whole-CPU checks append their target name to
+# SYSTEM_TESTS (`SYSTEM_TESTS += fixtures`); `make test` runs them after the unit tests. Outputs go
+# to build/, which is git-ignored.
 
 HW_DIR    := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 REPO_ROOT := $(abspath $(HW_DIR)/../../..)
@@ -37,11 +39,10 @@ need = @command -v $(1) > /dev/null 2>&1 || { \
 RTL_PKGS := $(sort $(wildcard $(HW_DIR)/core/*_pkg.sv))
 RTL_SRCS := $(RTL_PKGS) $(sort $(filter-out $(RTL_PKGS),$(wildcard $(HW_DIR)/core/*.sv)))
 
-# -Wno-MULTITOP: lint reads every core module at once, and until vcpu8_top instantiates them each
-# one is its own top.
-LINT_FLAGS := --lint-only -Wall -Wno-MULTITOP
+LINT_FLAGS := --lint-only -Wall --top-module vcpu8_top
 
-UNIT_TESTS :=
+UNIT_TESTS   :=
+SYSTEM_TESTS :=
 
 .DEFAULT_GOAL := help
 
@@ -64,13 +65,14 @@ lint: ## Verilator --lint-only -Wall over every core/*.sv
 	$(call need,$(VERILATOR))
 	$(VERILATOR) $(LINT_FLAGS) $(RTL_SRCS)
 
-test: ## Run every registered unit test (UNIT_TESTS)
+test: ## Run every registered unit test (UNIT_TESTS), then the system tests (SYSTEM_TESTS)
 ifeq ($(strip $(UNIT_TESTS)),)
 	@echo "0 unit tests registered"
 else
 	@set -e; for t in $(UNIT_TESTS); do $(MAKE) --no-print-directory test-$$t; done
 	@echo "$(words $(UNIT_TESTS)) unit tests passed: $(UNIT_TESTS)"
 endif
+	@set -e; for t in $(SYSTEM_TESTS); do $(MAKE) --no-print-directory $$t; done
 
 clean: ## Remove build/
 	rm -rf $(BUILD_DIR)

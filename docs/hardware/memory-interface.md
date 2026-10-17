@@ -36,7 +36,40 @@ A timing diagram of four cycles. Each row is one rising edge, with the inputs as
 - At e3 the write and the read happen together, and the read gets the byte from before the write.
 - The next read of `0x20`, at e4, returns the new byte.
 
-The control FSM therefore presents an address one state before the state that uses the byte. The FSM ticket adds how fetches and data accesses share this one port.
+The control FSM therefore presents an address one state before the state that uses the byte. [Sharing the port](#sharing-the-port) shows how fetches and data accesses take turns on it.
+
+## Sharing the port
+
+The CPU has one memory port for everything: opcode fetches, operand-byte fetches, data reads (LOAD, POP, RET) and data writes (STORE, PUSH, CALL). The control FSM ([control-unit.md](control-unit.md#control-fsm)) gives each access its own state, so there is exactly one access per cycle and they never compete. `vcpu8_core` drives `mem_addr` from the address mux and `mem_we` from the FSM:
+
+| FSM state       | `mem_addr`                                      | `mem_we`                | `mem_rdata` during this state holds                    |
+| --------------- | ----------------------------------------------- | ----------------------- | ------------------------------------------------------ |
+| FETCH           | PC                                              | 0                       | (the previous instruction's last access; unused)       |
+| DECODE          | PC + 1 if the instruction has a byte 1, else PC | 0                       | the opcode, `mem[PC]`                                  |
+| OPERAND1        | PC + 2 if it has a byte 2, else PC              | 0                       | byte 1, `mem[PC + 1]`                                  |
+| OPERAND2        | PC                                              | 0                       | byte 2, `mem[PC + 2]`                                  |
+| EXECUTE         | the data address, or PC if there is none        | 0                       | (unused)                                               |
+| WRITEBACK       | the data address, or PC if there is none        | 1 for STORE, PUSH, CALL | the data byte for LOAD, POP, RET (`mem[data address]`) |
+| HALTED, FAULTED | PC                                              | 0                       | (unused)                                               |
+
+The data address is IR.tb for the absolute forms, a register for the `[Rp]` forms, SP for a push and SP + 1 for a pop ([datapath.md](datapath.md#multiplexers-and-their-selects)). It is presented in EXECUTE and held through WRITEBACK, which serves both directions:
+
+- **A read** issued in EXECUTE has its byte on `mem_rdata` in WRITEBACK, where the register write (LOAD, POP) or the next PC (RET) takes it. The one-cycle latency costs no extra state.
+- **A write** happens at the edge that ends WRITEBACK, the CPU's single commit point, together with the register, FLAGS, SP, SD and PC updates.
+
+Here is a 2-byte `PUSH R1` at address `0x03` with SP = `0xFF` (from the fixture `op-push-full-stack`), one row per cycle:
+
+| Cycle | State     | `mem_addr` | `mem_we` | `mem_wdata` | `mem_rdata` | At the rising edge that ends the cycle                                      |
+| ----- | --------- | ---------- | -------- | ----------- | ----------- | --------------------------------------------------------------------------- |
+| 1     | FETCH     | `0x03`     | 0        | –           | –           | RAM reads `mem[0x03]`                                                       |
+| 2     | DECODE    | `0x04`     | 0        | –           | `0x50`      | IR.op ← `0x50` (PUSH); RAM reads `mem[0x04]`                                |
+| 3     | OPERAND1  | `0x03`     | 0        | –           | `0x10`      | IR.rb, IR.tb ← `0x10` (R1)                                                  |
+| 4     | EXECUTE   | `0xFF`     | 0        | –           | –           | stack check: SD < 64, no fault                                              |
+| 5     | WRITEBACK | `0xFF`     | 1        | `0x40` (R1) | –           | `mem[0xFF]` ← `0x40`; SP ← `0xFE`, SD ← 1, PC ← `0x05`; `retire` next cycle |
+
+**A write never coincides with a fetch.** Writes happen only in WRITEBACK, and fetches (of the opcode or an operand byte) only in FETCH, DECODE and OPERAND1. These are different states of one FSM, so they are always different cycles. The next instruction's FETCH starts in the cycle after the write and reads the memory as the write left it: a program that stores into its own next instruction executes the new byte. Within one instruction, a read and a write never share a cycle either: no instruction both reads and writes data memory.
+
+Because one access is all a cycle can do, the clocks an instruction takes are set by its memory accesses: one per instruction byte, plus EXECUTE and WRITEBACK, whose data access overlaps the work done there. Overlapping one instruction's WRITEBACK with the next one's FETCH, or prefetching, would need the two accesses to be ordered or the port duplicated. That is future work.
 
 ## Read-during-write: read-first
 

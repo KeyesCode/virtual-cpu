@@ -101,6 +101,8 @@ Each instruction takes one clock per FSM state it passes through. These counts w
 
 A taken branch costs the same as one not taken, because nothing is fetched ahead. A data read (LOAD, POP, RET) is addressed in EXECUTE and its byte arrives in WRITEBACK, so it costs no extra state. A precise fault ends the step when it is detected: 2 clocks for a DECODE fault (`fault-invalid-opcode`, `fault-instruction-overrun-at-fe`), 3 for a malformed register byte of a 2-byte instruction (`fault-malformed-field-b`), 4 for a malformed 3-byte instruction (`fault-malformed-register`), and 3 or 4 for an EXECUTE fault of a 1- or 2-byte instruction (`fault-stack-underflow-ret`, `fault-divide-by-zero`).
 
+This microarchitecture is revision `vcpu8-mc-r1` (`hardware/rtl/vcpu8/REVISION`). Any change to the counts above bumps it ([research/cpu/README.md](../../research/cpu/README.md#the-architecture-revision)). [performance-analysis.md](performance-analysis.md) has the cycles and CPI of the benchmark programs.
+
 [hardware-porting.md](../hardware-porting.md#per-instruction-state-sequence) predicted 12 clocks for DIV with an 8-iteration divider. This design divides combinationally, so DIV costs 5. The iterative divider is a later experiment.
 
 ## How this differs from the emulator

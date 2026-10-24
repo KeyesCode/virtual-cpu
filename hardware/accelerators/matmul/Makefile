@@ -60,10 +60,12 @@ RTL_PKGS := $(sort $(wildcard $(HW_DIR)/rtl/*_pkg.sv))
 RTL_SRCS := $(RTL_PKGS) $(sort $(filter-out $(RTL_PKGS),$(wildcard $(HW_DIR)/rtl/*.sv)))
 
 # Lint the whole accelerator from matmul_top at ROWS x COLS once it exists. Until then, lint each
-# other module as its own top at its default parameters (two modules with no common top would
-# otherwise stop -Wall with MULTITOP), or only the packages while rtl/ holds nothing else.
+# other module as its own top (two modules with no common top would otherwise stop -Wall with
+# MULTITOP): the modules that declare a ROWS parameter at ROWS x COLS, the others at their default
+# parameters; or only the packages while rtl/ holds nothing else.
 LINT_FLAGS   := --lint-only -Wall
 LINT_MODULES := $(basename $(notdir $(filter-out $(RTL_PKGS),$(RTL_SRCS))))
+LINT_SIZED   := $(basename $(notdir $(shell grep -lE 'parameter int ROWS( |=)' $(filter-out $(RTL_PKGS),$(RTL_SRCS)) /dev/null)))
 
 UNIT_TESTS   :=
 SYSTEM_TESTS :=
@@ -91,10 +93,11 @@ lint: ## Verilator --lint-only -Wall over every rtl/*.sv (from matmul_top at ROW
 ifneq ($(filter matmul_top,$(LINT_MODULES)),)
 	$(VERILATOR) $(LINT_FLAGS) --top-module matmul_top $(SIZE_GFLAGS) $(RTL_SRCS)
 else ifneq ($(strip $(LINT_MODULES)),)
-	@echo "No matmul_top yet: linting each module at its default parameters (ROWS/COLS not applied)"
+	@echo "No matmul_top yet: linting each module as its own top ($(SIZE) for $(LINT_SIZED))"
 	@set -e; for m in $(LINT_MODULES); do \
-	  echo "$(VERILATOR) $(LINT_FLAGS) --top-module $$m"; \
-	  $(VERILATOR) $(LINT_FLAGS) --top-module $$m $(RTL_SRCS); \
+	  case " $(LINT_SIZED) " in *" $$m "*) g='$(SIZE_GFLAGS)' ;; *) g= ;; esac; \
+	  echo "$(VERILATOR) $(LINT_FLAGS) --top-module $$m $$g"; \
+	  $(VERILATOR) $(LINT_FLAGS) --top-module $$m $$g $(RTL_SRCS); \
 	done
 else
 	$(VERILATOR) $(LINT_FLAGS) $(RTL_SRCS)

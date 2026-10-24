@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { writePeVectors } from './harness/pe-vectors.js';
+import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { writeCase } from './harness/vectors.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
 import {
@@ -36,6 +37,14 @@ ${GENERATORS}
                                          directed segments, then N random clocks from seed S, one
                                          line per clock with the outputs the clock-level PE model
                                          expects (format in src/harness/pe-vectors.ts).
+  gen-tile-vectors --rows R --cols C --k K --seed S --out <dir> [--generator G] [--name <name>]
+                                         Write one systolic-array tile case: gen-vectors with
+                                         M = R and N = C, so C is a single R × C output tile.
+                                         The default name is <generator>-<R>x<C>-k<K>-s<S>.
+  gen-tile-suite --rows R --cols C --seed S --count N --out <dir>
+                                         Write the array unit-test suite into <dir>: the directed
+                                         tiles, then N random tiles (K and seed drawn from S), and
+                                         <dir>/cases.txt, the case names in run order.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -167,9 +176,134 @@ function genPeVectors(args: readonly string[]): number {
   return 0;
 }
 
+/**
+ * The `--flag value` pairs of `command`, each flag in `allowed` at most once and every one in
+ * `required` present; otherwise writes the problem to stderr and returns undefined.
+ */
+function parseFlags(
+  command: string,
+  args: readonly string[],
+  allowed: readonly string[],
+  required: readonly string[],
+): Map<string, string> | undefined {
+  const values = new Map<string, string>();
+  for (let i = 0; i < args.length; i += 2) {
+    const flag = args[i] ?? '';
+    const value = args[i + 1];
+    if (!allowed.includes(flag)) {
+      process.stderr.write(`${command}: unexpected argument ${flag}\n${USAGE}`);
+      return undefined;
+    }
+    if (value === undefined) {
+      process.stderr.write(`${command}: ${flag} needs a value\n${USAGE}`);
+      return undefined;
+    }
+    if (values.has(flag)) {
+      process.stderr.write(`${command}: ${flag} given twice\n`);
+      return undefined;
+    }
+    values.set(flag, value);
+  }
+  const missing = required.filter((flag) => !values.has(flag));
+  if (missing.length > 0) {
+    process.stderr.write(`${command}: missing ${missing.join(', ')}\n${USAGE}`);
+    return undefined;
+  }
+  return values;
+}
+
+/** The non-negative integer values of `keys` (`--<key>`), or undefined after reporting one. */
+function parseCounts<Key extends string>(
+  command: string,
+  values: ReadonlyMap<string, string>,
+  keys: readonly Key[],
+): Record<Key, number> | undefined {
+  const numbers: Partial<Record<Key, number>> = {};
+  for (const key of keys) {
+    const raw = values.get(`--${key}`) ?? '';
+    const parsed = parseCount(raw);
+    if (parsed === undefined || !Number.isSafeInteger(parsed)) {
+      process.stderr.write(`${command}: --${key} must be a non-negative integer, got '${raw}'\n`);
+      return undefined;
+    }
+    numbers[key] = parsed;
+  }
+  return numbers as Record<Key, number>;
+}
+
+function genTileVectors(args: readonly string[]): number {
+  const values = parseFlags(
+    'gen-tile-vectors',
+    args,
+    ['--rows', '--cols', '--k', '--seed', '--out', '--generator', '--name'],
+    ['--rows', '--cols', '--k', '--seed', '--out'],
+  );
+  const numbers =
+    values && parseCounts('gen-tile-vectors', values, ['rows', 'cols', 'k', 'seed'] as const);
+  if (values === undefined || numbers === undefined) {
+    return 2;
+  }
+  const generatorArg = values.get('--generator') ?? 'random';
+  if (!isGeneratorName(generatorArg)) {
+    process.stderr.write(
+      `gen-tile-vectors: --generator must be one of ${GENERATOR_NAMES.join(', ')}, got '${generatorArg}'\n`,
+    );
+    return 2;
+  }
+  const { rows, cols, k, seed } = numbers;
+  const array = { rows, cols };
+  try {
+    validateDims({ m: rows, n: cols, k });
+  } catch (error) {
+    process.stderr.write(
+      `gen-tile-vectors: ${error instanceof Error ? error.message : String(error)} (M is --rows, N is --cols)\n`,
+    );
+    return 2;
+  }
+  const name = values.get('--name') ?? tileCaseName(array, generatorArg, k, seed);
+  const written = writeTileCase(resolve(cwd, values.get('--out') ?? ''), array, {
+    name,
+    generator: generatorArg,
+    k,
+    seed,
+  });
+  for (const file of [written.input, written.expected, written.meta]) {
+    process.stdout.write(`wrote ${file}\n`);
+  }
+  return 0;
+}
+
+function genTileSuite(args: readonly string[]): number {
+  const flags = ['--rows', '--cols', '--seed', '--count', '--out'];
+  const values = parseFlags('gen-tile-suite', args, flags, flags);
+  const numbers =
+    values && parseCounts('gen-tile-suite', values, ['rows', 'cols', 'seed', 'count'] as const);
+  if (values === undefined || numbers === undefined) {
+    return 2;
+  }
+  const { rows, cols, seed, count } = numbers;
+  try {
+    validateDims({ m: rows, n: cols, k: 1 });
+  } catch (error) {
+    process.stderr.write(
+      `gen-tile-suite: ${error instanceof Error ? error.message : String(error)} (M is --rows, N is --cols)\n`,
+    );
+    return 2;
+  }
+  const dir = resolve(cwd, values.get('--out') ?? '');
+  const suite = writeTileSuite(dir, { rows, cols, seed, count });
+  const random = suite.cases.filter((testCase) => testCase.random).length;
+  process.stdout.write(
+    `wrote ${String(suite.cases.length)} ${String(rows)}x${String(cols)} tile cases to ${dir} (${String(suite.cases.length - random)} directed, ${String(random)} random from seed ${String(seed)}) and ${suite.list}\n`,
+  );
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
+  'gen-tile-vectors': genTileVectors,
+  'gen-tile-suite': genTileSuite,
 };
 
 const [name, ...rest] = process.argv.slice(2);

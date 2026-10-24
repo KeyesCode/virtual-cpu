@@ -2,7 +2,7 @@
 
 Project 3 adds dedicated AI hardware to the monorepo: a synthesizable, parameterized INT8 × INT8 → INT32 matrix multiplication accelerator, built as an output-stationary systolic array of 4 × 4, 8 × 8 or 16 × 16 processing elements from one RTL, with tiling for any M × K · K × N up to 64. It is verified element by element against a TypeScript reference model, and every performance number in its reports comes from the RTL or from synthesis, never from the reference.
 
-**Status: the complete tiled accelerator RTL, differentially verified.** The make workspace, the reference model, the vector format, the architecture contract, the verified processing element, the verified 4 × 4 / 8 × 8 / 16 × 16 systolic array, and the buffers, controller and `matmul_top`, verified on tiled matmuls of any M × K · K × N up to 64 at every size, exist, with the Verilator runner and the differential verification (`make verify`: the directed corpus and 120 seeded random products across 4 × 4, 8 × 8 and 16 × 16, compared element by element, and six RTL mutants it must catch). Synthesis and benchmarks are being built by the other Project 3 tickets; each adds its documents here.
+**Status: the complete tiled accelerator RTL, differentially verified and synthesized.** The make workspace, the reference model, the vector format, the architecture contract, the verified processing element, the verified 4 × 4 / 8 × 8 / 16 × 16 systolic array, and the buffers, controller and `matmul_top`, verified on tiled matmuls of any M × K · K × N up to 64 at every size, exist, with the Verilator runner and the differential verification (`make verify`: the directed corpus and 120 seeded random products across 4 × 4, 8 × 8 and 16 × 16, compared element by element, and six RTL mutants it must catch), and all three sizes synthesize ([synthesis guide](synthesis-guide.md)); `make wave` records any run as a GTKWave waveform ([simulation guide](simulation-guide.md)). Benchmarks are being built by the other Project 3 tickets; each adds its documents here.
 
 Start with the [architecture contract](architecture.md): the numerics, the dataflow and its cycle-by-cycle timing, tiling, the buffers and host port, and the handshake that every RTL module implements.
 
@@ -39,6 +39,7 @@ New to hardware? Read [concepts.md](concepts.md) first, then [from-rtl-to-silico
 | [systolic-array.md](systolic-array.md)                               | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence                               |
 | [controller.md](controller.md)                                       | The FSM and `matmul_top`: states, tile order, how K is handled, edge masks, read latency, handshake timing, cycle formulas and their measured values, `test-top` evidence                  |
 | [memory.md](memory.md)                                               | The buffers and the host port: sizes, layout, banking, bandwidth, read/write timing, maximum dimensions, transfer overhead, the RAM inference check                                        |
+| [synthesis-guide.md](synthesis-guide.md)                             | Yosys and nextpnr for 4 × 4, 8 × 8 and 16 × 16: the flows, the FPGA wrapper, cells, multipliers, memories, logic depth, fit and Fmax estimates, warnings, baseline                         |
 | [verification-strategy.md](verification-strategy.md)                 | The layers of checks, the Verilator runner and its clock breakdown, the directed and random corpora, reports, failure replay, the mutants and what is not covered                          |
 | [simulation-guide.md](simulation-guide.md)                           | Running a case, `make wave` / `wave-check`, the GTKWave view, and the demo product clock by clock: skew, accumulators, drain, store, the 4 tile boundaries and the done pulse              |
 | [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                                                         |
@@ -55,6 +56,7 @@ hardware/accelerators/matmul/
 ├── mk/                      one make fragment per topic (unit-pe.mk: gen-pe-vectors, test-pe, test-pe-corrupt;
 │                            unit-array.mk: test-array, test-array-4|8|16|4x8, test-array-corrupt, trace-array;
 │                            unit-top.mk: test-top, test-top-4|8|16|4x8, test-top-corrupt;
+│                            synth.mk: synth, synth-size-4|8|16, synth-baseline, synth-compare, synth-latch-check;
 │                            sim.mk: sim, sim-all, simulate; verify.mk: verify, verify-size, replay, verify-mutant;
 │                            wave.mk: sim-trace, wave, wave-check)
 ├── scripts/tool-versions.sh `make tools-check`: tool versions to build/tool-versions.json
@@ -71,24 +73,25 @@ hardware/accelerators/matmul/
 ├── tb/sim/                  the Verilator runner: matmul_sim_top.sv (matmul_top + its size) and matmul_sim.cpp
 ├── tb/wave/                 the GTKWave view: matmul.gtkw, the generated filters ctrl_state.txt and error_code.txt,
 │                            and the waveform demo case demo.in / demo.expected
+├── synth/                   Yosys scripts (generic.ys, ice40.ys, ecp5.ys) and the reviewed warnings.allow
 └── build/                   all outputs, per size (build/sim-8x8/, …), git-ignored
 packages/accelerator-reference/
 ├── src/model/               the pure reference: matmul.ts (wrapping INT32 matmul, exact matmul, fitsInt32, validation),
 │                            prng.ts (the seeded PRNG and the named matrix generators), pe.ts (the clock-level PE)
 ├── src/harness/             vectors.ts: the .in/.expected/.out text format, the JSON sidecar, output comparison;
 │                            pe-vectors.ts: the PE unit-test vectors; tile-vectors.ts: the array tile suites;
-│                            top-vectors.ts: the matmul_top suites;
+│                            top-vectors.ts: the matmul_top suites; synth-summary.ts: the synthesis summary and compare;
 │                            verify.ts: the verify corpora, runner pool, comparison, failures and replay;
 │                            report.ts: report schemas and provenance; mutants.ts: verify-mutant;
 │                            wave.ts: the demo case, the VCD reader, wave-check and wave-table;
 │                            wave-filters.ts: the GTKWave filters from matmul_pkg
 ├── src/viz/                 schedule.ts: the documented tile timing rule for the visualizations; svg.ts, page.ts: gen-viz
-└── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite, gen-top-suite, gen-viz, verify, mutants,
-                             gen-wave-filters, gen-wave-demo, wave-check, wave-table
+└── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite, gen-top-suite, gen-viz,
+                             synth-summary, synth-compare, verify, mutants, gen-wave-filters, gen-wave-demo,
+                             wave-check, wave-table
+hardware/fpga/matmul_fpga_wrapper.sv, matmul_up5k_sg48.pcf   the pin-legal top and iCE40 pins of the FPGA flows
 research/accelerators/matmul/  committed small reports (see its README)
 ```
-
-A later ticket adds `synth/` (Yosys scripts and the reviewed warning allowlist).
 
 ## Building
 
@@ -108,6 +111,7 @@ make -C hardware/accelerators/matmul simulate ROWS=8 CASE=<file.in>  # one case:
 make -C hardware/accelerators/matmul verify           # differential verification (SEED=1 COUNT=40 per size)
 make -C hardware/accelerators/matmul verify-mutant    # every RTL mutant in scripts/mutants.txt must be caught
 make -C hardware/accelerators/matmul test             # every registered unit test
+make -C hardware/accelerators/matmul synth            # Yosys + nextpnr for 4x4, 8x8 and 16x16 -> build/synth/summary.{json,md}
 make -C hardware/accelerators/matmul wave             # the demo's waveform -> build/waves/demo.fst (see simulation-guide.md)
 make -C hardware/accelerators/matmul wave-check       # the demo's waveform has every signal, 4 tile_done pulses and 1 done
 pnpm --filter @vcpu/accelerator-reference test        # the reference model's tests

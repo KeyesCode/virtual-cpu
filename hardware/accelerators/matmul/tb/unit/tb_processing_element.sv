@@ -6,8 +6,11 @@
 // The format is in packages/accelerator-reference/src/harness/pe-vectors.ts: a header line
 // `pe-vectors 1 <clocks> <random clocks> <seed>`, `# <description>` lines that start a segment,
 // and one line per clock, `rst clear a a_valid b b_valid acc a_out a_valid_out b_out b_valid_out`.
-// Inputs change on the falling edge; the five outputs are compared bit for bit (=== so X/Z fail)
-// just after the rising edge. One check is one clock, all five outputs.
+// Inputs change on the falling edge. The five outputs are compared with !== twice per clock:
+// 1 ns after the falling edge, when they must still hold the previous clock's expected values
+// (so a combinational path from an input, or an asynchronous reset, fails), and 1 ns after the
+// rising edge, against this line's expected values. One check is one clock, both comparisons of
+// all five outputs.
 //
 // Plusargs: +vectors=<pe.vec> (required). It prints one summary line per segment, the first
 // MAX_REPORTED mismatches as `MISMATCH line <n> …`, and exits non-zero ($fatal) on a mismatch,
@@ -61,7 +64,7 @@ module tb_processing_element;
     int    version;
     int    header_clocks;
     int    header_random;
-    int    seed;
+    string seed;
     int    line_no;
     int    checks;
     int    mismatches;
@@ -71,6 +74,12 @@ module tb_processing_element;
     int    seg_mismatches;
     int    v_rst, v_clear, v_a, v_av, v_b, v_bv;
     int    e_acc, e_a, e_av, e_b, e_bv;
+    /* verilator lint_off UNUSEDSIGNAL */
+    int    extra;  // only ever written by $sscanf, to reject a line with a twelfth field
+    /* verilator lint_on UNUSEDSIGNAL */
+    bit    have_prev;
+    int    p_acc, p_a, p_av, p_b, p_bv;
+    bit    hold_ok;
 
     rst        = 1'b0;
     clear      = 1'b0;
@@ -83,7 +92,7 @@ module tb_processing_element;
     fd = $fopen(path, "r");
     if (fd == 0) $fatal(1, "tb_processing_element: cannot open %s", path);
     if ($fgets(line, fd) == 0 ||
-        $sscanf(line, "pe-vectors %d %d %d %d", version, header_clocks, header_random, seed) != 4) begin
+        $sscanf(line, "pe-vectors %d %d %d %s", version, header_clocks, header_random, seed) != 4) begin
       $fatal(1, "%s:1: expected 'pe-vectors <version> <clocks> <random clocks> <seed>', got '%s'", path, chomp(line));
     end
     if (version != 1) $fatal(1, "%s:1: format version %0d, this testbench reads version 1", path, version);
@@ -96,6 +105,7 @@ module tb_processing_element;
     segment        = "";
     seg_clocks     = 0;
     seg_mismatches = 0;
+    have_prev      = 1'b0;
     while ($fgets(line, fd) != 0) begin
       line_no++;
       line = chomp(line);
@@ -110,8 +120,9 @@ module tb_processing_element;
         seg_mismatches = 0;
         continue;
       end
-      if ($sscanf(line, "%d %d %d %d %d %d %d %d %d %d %d", v_rst, v_clear, v_a, v_av, v_b, v_bv,
-                  e_acc, e_a, e_av, e_b, e_bv) != 11) begin
+      // A twelfth field is read only to reject a line that has one.
+      if ($sscanf(line, "%d %d %d %d %d %d %d %d %d %d %d %d", v_rst, v_clear, v_a, v_av, v_b, v_bv,
+                  e_acc, e_a, e_av, e_b, e_bv, extra) != 11) begin
         $fatal(1, "%s:%0d: expected 11 integers, got '%s'", path, line_no, line);
       end
       if (!is_bit(v_rst) || !is_bit(v_clear) || !is_bit(v_av) || !is_bit(v_bv) || !is_bit(e_av) ||
@@ -127,6 +138,19 @@ module tb_processing_element;
       a_valid_in = v_av[0];
       b_in       = DATA_W'(v_b);
       b_valid_in = v_bv[0];
+      #1;
+      hold_ok = !have_prev ||
+                (acc === ACC_W'(p_acc) && a_out === DATA_W'(p_a) && a_valid_out === p_av[0] &&
+                 b_out === DATA_W'(p_b) && b_valid_out === p_bv[0]);
+      if (!hold_ok) begin
+        mismatches++;
+        seg_mismatches++;
+        if (mismatches <= MAX_REPORTED) begin
+          $display("MISMATCH line %0d (segment '%s'): before the rising edge the outputs changed with the inputs: expected acc=%0d a_out=%0d/%0d b_out=%0d/%0d from the previous clock, got acc=%0d a_out=%0d/%0d b_out=%0d/%0d",
+                   line_no, segment, p_acc, p_a, p_av, p_b, p_bv, acc, a_out, a_valid_out, b_out,
+                   b_valid_out);
+        end
+      end
       @(posedge clk);
       #1;
 
@@ -135,14 +159,18 @@ module tb_processing_element;
       if (in_random) random_clocks++;
       if (acc !== ACC_W'(e_acc) || a_out !== DATA_W'(e_a) || a_valid_out !== e_av[0] ||
           b_out !== DATA_W'(e_b) || b_valid_out !== e_bv[0]) begin
-        mismatches++;
-        seg_mismatches++;
+        if (hold_ok) begin
+          mismatches++;
+          seg_mismatches++;
+        end
         if (mismatches <= MAX_REPORTED) begin
-          $display("MISMATCH line %0d (segment '%s'): rst=%0d clear=%0d a=%0d a_valid=%0d b=%0d b_valid=%0d: expected acc=%0d a_out=%0d/%0d b_out=%0d/%0d, got acc=%0d a_out=%0d/%0b b_out=%0d/%0b",
+          $display("MISMATCH line %0d (segment '%s'): rst=%0d clear=%0d a=%0d a_valid=%0d b=%0d b_valid=%0d: expected acc=%0d a_out=%0d/%0d b_out=%0d/%0d, got acc=%0d a_out=%0d/%0d b_out=%0d/%0d",
                    line_no, segment, v_rst, v_clear, v_a, v_av, v_b, v_bv, e_acc, e_a, e_av, e_b,
                    e_bv, acc, a_out, a_valid_out, b_out, b_valid_out);
         end
       end
+      {p_acc, p_a, p_av, p_b, p_bv} = {e_acc, e_a, e_av, e_b, e_bv};
+      have_prev = 1'b1;
     end
     $fclose(fd);
     if (segment != "") begin
@@ -160,7 +188,7 @@ module tb_processing_element;
     if (mismatches != 0) begin
       $fatal(1, "tb_processing_element: %0d of %0d checks failed", mismatches, checks);
     end
-    $display("tb_processing_element: PASS (%0d checks, %0d random clocks, seed %0d)", checks, random_clocks, seed);
+    $display("tb_processing_element: PASS (%0d checks, %0d random clocks, seed %s)", checks, random_clocks, seed);
     $finish;
   end
 endmodule

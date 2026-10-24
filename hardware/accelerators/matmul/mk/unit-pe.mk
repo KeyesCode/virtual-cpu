@@ -2,21 +2,30 @@
 # @vcpu/accelerator-reference, one clock per vector line (tb/unit/tb_processing_element.sv).
 #
 # The vectors (the directed segments, then PE_RANDOM_CLOCKS random clocks from PE_SEED) are
-# regenerated whenever the generator, the model or this file changes. test-pe also proves the
+# regenerated whenever the generator, the model, this file, PE_SEED or PE_RANDOM_CLOCKS changes
+# (`make test-pe PE_SEED=5 PE_RANDOM_CLOCKS=50000` runs another sequence). test-pe also proves the
 # harness can fail: test-pe-corrupt reruns the testbench on a copy of the vectors with the expected
 # accumulator of the first wrapped clock (−2^31, in the overflow-up segment) changed by one, and
 # requires a non-zero exit that names that line.
 
 UNIT_TESTS += pe
 
-PE_SEED          := 1
-PE_RANDOM_CLOCKS := 20000
+PE_SEED          ?= 1
+PE_RANDOM_CLOCKS ?= 20000
 
 PE_VECTORS  := $(BUILD_DIR)/vectors/pe.vec
+# Holds the seed and count pe.vec was generated with; rewritten (so pe.vec is regenerated) only
+# when either changes.
+PE_PARAMS      := $(BUILD_DIR)/vectors/pe.params
+PE_PARAMS_TEXT := seed $(PE_SEED) random-clocks $(PE_RANDOM_CLOCKS)
+ifneq ($(shell cat $(PE_PARAMS) 2> /dev/null),$(PE_PARAMS_TEXT))
+  $(shell mkdir -p $(dir $(PE_PARAMS)) && echo '$(PE_PARAMS_TEXT)' > $(PE_PARAMS))
+endif
 PE_REF_SRC  := $(REPO_ROOT)/packages/accelerator-reference/src
 PE_GEN_DEPS := $(PE_REF_SRC)/harness/pe-vectors.ts $(PE_REF_SRC)/model/pe.ts \
                $(PE_REF_SRC)/model/matmul.ts $(PE_REF_SRC)/model/prng.ts $(PE_REF_SRC)/cli.ts \
-               $(HW_DIR)/mk/unit-pe.mk
+               $(REPO_ROOT)/packages/accelerator-reference/package.json $(HW_DIR)/mk/unit-pe.mk \
+               $(PE_PARAMS)
 PE_TB       := $(HW_DIR)/tb/unit/tb_processing_element.sv
 PE_TB_DIR   := $(BUILD_DIR)/unit/pe
 PE_TB_BIN   := $(PE_TB_DIR)/Vtb_processing_element
@@ -30,14 +39,14 @@ $(PE_VECTORS): $(PE_GEN_DEPS)
 	cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/accelerator-reference gen-pe-vectors \
 	  --seed $(PE_SEED) --count $(PE_RANDOM_CLOCKS) --out $(PE_VECTORS)
 
-$(PE_TB_BIN): $(RTL_PKGS) $(HW_DIR)/rtl/processing_element.sv $(PE_TB)
+$(PE_TB_BIN): $(RTL_PKGS) $(HW_DIR)/rtl/processing_element.sv $(PE_TB) $(HW_DIR)/mk/unit-pe.mk
 	$(call need,$(VERILATOR))
 	@mkdir -p $(PE_TB_DIR)
 	$(VERILATOR) --binary --timing --timescale 1ns/1ps -O3 -Wall -j 0 --top-module tb_processing_element \
 	  -Mdir $(PE_TB_DIR) -CFLAGS -Wno-unknown-warning-option -o Vtb_processing_element \
 	  $(RTL_PKGS) $(HW_DIR)/rtl/processing_element.sv $(PE_TB) > $(PE_TB_DIR).build.log
 
-test-pe: $(PE_TB_BIN) $(PE_VECTORS) ## PE unit test: directed segments + 20,000 random clocks vs the TypeScript model
+test-pe: $(PE_TB_BIN) $(PE_VECTORS) ## PE unit test vs the TypeScript model: directed segments + PE_RANDOM_CLOCKS random clocks
 	$(PE_TB_BIN) +vectors=$(PE_VECTORS)
 	@$(MAKE) --no-print-directory test-pe-corrupt
 

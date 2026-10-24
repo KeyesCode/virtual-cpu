@@ -97,8 +97,8 @@ yosys -q -p 'read_verilog -sv rtl/matmul_pkg.sv rtl/processing_element.sv; hiera
 
 `make -C hardware/accelerators/matmul test-pe` (registered in `UNIT_TESTS`, so `make test` runs it too):
 
-1. **Vectors from the reference.** `pnpm --filter @vcpu/accelerator-reference gen-pe-vectors --seed 1 --count 20000 --out build/vectors/pe.vec` runs `stepPe` one clock at a time and writes the inputs and the expected outputs of every clock. It is regenerated whenever the model, the generator or `mk/unit-pe.mk` changes.
-2. **Bit-for-bit check per clock.** `tb_processing_element` applies each line's inputs on the falling edge and compares `acc`, `a_out`, `a_valid_out`, `b_out` and `b_valid_out` with `!==` just after the rising edge, so an X or Z fails too. A malformed line, or a clock count that disagrees with the file's header, is a failure as well.
+1. **Vectors from the reference.** The make recipe runs `pnpm --filter @vcpu/accelerator-reference gen-pe-vectors --seed 1 --count 20000 --out <absolute path>/build/vectors/pe.vec` (a relative `--out` resolves against the directory pnpm was started in), which runs `stepPe` one clock at a time and writes the inputs and the expected outputs of every clock. It is regenerated whenever the model, the generator, `mk/unit-pe.mk`, `PE_SEED` or `PE_RANDOM_CLOCKS` changes, so `make test-pe PE_SEED=5 PE_RANDOM_CLOCKS=50000` runs another random sequence.
+2. **Bit-for-bit check, twice per clock.** `tb_processing_element` applies each line's inputs on the falling edge and compares `acc`, `a_out`, `a_valid_out`, `b_out` and `b_valid_out` twice: 1 ns later, while the new inputs are already applied, against the _previous_ clock's expected values (they must not have moved yet, so a combinational path from an input to an output, or an asynchronous reset, fails), and 1 ns after the rising edge against this line's expected values. That first comparison is what verifies the one-clock latency. A malformed line, or a clock count that disagrees with the file's header, is a failure as well.
 3. **The harness can fail.** `test-pe-corrupt` (run by `test-pe`) changes the expected accumulator of the first wrapped clock by one and requires the testbench to exit non-zero with a `MISMATCH line <n>` for exactly that line.
 
 The vectors are 13 directed segments, then the random segment, in one run (the state carries across segments, as in the RTL):
@@ -130,7 +130,7 @@ tb_processing_element: PASS (284355 checks, 20000 random clocks, seed 1)
 test-pe-corrupt: corrupting the expected wrapped accumulator on line 132251 fails the test as it should
 ```
 
-One check is one clock with all five outputs compared. As a further check of the testbench, a deliberately broken PE whose multiply is unsigned (`$unsigned` on both operands) fails at the first negative product of the `negative` segment.
+One check is one clock: both comparisons of all five outputs. As a further check of the testbench, deliberately broken PEs fail it: an unsigned multiply (`$unsigned` on both operands) at the first negative product of the `negative` segment, forwarding through wires instead of registers at the first clock whose inputs differ from the previous one, and an asynchronous `rst` at the first reset with a non-zero accumulator.
 
 ### Vector format
 

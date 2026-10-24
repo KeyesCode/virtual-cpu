@@ -9,6 +9,7 @@
   "scripts": {
     "cli": "tsx src/cli.ts",
     "gen-vectors": "tsx src/cli.ts gen-vectors",
+    "gen-pe-vectors": "tsx src/cli.ts gen-pe-vectors",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

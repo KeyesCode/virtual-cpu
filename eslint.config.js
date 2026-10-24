@@ -28,6 +28,7 @@ export default defineConfig(
       'apps/cli/**/*.ts',
       'apps/web/vite.config.ts',
       'packages/rtl-tools/**/*.ts',
+      'packages/accelerator-reference/**/*.ts',
     ],
     languageOptions: { globals: globals.node },
   },

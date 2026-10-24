@@ -13,9 +13,9 @@
 // Only the cycle counters, error_code and the debug taps are left unconnected, so synthesis removes the logic
 // that only they use (the guide compares the counts with the generic matmul_top's).
 //
-// Commands (CMD_*): the 12-bit address register is written a byte at a time (ADDR_LO, ADDR_HI);
-// WRITE_A and WRITE_B write data_in to A or B at the address and then increment it, so a matrix
-// streams in one byte per strobe; SET_M, SET_N and SET_K load a dimension (data_in, 0 … 255, so
+// Commands (CMD_*): the address register (12 bits at MAX_DIM 64) is written a byte at a time
+// (ADDR_LO, ADDR_HI); WRITE_A and WRITE_B write data_in to A or B at the address and then
+// increment it, so a matrix streams in one byte per strobe; SET_M, SET_N and SET_K load a dimension (data_in, 0 … 255, so
 // the controller's range checks stay reachable); CTRL selects the byte of C shown on data_out
 // (data_in[1:0]) and, with data_in[7], pulses start.
 //
@@ -24,8 +24,11 @@
 // command is taken on its synchronized rising edge, by which time cmd and data_in have been
 // steady for two clocks (the host's side of the contract: hold them while strobe is high).
 module matmul_fpga_wrapper #(
-  parameter int ROWS = 4,
-  parameter int COLS = 4
+  parameter int ROWS    = 4,
+  parameter int COLS    = 4,
+  // The buffer capacity (experiment variants change it). The address register is written a byte
+  // at a time, ADDR_HI holding the bits above 8, and SET_M/N/K take one byte, so 32 … 128.
+  parameter int MAX_DIM = matmul_pkg::MAX_DIM
 ) (
   input  logic       clk,
   input  logic       rst,       // active-high, asynchronous to clk
@@ -37,7 +40,7 @@ module matmul_fpga_wrapper #(
   output logic       led_done,
   output logic       led_error
 );
-  localparam int ADDR_W = matmul_pkg::ADDR_W;
+  localparam int ADDR_W = $clog2(MAX_DIM * MAX_DIM);
   localparam int CFG_W  = matmul_pkg::CFG_W;
   localparam int ACC_W  = matmul_pkg::ACC_W;
 
@@ -113,8 +116,9 @@ module matmul_fpga_wrapper #(
   // synthesis removes the logic only they use.
   /* verilator lint_off PINCONNECTEMPTY */
   matmul_top #(
-    .ROWS(ROWS),
-    .COLS(COLS)
+    .ROWS   (ROWS),
+    .COLS   (COLS),
+    .MAX_DIM(MAX_DIM)
   ) u_matmul (
     .clk,
     .rst           (rst_q),

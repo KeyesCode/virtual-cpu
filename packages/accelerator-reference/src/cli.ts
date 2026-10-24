@@ -9,6 +9,7 @@ import {
   runBenchmark,
 } from './harness/benchmark.js';
 import { COMPARE_DEFAULTS, defaultCompareOptions, runCompareCpu } from './harness/compare-cpu.js';
+import { defaultExperimentOptions, runExperiment } from './harness/experiment.js';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { MUTANTS_DEFAULTS, runMutants } from './harness/mutants.js';
@@ -133,6 +134,12 @@ ${GENERATORS}
                                          --publish also writes <dir>/<date>-<shortsha>.{json,md}
                                          when every row passed, refused from a dirty working tree
                                          unless --allow-dirty. Exit 1 on a failing row.
+  experiment --spec <experiment.json> --out <dir> [--make <make>] [--jobs J] [--allow-dirty]
+                                         Build, verify, benchmark and synthesise every variant of
+                                         the spec (src/harness/experiment.ts) and write
+                                         <dir>/<date>-<shortsha>.{json,md} with the Pareto-optimal
+                                         variants. Refused from a dirty working tree unless
+                                         --allow-dirty. Exit 1 when a variant failed a stage.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -798,6 +805,35 @@ async function compareCpu(args: readonly string[]): Promise<number> {
   return outcome.exitCode;
 }
 
+async function experiment(args: readonly string[]): Promise<number> {
+  const parsed = parseArgs(
+    'experiment',
+    args,
+    ['--spec', '--out', '--make', '--jobs'],
+    ['--allow-dirty'],
+  );
+  if (parsed === undefined) return 2;
+  const { values, set } = parsed;
+  const spec = values.get('--spec')?.[0];
+  const out = values.get('--out')?.[0];
+  if (spec === undefined || out === undefined) {
+    process.stderr.write(`experiment: --spec and --out are required\n${USAGE}`);
+    return 2;
+  }
+  const defaults = defaultExperimentOptions(resolve(cwd, spec), resolve(cwd, out));
+  const jobs = countFlag('experiment', values, '--jobs', defaults.jobs, 1);
+  if (jobs === undefined) return 2;
+  return runExperiment(
+    {
+      ...defaults,
+      make: values.get('--make')?.[0] ?? defaults.make,
+      jobs,
+      allowDirty: set.has('--allow-dirty'),
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
@@ -816,6 +852,7 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   benchmark,
   'benchmark-compare': benchmarkCompare,
   'compare-cpu': compareCpu,
+  experiment,
 };
 
 const [name, ...rest] = process.argv.slice(2);

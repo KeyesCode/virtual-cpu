@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, cpus } from 'node:os';
 import { join, relative, resolve } from 'node:path';
-import { type MatmulDims, validateDims } from '../model/matmul.js';
+import { MAX_DIM, type MatmulDims, validateDims } from '../model/matmul.js';
 import { generateOperands } from '../model/prng.js';
 import {
   BENCHMARK_FORMULAS,
@@ -41,7 +41,7 @@ export interface BenchmarkWorkload {
   readonly what: string;
 }
 
-function workload(m: number, k: number, n: number, what: string): BenchmarkWorkload {
+export function workload(m: number, k: number, n: number, what: string): BenchmarkWorkload {
   return { name: `${String(m)}x${String(k)}x${String(n)}`, dims: { m, n, k }, what };
 }
 
@@ -73,6 +73,8 @@ export interface BenchmarkOptions {
   readonly sims: readonly string[];
   readonly seed: number;
   readonly workloads?: readonly BenchmarkWorkload[];
+  /** The runners' MAX_DIM (an experiment variant's buffer capacity); {@link MAX_DIM} when absent. */
+  readonly maxDim?: number;
   /** Where the case files and runner outputs go. */
   readonly work: string;
   /** Where benchmark.{json,csv,md} go. */
@@ -185,6 +187,7 @@ export async function runBenchmark(
   write: (text: string) => void,
 ): Promise<BenchmarkOutcome> {
   const workloads = options.workloads ?? BENCHMARK_WORKLOADS;
+  const maxDim = options.maxDim ?? MAX_DIM;
   if (options.sims.length === 0) {
     write('benchmark: no runner given (--sim build/sim-<R>x<C>/matmul_sim)\n');
     return { exitCode: 2, report: null };
@@ -208,7 +211,7 @@ export async function runBenchmark(
     }
     let size: ArraySize;
     try {
-      size = await runnerInfo(sim);
+      size = await runnerInfo(sim, maxDim);
     } catch (error) {
       write(`benchmark: ${(error as Error).message}\n`);
       return { exitCode: 2, report: null };
@@ -238,7 +241,7 @@ export async function runBenchmark(
   const worker = async () => {
     for (let task = tasks[next++]; task !== undefined; task = tasks[next++]) {
       const { size, sim, workload: w } = task;
-      validateDims(w.dims);
+      validateDims(w.dims, { maxDim });
       const dir = join(options.work, sizeName(size));
       const name = `${w.name}-s${String(options.seed)}`;
       const written = writeCase(
@@ -246,6 +249,7 @@ export async function runBenchmark(
         name,
         { ...w.dims, ...generateOperands('random', options.seed, w.dims) },
         { seed: options.seed, generator: 'random' },
+        { maxDim },
       );
       const files = {
         expected: written.expected,

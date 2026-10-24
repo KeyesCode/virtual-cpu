@@ -5,6 +5,9 @@
 #
 #   make sim [ROWS=8]                            build the runner for one size
 #   make sim-all                                 build it for 4x4, 8x8 and 16x16
+#   make sim-variant SIM_DIR=<dir> SIM_GFLAGS=… [SIM_DEFINES=…]
+#                                                build <dir>/matmul_sim with those flags (the
+#                                                experiment runner's hook, mk/experiment.mk)
 #   make simulate CASE=<file.in> [ROWS=8] [REPEAT=N]
 #
 # CASE is a matmul case (`pnpm accel:gen-vectors` writes them, verify saves them under
@@ -27,11 +30,31 @@ $(BUILD_DIR)/sim-%/matmul_sim: $(RTL_SRCS) $(SIM_TOP) $(SIM_CPP) $(HW_DIR)/mk/si
 	  $(RTL_SRCS) $(SIM_TOP) $(SIM_CPP) > $(dir $@)build.log
 	@echo "built $@"
 
-.PHONY: sim sim-all simulate
+# An experiment variant's runner: SIM_DIR=<dir> builds <dir>/matmul_sim with SIM_GFLAGS (-GROWS=…
+# -GCOLS=… -GMAX_DIM=…) and SIM_DEFINES (-DNAME[=value]). The experiment names the directory after
+# a hash of the flags (build/variants/<hash>/sim/), so only a source change needs a rebuild.
+SIM_DIR     ?=
+SIM_GFLAGS  ?= $(SIZE_GFLAGS)
+SIM_DEFINES ?=
+ifneq ($(SIM_DIR),)
+$(SIM_DIR)/matmul_sim: $(RTL_SRCS) $(SIM_TOP) $(SIM_CPP) $(HW_DIR)/mk/sim.mk
+	$(call need,$(VERILATOR))
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --cc --exe --build -O3 -Wall --quiet -j 0 --top-module matmul_sim_top \
+	  $(SIM_GFLAGS) $(SIM_DEFINES) \
+	  -CFLAGS -Wno-unknown-warning-option -Mdir $(dir $@)obj -o $@ \
+	  $(RTL_SRCS) $(SIM_TOP) $(SIM_CPP) > $(dir $@)build.log 2>&1
+	@echo "built $@"
+endif
+
+.PHONY: sim sim-all sim-variant simulate
 
 sim: $(SIM_BIN) ## Build the Verilator matmul runner build/sim-<R>x<C>/matmul_sim (ROWS=4|8|16)
 
 sim-all: $(foreach size,$(SIM_SIZES),$(BUILD_DIR)/sim-$(size)/matmul_sim) ## Build the runner for 4x4, 8x8 and 16x16
+
+sim-variant: $(if $(SIM_DIR),$(SIM_DIR)/matmul_sim) ## Build SIM_DIR/matmul_sim with SIM_GFLAGS and SIM_DEFINES (experiment variants)
+	@test -n "$(SIM_DIR)" || { echo "sim-variant: set SIM_DIR=<dir>" >&2; exit 2; }
 
 SIMULATE_OUT      := $(BUILD_DIR)/simulate-$(SIZE)
 SIMULATE_SOURCE    = $(firstword $(wildcard $(REPO_ROOT)/$(CASE) $(CASE)))

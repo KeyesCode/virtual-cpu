@@ -76,21 +76,26 @@ function caseName(label: string, dims: MatmulDims, seed: number): string {
  * zero, the identity, all −128, all 127, sign checkerboards, M, N or K equal to 1, a MAX_DIM dot
  * product, three runs in one runner process without a reset, and a run reset in its first STORE
  * clock then restarted twice with a reset in between.
+ *
+ * `maxDim` is the runner's MAX_DIM (an experiment variant may build another buffer capacity): the
+ * capacity cases use it, and every other dimension is capped at it, so the default (MAX_DIM) gives
+ * exactly the corpus of `make verify`.
  */
-export function directedPlan(size: ArraySize, seed: number): VerifyCasePlan[] {
+export function directedPlan(size: ArraySize, seed: number, maxDim = MAX_DIM): VerifyCasePlan[] {
   const { rows: r, cols: c } = size;
-  const full = { m: MAX_DIM, n: MAX_DIM, k: MAX_DIM };
-  // Two tile rows and one more, two tile columns and one fewer (capped for the 32 and 64 sides).
-  const edge = { m: Math.min(2 * r + 1, MAX_DIM - 1), n: Math.min(2 * c - 1, MAX_DIM - 1), k: 7 };
+  const full = { m: maxDim, n: maxDim, k: maxDim };
+  // Two tile rows and one more, two tile columns and one fewer (capped for the largest sides).
+  const edge = { m: Math.min(2 * r + 1, maxDim - 1), n: Math.min(2 * c - 1, maxDim - 1), k: 7 };
+  const far = { m: maxDim - 1, n: maxDim - 3, k: maxDim - 2 };
   const list: [string, CaseGenerator, MatmulDims, string, RunnerFlags?][] = [
     ['small', 'random', { m: 2, n: 3, k: 2 }, 'smaller than the array in every dimension'],
     ['one-tile', 'random', { m: r, n: c, k: r }, 'exactly one full output tile'],
     ['large', 'random', full, 'the largest product within capacity'],
     ['nonsquare', 'random', { m: 13, n: 11, k: 19 }, 'non-square, not a multiple of any size'],
-    ['wide', 'random', { m: 5, n: MAX_DIM, k: 33 }, 'a short, wide C'],
-    ['tall', 'random', { m: MAX_DIM, n: 7, k: 50 }, 'a tall, narrow C (N < M)'],
+    ['wide', 'random', { m: 5, n: maxDim, k: 33 }, 'a short, wide C'],
+    ['tall', 'random', { m: maxDim, n: 7, k: 50 }, 'a tall, narrow C (N < M)'],
     ['edge-tiles', 'random', edge, 'edge tiles in both dimensions'],
-    ['edge-far', 'random', { m: 63, n: 61, k: 62 }, 'edge tiles at the far end of the buffers'],
+    ['edge-far', 'random', far, 'edge tiles at the far end of the buffers'],
     ['negative', 'negative', { m: 24, n: 22, k: 26 }, 'A and B all negative'],
     ['negpos', 'negpos', { m: 19, n: 23, k: 21 }, 'A negative, B non-negative'],
     ['zero', 'zero', { m: 23, n: 29, k: 31 }, 'B all zeros, so C is all zeros'],
@@ -102,7 +107,7 @@ export function directedPlan(size: ArraySize, seed: number): VerifyCasePlan[] {
     ['n1', 'random', { m: 37, n: 1, k: 50 }, 'N = 1'],
     ['k1', 'random', { m: 53, n: 61, k: 1 }, 'K = 1'],
     ['mnk1', 'random', { m: 1, n: 1, k: 1 }, 'M = N = K = 1'],
-    ['dot', 'random', { m: 1, n: 1, k: MAX_DIM }, 'one dot product of length MAX_DIM'],
+    ['dot', 'random', { m: 1, n: 1, k: maxDim }, 'one dot product of length MAX_DIM'],
     [
       'repeat',
       'random',
@@ -118,15 +123,22 @@ export function directedPlan(size: ArraySize, seed: number): VerifyCasePlan[] {
       { repeat: 2, resetBetween: true, abortFirst: true },
     ],
   ];
-  return list.map(([label, generator, dims, what, flags]) => ({
-    name: caseName(label, dims, seed),
-    kind: 'directed',
-    generator,
-    dims,
-    seed,
-    flags: flags ?? ONE_RUN,
-    what,
-  }));
+  return list.map(([label, generator, wanted, what, flags]) => {
+    const dims = {
+      m: Math.min(wanted.m, maxDim),
+      n: Math.min(wanted.n, maxDim),
+      k: Math.min(wanted.k, maxDim),
+    };
+    return {
+      name: caseName(label, dims, seed),
+      kind: 'directed' as const,
+      generator,
+      dims,
+      seed,
+      flags: flags ?? ONE_RUN,
+      what,
+    };
+  });
 }
 
 /**
@@ -134,12 +146,12 @@ export function directedPlan(size: ArraySize, seed: number): VerifyCasePlan[] {
  * one time in eight, otherwise a non-multiple of the side below MAX_DIM, so most products have
  * edge tiles.
  */
-function randomSide(prng: Prng, side: number): number {
+function randomSide(prng: Prng, side: number, maxDim: number): number {
   const pick = prng.int(0, 7);
-  if (pick === 0) return MAX_DIM;
-  if (pick === 1) return side * prng.int(1, MAX_DIM / side);
+  if (pick === 0) return maxDim;
+  if (pick === 1) return side * prng.int(1, maxDim / side);
   for (;;) {
-    const value = prng.int(1, MAX_DIM - 1);
+    const value = prng.int(1, maxDim - 1);
     if (value % side !== 0) return value;
   }
 }
@@ -148,21 +160,27 @@ function randomSide(prng: Prng, side: number): number {
  * `count` random cases for one array size, drawn from `seed` and the size (each size gets its own
  * cases): M and N from {@link randomSide}, K uniform in 1 … MAX_DIM (MAX_DIM one time in eight),
  * and every tenth case has one dimension (M, N, K in turn) forced to MAX_DIM. Each case has its own
- * operand seed, so one can be regenerated alone.
+ * operand seed, so one can be regenerated alone. `maxDim` is the runner's MAX_DIM, as for
+ * {@link directedPlan}.
  */
-export function randomPlan(size: ArraySize, seed: number, count: number): VerifyCasePlan[] {
+export function randomPlan(
+  size: ArraySize,
+  seed: number,
+  count: number,
+  maxDim = MAX_DIM,
+): VerifyCasePlan[] {
   const base = new Prng(seed).next() ^ ((size.rows << 16) | size.cols);
   const prng = new Prng(base >>> 0);
   const plan: VerifyCasePlan[] = [];
   for (let index = 0; index < count; index += 1) {
     const dims = {
-      m: randomSide(prng, size.rows),
-      n: randomSide(prng, size.cols),
-      k: prng.int(0, 7) === 0 ? MAX_DIM : prng.int(1, MAX_DIM),
+      m: randomSide(prng, size.rows, maxDim),
+      n: randomSide(prng, size.cols, maxDim),
+      k: prng.int(0, 7) === 0 ? maxDim : prng.int(1, maxDim),
     };
     if (index % 10 === 0) {
       const forced = (['m', 'n', 'k'] as const)[(index / 10) % 3] ?? 'm';
-      dims[forced] = MAX_DIM;
+      dims[forced] = maxDim;
     }
     const caseSeed = prng.int(0, 0x7fff_ffff);
     plan.push({
@@ -184,6 +202,8 @@ export interface CorpusOptions {
   readonly count: number;
   readonly directed: boolean;
   readonly random: boolean;
+  /** The runner's MAX_DIM; {@link MAX_DIM} when absent. */
+  readonly maxDim?: number;
 }
 
 /** The corpus of one size: the directed cases, then the random ones. */
@@ -197,8 +217,8 @@ export function corpusPlan(size: ArraySize, options: CorpusOptions): VerifyCaseP
     }
   }
   return [
-    ...(options.directed ? directedPlan(size, options.seed) : []),
-    ...(options.random ? randomPlan(size, options.seed, options.count) : []),
+    ...(options.directed ? directedPlan(size, options.seed, options.maxDim) : []),
+    ...(options.random ? randomPlan(size, options.seed, options.count, options.maxDim) : []),
   ];
 }
 
@@ -278,8 +298,11 @@ export function runRunner(sim: string, args: readonly string[]): Promise<RunnerR
   });
 }
 
-/** The array a runner was built for (`matmul_sim --info`). */
-export async function runnerInfo(sim: string): Promise<ArraySize> {
+/**
+ * The array a runner was built for (`matmul_sim --info`). Throws unless it was built with
+ * `maxDim` (default {@link MAX_DIM}), the capacity the cases are generated for.
+ */
+export async function runnerInfo(sim: string, maxDim = MAX_DIM): Promise<ArraySize> {
   const output = await new Promise<string>((done, fail) => {
     execFile(sim, ['--info'], { timeout: 10_000 }, (error, stdout) => {
       if (error === null) done(stdout);
@@ -289,9 +312,9 @@ export async function runnerInfo(sim: string): Promise<ArraySize> {
   const info = z
     .object({ rows: z.number().int(), cols: z.number().int(), maxDim: z.number().int() })
     .parse(JSON.parse(output));
-  if (info.maxDim !== MAX_DIM) {
+  if (info.maxDim !== maxDim) {
     throw new Error(
-      `${sim} was built with MAX_DIM ${String(info.maxDim)}; the reference uses ${String(MAX_DIM)}`,
+      `${sim} was built with MAX_DIM ${String(info.maxDim)}; the cases are for MAX_DIM ${String(maxDim)}`,
     );
   }
   return { rows: info.rows, cols: info.cols };
@@ -426,6 +449,8 @@ export const FailureCaseSchema = z.object({
   dims: z.object({ m: z.number().int(), n: z.number().int(), k: z.number().int() }),
   flags: RunnerFlagsSchema,
   what: z.string(),
+  /** The runner's MAX_DIM; absent for the default capacity. */
+  maxDim: z.number().int().positive().optional(),
   /** The runner it failed on (absolute). */
   sim: z.string(),
   reason: z.string(),
@@ -475,6 +500,7 @@ interface Task {
   readonly size: ArraySize;
   readonly sim: string;
   readonly plan: VerifyCasePlan;
+  readonly maxDim: number;
 }
 
 interface Failure {
@@ -512,6 +538,7 @@ function saveFailure(failure: Failure): string {
     dims: plan.dims,
     flags: plan.flags,
     what: plan.what,
+    ...(task.maxDim === MAX_DIM ? {} : { maxDim: task.maxDim }),
     sim: resolve(sim),
     reason: outcome.reason ?? '',
   };
@@ -543,6 +570,7 @@ export async function runVerify(
     write('verify: no runner given (--sim build/sim-<R>x<C>/matmul_sim)\n');
     return { exitCode: 2, report: null, failures: [] };
   }
+  const maxDim = options.maxDim ?? MAX_DIM;
   const sizes: { size: ArraySize; sim: string }[] = [];
   for (const sim of options.sims) {
     if (!existsSync(sim)) {
@@ -551,7 +579,7 @@ export async function runVerify(
     }
     let size: ArraySize;
     try {
-      size = await runnerInfo(sim);
+      size = await runnerInfo(sim, maxDim);
     } catch (error) {
       write(`verify: ${(error as Error).message}\n`);
       return { exitCode: 2, report: null, failures: [] };
@@ -570,7 +598,9 @@ export async function runVerify(
   for (const { size, sim } of sizes) {
     // The case files of a size are exactly its corpus: the same seed gives the same files.
     rmSync(join(options.work, sizeName(size)), { recursive: true, force: true });
-    for (const plan of corpusPlan(size, options)) tasks.push({ size, sim, plan });
+    for (const plan of corpusPlan(size, { ...options, maxDim })) {
+      tasks.push({ size, sim, plan, maxDim });
+    }
   }
   const corpora = [
     ...(options.directed ? (['directed'] as const) : []),
@@ -589,12 +619,13 @@ export async function runVerify(
     for (let task = tasks[next++]; task !== undefined; task = tasks[next++]) {
       const { size, sim, plan } = task;
       const dir = join(options.work, sizeName(size));
-      validateDims(plan.dims);
+      validateDims(plan.dims, { maxDim });
       const written = writeCase(
         dir,
         plan.name,
         { ...plan.dims, ...caseOperands(plan) },
         { seed: plan.seed, generator: plan.generator },
+        { maxDim },
       );
       const files = {
         input: written.input,
@@ -723,7 +754,7 @@ export async function replayCase(
     write(`replay: no runner at ${runner}\n`);
     return 2;
   }
-  const size = await runnerInfo(runner);
+  const size = await runnerInfo(runner, file.maxDim);
   if (size.rows !== file.rows || size.cols !== file.cols) {
     write(`replay: ${runner} is a ${sizeName(size)} runner; the case failed on ${file.size}\n`);
     return 2;

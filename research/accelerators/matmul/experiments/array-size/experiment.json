@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "array-size",
+  "description": "4 × 4 versus 8 × 8 versus 16 × 16 processing elements, every other parameter at its default (MAX_DIM 64): the cycles each larger array saves on the benchmark workloads against the cells, flip-flops, multipliers and FPGA resources it costs.",
+  "verify": { "seed": 1, "count": 40 },
+  "benchmark": { "seed": 1 },
+  "baseline": "8x8",
+  "variants": [
+    { "name": "4x4", "description": "16 PEs.", "parameters": { "ROWS": 4, "COLS": 4 } },
+    { "name": "8x8", "description": "64 PEs.", "parameters": { "ROWS": 8, "COLS": 8 } },
+    { "name": "16x16", "description": "256 PEs.", "parameters": { "ROWS": 16, "COLS": 16 } }
+  ]
+}

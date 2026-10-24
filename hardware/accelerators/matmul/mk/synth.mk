@@ -11,6 +11,12 @@
 #   make synth-compare      make synth, then fail on any difference from the committed baseline
 #   make synth-latch-check  prove the latch gate fails on copies of rtl/ with a latch added
 #
+# The experiment runner (mk/experiment.mk) synthesises a design variant with SYNTH_ROOT=<dir> (the
+# per-size directories and the summary go to <dir>/synth-<R>x<C>/ and <dir>/synth/ instead of
+# build/), SYNTH_PARAMS=`NAME=value …` (more top-level parameters, such as MAX_DIM, set with
+# chparam on matmul_top and on the FPGA wrapper) and SYNTH_DEFINES=`-DNAME[=value] …` (for
+# read_verilog). All three default to the committed design.
+#
 # Every size runs with identical settings, and with the same frequency target and nextpnr seed as
 # VCPU-8's flow (hardware/rtl/vcpu8/mk/synth.mk), so the designs can be compared. make synth fails
 # on a hierarchy, latch, loop, multiple-driver or undriven-net check in any Yosys run, on a missing
@@ -23,11 +29,14 @@
 # baseline is only for the full set.
 SYNTH_SIZES       ?= 4 8 16
 SYNTH_ALL_SIZES   := 4 8 16
-SYNTH_DIR         := $(BUILD_DIR)/synth
+SYNTH_ROOT        ?= $(BUILD_DIR)
+SYNTH_PARAMS      ?=
+SYNTH_DEFINES     ?=
+SYNTH_DIR         := $(SYNTH_ROOT)/synth
 SYNTH_SCRIPTS     := $(HW_DIR)/synth
 SYNTH_ALLOW       := $(SYNTH_SCRIPTS)/warnings.allow
 SYNTH_BASELINE    ?= $(REPO_ROOT)/research/accelerators/matmul/synth/baseline
-synth_size_dir     = $(BUILD_DIR)/synth-$(1)x$(1)
+synth_size_dir     = $(SYNTH_ROOT)/synth-$(1)x$(1)
 
 FPGA_DIR     := $(REPO_ROOT)/hardware/fpga
 FPGA_WRAPPER := $(FPGA_DIR)/matmul_fpga_wrapper.sv
@@ -50,9 +59,9 @@ NEXTPNR_ECP5  ?= $(TOOL_BIN)nextpnr-ecp5
 SYNTH_NO_FIT := ^ERROR: Unable to place cell .*, no BELs remaining to implement cell type
 
 # `$(call synth_read,<sources>)`: the Yosys command that reads the sources, packages first.
-synth_read = read_verilog -sv -D SYNTHESIS $(1)
-# `$(call synth_size,<top>,<n>)`: set an n × n array on <top>.
-synth_size = chparam -set ROWS $(2) -set COLS $(2) $(1)
+synth_read = read_verilog -sv -D SYNTHESIS $(SYNTH_DEFINES) $(1)
+# `$(call synth_size,<top>,<n>)`: set an n × n array, and SYNTH_PARAMS, on <top>.
+synth_size = chparam -set ROWS $(2) -set COLS $(2)$(foreach p,$(SYNTH_PARAMS), -set $(subst =, ,$(p))) $(1)
 
 NEXTPNR_COMMON = --json $(1).json --freq $(SYNTH_FREQ_MHZ) --seed $(SYNTH_SEED) --timing-allow-fail \
   --report nextpnr-$(1).report.json -l nextpnr-$(1).log -q
@@ -65,7 +74,7 @@ synth_pnr = if $(2) $(call NEXTPNR_COMMON,$(1)); then :; else status=$$?; \
     echo "nextpnr-$(1): the design does not fit: $$(cat nextpnr-$(1).nofit)"; \
   else rm -f nextpnr-$(1).nofit; echo "nextpnr-$(1) failed (exit $$status); see $$PWD/nextpnr-$(1).log" >&2; exit $$status; fi; fi
 
-SYNTH_SUMMARY_ARGS = --dir $(BUILD_DIR) --sizes $(subst $(space),$(comma),$(strip $(SYNTH_SIZES))) \
+SYNTH_SUMMARY_ARGS = --dir $(SYNTH_ROOT) --sizes $(subst $(space),$(comma),$(strip $(SYNTH_SIZES))) \
   --allow $(SYNTH_ALLOW) --toolchain '$(TOOLCHAIN)' --toolchain-version $(OSS_CAD_SUITE_VERSION) \
   --revision $(REVISION) --freq $(SYNTH_FREQ_MHZ) --seed $(SYNTH_SEED) \
   --ice40 $(ICE40_DEVICE):$(ICE40_PACKAGE) --ecp5 $(ECP5_DEVICE):$(ECP5_PACKAGE):$(ECP5_SPEED)
@@ -114,6 +123,9 @@ synth: ## Yosys + nextpnr reports for SYNTH_SIZES (4 8 16) in build/synth-*/ and
 ifneq ($(filter synth-baseline,$(MAKECMDGOALS)),)
   ifneq ($(sort $(SYNTH_SIZES)),$(sort $(SYNTH_ALL_SIZES)))
     $(error synth-baseline: only for SYNTH_SIZES='$(SYNTH_ALL_SIZES)', not '$(SYNTH_SIZES)')
+  endif
+  ifneq ($(strip $(SYNTH_PARAMS)$(SYNTH_DEFINES))$(filter-out $(BUILD_DIR),$(SYNTH_ROOT)),)
+    $(error synth-baseline: only for the committed design (no SYNTH_PARAMS, SYNTH_DEFINES or SYNTH_ROOT))
   endif
   ifneq ($(shell git -C $(REPO_ROOT) status --porcelain),)
     $(error synth-baseline: commit or stash your changes first; the baseline must come from a clean tree)

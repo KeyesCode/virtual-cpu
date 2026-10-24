@@ -109,7 +109,7 @@ When a sum does pass the INT32 range, this design **wraps around in two's comple
 
 ## 4. How a systolic array works
 
-A **systolic array** is a grid of identical MAC units (processing elements, PEs) in which each PE talks only to its neighbours. Data enters at the edges and is pumped through the grid one PE per clock, like blood through the body with each heartbeat (systole), hence the name. No PE reaches out to a shared memory or a shared bus; every wire is short and local, so the grid scales to many PEs without a central bottleneck.
+A **systolic array** is a grid of identical MAC units (processing elements, PEs) in which each PE talks only to its neighbours. Data enters at the edges and is pumped through the grid one PE per clock, like blood through the body with each heartbeat (systole), hence the name. No PE reaches out to a shared memory or a shared bus for its operands; the operand wires run only between neighbours and stay short however large the grid grows. (Not everything is local: the tile-start clear and the reset reach every PE, and reading the results out goes through one wide multiplexer, which [from-rtl-to-silicon.md](from-rtl-to-silicon.md#reading-the-accelerators-report-when-it-lands) names as a likely long path.)
 
 ```text
                  B[k,0]  B[k,1]  B[k,2]  B[k,3]       B enters at the top
@@ -242,7 +242,7 @@ A tile does `ROWS` · `COLS` · K MACs and occupies the array for K + `ROWS` + `
 
 ### Whole matmuls: small versus large
 
-The table below divides the MACs by the measured clocks of `make test-top` ([controller.md](controller.md#cycle-formulas)): once over the compute clocks (`cycles_compute`: tile starts, streaming, fill and drain) and once over every busy clock (compute plus the one-element-per-clock store and the tile changes).
+The table below divides the MACs by the measured clocks of `make test-top` ([controller.md](controller.md#cycle-formulas)): once over the compute clocks (`cycles_compute`: tile starts, streaming, fill and drain) and once over every busy clock (compute plus the one-element-per-clock store and the tile changes). Which denominator is "the" PE utilisation is the benchmark report's to fix; both are shown here so the store's cost is visible.
 
 | Product           |    MACs | Array   | compute clocks | busy clocks | utilisation over compute | utilisation over busy | MACs per busy clock |
 | ----------------- | ------: | ------- | -------------: | ----------: | -----------------------: | --------------------: | ------------------: |
@@ -255,7 +255,7 @@ The table below divides the MACs by the measured clocks of `make test-top` ([con
 
 What it shows:
 
-- **Small, ragged products waste big arrays.** 13 × 19 · 19 × 11 on 16 × 16 is one tile with 143 of 256 PEs masked to zero and K = 19 against a fill and drain of 31 clocks: a fifth of the PE-clocks of compute do useful work.
+- **Small, ragged products waste big arrays.** 13 × 19 · 19 × 11 on 16 × 16 is one tile in which only 143 of the 256 PEs (13 · 11) hold a real output and the other 113 are masked, with K = 19 against a fill and drain of 31 clocks: a fifth of the PE-clocks of compute do useful work.
 - **Large products amortise fill and drain.** At 64³ the 4 × 4 array is 88.9 % busy over its compute clocks.
 - **A bigger array is still faster in clocks**, 196 busy clocks against 480 for the small product, but far from 16 times faster, and over busy clocks the gap is worse: the store writes one element per clock whatever the array size, so on 16 × 16 at 64³ the 4 096 store clocks outweigh the 1 536 compute clocks ([controller.md](controller.md#cycle-formulas) names it as the r1 bottleneck).
 
@@ -276,7 +276,7 @@ This is a scaling rule of thumb, not a measurement: only the INT8 PE has been sy
 
 Precision also sets the size of everything around the arithmetic:
 
-- **Registers move with the width.** Each PE forwards 2 · `DATA_W` operand bits per clock; INT16 operands would double the 16 operand flip-flops per PE and the skew registers.
+- **Registers move with the width.** Each PE forwards 2 · `DATA_W` operand bits per clock; INT16 operands would double the 16 operand flip-flops per PE and nearly double the skew registers (each stage is `DATA_W` + 1 bits: 9 now, 17 then).
 - **Storage and bandwidth move with the width.** The A and B buffers hold INT8, 32 768 bits each; the C buffer holds INT32, 131 072 bits, two thirds of the accelerator's 196 608 bits of RAM ([memory.md](memory.md#sizes)). Doubling the operand width doubles the input bytes per clock in [section 8](#8-why-memory-bandwidth-matters).
 - **The accumulator width is a trade-off.** A narrower accumulator saves flip-flops, adder bits and output-buffer bits, but overflows sooner: INT16 would overflow on the second extreme product. INT32 keeps any r1 result exact with a wide margin (2²⁰ against 2³¹). Wrap-around is the cheapest overflow rule (no extra logic); saturation, which clamps at the INT32 limits, would need a comparator and a multiplexer in every PE.
 

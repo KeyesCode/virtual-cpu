@@ -139,7 +139,7 @@ From the measured clocks in [controller.md](controller.md#cycle-formulas), 13 ×
 
 The 16 × 16 array finishes in 2.4 times fewer clocks with 16 times the PEs, so each of its PEs does about 15 % of the work of a 4 × 4 PE per clock. Whether it is faster in time depends on the two Fmax estimates (not measured), and whether it is worth its area depends on the resource counts (in the synthesis ticket's reports). Neither the clocks nor the PE counts alone answer "which is better".
 
-The same rules govern the CPU-versus-accelerator comparison, whose results the CPU comparison ticket commits under `research/accelerators/matmul/cpu-comparison/`: the CPU and the accelerator differ in instruction set, numeric support (VCPU-8 is an 8-bit CPU, so INT32 accumulation takes multi-byte arithmetic), memory interface and clock, so that comparison states every one of those differences and compares architectural clocks and memory accesses, not time or energy.
+The same rules govern the CPU-versus-accelerator comparison, whose results are committed under `research/accelerators/matmul/comparisons/` ([cpu-comparison.md](cpu-comparison.md)): the CPU and the accelerator differ in instruction set, numeric support (VCPU-8 is an 8-bit CPU, so INT32 accumulation takes multi-byte arithmetic), memory interface and clock, so that comparison states every one of those differences and compares architectural clocks and memory accesses, not time or energy.
 
 ## 14. What FPGA implementation requires
 

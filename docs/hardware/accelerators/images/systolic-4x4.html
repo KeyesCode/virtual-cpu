@@ -1,0 +1,779 @@
+<!doctype html>
+<!--
+  The 4 × 4 output-stationary systolic array, clock by clock: an educational page, not a
+  simulator of the RTL. It renders the trace embedded below, which
+  `pnpm --filter @vcpu/accelerator-reference gen-viz` generates from the documented timing rule
+  (packages/accelerator-reference/src/viz/schedule.ts); a Vitest drift test regenerates it and
+  compares. Self-contained: no network requests. Open it from disk; #clock=N opens clock N.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>4 × 4 systolic array, clock by clock</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --panel: #f8fafc;
+        --ink: #111827;
+        --muted: #6b7280;
+        --line: #d1d5db;
+        --a: #1d4ed8;
+        --a-tint: #dbeafe;
+        --b: #b45309;
+        --b-tint: #fef3c7;
+        --active-fill: #dcfce7;
+        --active-stroke: #15803d;
+        --done-fill: #e5e7eb;
+        --current: #fef9c3;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --panel: #1e293b;
+          --ink: #f1f5f9;
+          --muted: #94a3b8;
+          --line: #475569;
+          --a: #93c5fd;
+          --a-tint: #1e3a8a;
+          --b: #fbbf24;
+          --b-tint: #78350f;
+          --active-fill: #14532d;
+          --active-stroke: #4ade80;
+          --done-fill: #334155;
+          --current: #422006;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 16px 24px 32px;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.45 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 16px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 4px 0;
+        max-width: 1100px;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.92em;
+      }
+      .a {
+        color: var(--a);
+      }
+      .b {
+        color: var(--b);
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 16px;
+        margin: 12px 0;
+        padding: 10px 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .buttons {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      button,
+      select {
+        font: inherit;
+        color: var(--ink);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      button:focus-visible,
+      select:focus-visible,
+      tr:focus-visible {
+        outline: 2px solid var(--active-stroke);
+        outline-offset: 1px;
+      }
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 18px;
+      }
+      .status b {
+        font-variant-numeric: tabular-nums;
+      }
+      .signal.on {
+        font-weight: 700;
+        text-decoration: underline;
+      }
+      main {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 28px;
+        align-items: flex-start;
+      }
+      #array {
+        flex: 1 1 640px;
+        max-width: 860px;
+      }
+      #array svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      svg text {
+        fill: var(--ink);
+        font-size: 12px;
+      }
+      svg .muted {
+        fill: var(--muted);
+      }
+      svg .ta {
+        fill: var(--a);
+      }
+      svg .tb {
+        fill: var(--b);
+      }
+      svg .bold {
+        font-weight: 700;
+      }
+      svg .small {
+        font-size: 10.5px;
+      }
+      svg line.fa {
+        stroke: var(--a);
+        stroke-width: 1.6;
+      }
+      svg line.fb {
+        stroke: var(--b);
+        stroke-width: 1.6;
+        stroke-dasharray: 5 3;
+      }
+      svg .ma {
+        fill: var(--a);
+      }
+      svg .mb {
+        fill: var(--b);
+      }
+      svg rect.in-a,
+      svg rect.reg-a {
+        fill: var(--bg);
+        stroke: var(--a);
+        stroke-width: 1.3;
+      }
+      svg rect.in-b,
+      svg rect.reg-b {
+        fill: var(--bg);
+        stroke: var(--b);
+        stroke-width: 1.3;
+        stroke-dasharray: 4 2;
+      }
+      svg rect.reg-a.held,
+      svg rect.in-a.held {
+        fill: var(--a-tint);
+      }
+      svg rect.reg-b.held,
+      svg rect.in-b.held {
+        fill: var(--b-tint);
+      }
+      svg rect.pe {
+        fill: var(--bg);
+        stroke: var(--muted);
+        stroke-width: 1.2;
+        stroke-dasharray: 4 3;
+      }
+      svg rect.pe.active {
+        fill: var(--active-fill);
+        stroke: var(--active-stroke);
+        stroke-width: 3.2;
+        stroke-dasharray: none;
+      }
+      svg rect.pe.final {
+        fill: var(--done-fill);
+        stroke: var(--ink);
+        stroke-dasharray: none;
+      }
+      aside {
+        flex: 0 1 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .matrix table {
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      .matrix td,
+      .matrix th {
+        width: 40px;
+        height: 28px;
+        text-align: center;
+        border: 1px solid var(--line);
+        padding: 0;
+      }
+      .matrix th {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 12px;
+        border: none;
+      }
+      .matrix td.in {
+        background: var(--current);
+        box-shadow: inset 0 -4px 0 var(--ink);
+      }
+      .matrix td.use {
+        outline: 3px solid var(--active-stroke);
+        outline-offset: -3px;
+        font-weight: 700;
+      }
+      .matrix td.pending {
+        color: var(--muted);
+      }
+      .matrix td.done {
+        background: var(--done-fill);
+        font-weight: 700;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 12px;
+        max-width: 300px;
+      }
+      #check.ok {
+        color: var(--active-stroke);
+        font-weight: 700;
+      }
+      #check.bad {
+        color: #dc2626;
+        font-weight: 700;
+      }
+      .schedule {
+        margin-top: 20px;
+        overflow-x: auto;
+      }
+      .schedule table {
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .schedule th,
+      .schedule td {
+        border: 1px solid var(--line);
+        padding: 3px 9px;
+        text-align: center;
+      }
+      .schedule th {
+        background: var(--panel);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .schedule td.k {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      .schedule tbody tr {
+        cursor: pointer;
+      }
+      .schedule tr.current {
+        background: var(--current);
+        font-weight: 700;
+      }
+      .schedule tr.current td:first-child::before {
+        content: '▶ ';
+      }
+      .reading {
+        margin-top: 20px;
+      }
+      .reading li {
+        max-width: 1100px;
+        margin: 3px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>4 × 4 output-stationary systolic array, clock by clock</h1>
+      <p>
+        One tile of C = A · B with A 4 × 3 and B 3 × 4 (K = 3), signed INT8 operands. PE(i, j) keeps
+        C[i, j] in its accumulator; <span class="a">A moves right</span> and
+        <span class="b">B moves down</span>. The caller presents column k of A and row k of B
+        unskewed in clock k + 1; row i passes i skew registers and column j passes j, so
+        <b>PE(i, j) multiplies A[i, k] × B[k, j] in clock k + i + j + 1</b>, and
+        <code>tile_done</code> pulses in clock K + ROWS + COLS − 1 = 10. Clocks are counted from the
+        <code>tile_start</code> clock, 0, exactly as in <code>systolic-array.md</code>.
+      </p>
+    </header>
+
+    <div class="controls" role="toolbar" aria-label="Clock controls">
+      <div class="buttons">
+        <button id="reset" type="button" title="Reset to clock 0 (Home)">⏮ Reset</button>
+        <button id="prev" type="button" title="Previous clock (←)">◀ Prev</button>
+        <button id="play" type="button" title="Play or pause (Space)">▶ Play</button>
+        <button id="next" type="button" title="Next clock (→)">Next ▶</button>
+        <label
+          >Speed
+          <select id="speed" aria-label="Clocks per second">
+            <option value="0.5">0.5 clock/s</option>
+            <option value="1" selected>1 clock/s</option>
+            <option value="2">2 clocks/s</option>
+            <option value="4">4 clocks/s</option>
+          </select>
+        </label>
+      </div>
+      <div class="status">
+        <span>Clock <b id="clock">0</b> / <b id="last">10</b></span>
+        <span>Operand clock <b id="operand">–</b></span>
+        <span>Caller presents <b id="inputs">–</b></span>
+        <span>MACs this clock <b id="macs">0</b></span>
+        <span class="signal" id="busy">busy <b>0</b></span>
+        <span class="signal" id="done">tile_done <b>0</b></span>
+      </div>
+    </div>
+
+    <main>
+      <div id="array" role="region" aria-label="The 4 × 4 PE grid with its skew registers"></div>
+      <aside>
+        <div class="matrix">
+          <h2><span class="a">A</span> (4 × 3)</h2>
+          <table id="ma"></table>
+        </div>
+        <div class="matrix">
+          <h2><span class="b">B</span> (3 × 4)</h2>
+          <table id="mb"></table>
+        </div>
+        <div class="matrix">
+          <h2>C = A · B (4 × 4), from the accumulators</h2>
+          <table id="mc"></table>
+          <p id="check" aria-live="polite"></p>
+        </div>
+        <p class="note">
+          Shaded and underlined in A and B: the column / row the caller presents this clock.
+          Outlined bold: the operands some PE is multiplying this clock. A C entry appears, grey and
+          bold, from the clock its accumulator is final (clock K + i + j + 1).
+        </p>
+      </aside>
+    </main>
+
+    <section class="schedule">
+      <h2>The schedule (the same table as <code>systolic-array.md</code>)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Clock (from tile_start)</th>
+            <th>Operand clock</th>
+            <th>Inputs</th>
+            <th>k at PE(0, 0…3)</th>
+            <th>k at PE(1, 0…3)</th>
+            <th>k at PE(2, 0…3)</th>
+            <th>k at PE(3, 0…3)</th>
+            <th>MACs</th>
+            <th>busy</th>
+            <th>tile_done</th>
+          </tr>
+        </thead>
+        <tbody id="schedule"></tbody>
+      </table>
+    </section>
+
+    <section class="reading">
+      <h2>How to read it</h2>
+      <ul>
+        <li>
+          Each PE shows its name and, when it works this clock, the k of its pair (bold outline,
+          green): the <span class="a">A</span> × <span class="b">B</span> operands it multiplies,
+          its accumulator register in this clock, and the product added at the end of the clock with
+          the value it leaves (+= p → v). Dashed outline: idle. Grey with ✓: the accumulator already
+          holds C[i, j].
+        </li>
+        <li>
+          The boxes left of the grid are row i's i skew registers, above it column j's j: each shows
+          the operand it holds this clock. Clock 0 is <code>tile_start</code> (the accumulators are
+          cleared at its end), clocks 1 … 3 are the operand clocks, and from clock 4 the array only
+          drains what is already inside it.
+        </li>
+        <li>
+          Step with ← / →, Space plays and pauses, Home resets; click a schedule row to jump to that
+          clock.
+        </li>
+      </ul>
+    </section>
+
+    <!-- prettier-ignore -->
+    <script type="application/json" id="systolic-trace">
+{"rows":4,"cols":4,"k":3,"a":[1,-2,3,0,2,-1,-3,1,2,2,-1,-2],"b":[2,1,-1,0,-1,3,2,-2,1,0,-3,1],"c":[7,-5,-14,7,-3,6,7,-5,-5,0,-1,0,3,-1,2,0],"doneClock":10,
+"clocks":[
+{"clock":0,"operandClock":null,"inputK":null,"macK":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"macs":0,"busy":false,"tileDone":false,"aSkew":[[],[null],[null,null],[null,null,null]],"bSkew":[[],[null],[null,null],[null,null,null]],"a":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"b":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"acc":[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"final":[[false,false,false,false],[false,false,false,false],[false,false,false,false],[false,false,false,false]]},
+{"clock":1,"operandClock":0,"inputK":0,"macK":[[0,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"macs":1,"busy":true,"tileDone":false,"aSkew":[[],[null],[null,null],[null,null,null]],"bSkew":[[],[null],[null,null],[null,null,null]],"a":[[1,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"b":[[2,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"acc":[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"final":[[false,false,false,false],[false,false,false,false],[false,false,false,false],[false,false,false,false]]},
+{"clock":2,"operandClock":1,"inputK":1,"macK":[[1,0,null,null],[0,null,null,null],[null,null,null,null],[null,null,null,null]],"macs":3,"busy":true,"tileDone":false,"aSkew":[[],[{"k":0,"value":0}],[{"k":0,"value":-3},null],[{"k":0,"value":2},null,null]],"bSkew":[[],[{"k":0,"value":1}],[{"k":0,"value":-1},null],[{"k":0,"value":0},null,null]],"a":[[-2,1,null,null],[0,null,null,null],[null,null,null,null],[null,null,null,null]],"b":[[-1,1,null,null],[2,null,null,null],[null,null,null,null],[null,null,null,null]],"acc":[[2,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"final":[[false,false,false,false],[false,false,false,false],[false,false,false,false],[false,false,false,false]]},
+{"clock":3,"operandClock":2,"inputK":2,"macK":[[2,1,0,null],[1,0,null,null],[0,null,null,null],[null,null,null,null]],"macs":6,"busy":true,"tileDone":false,"aSkew":[[],[{"k":1,"value":2}],[{"k":1,"value":1},{"k":0,"value":-3}],[{"k":1,"value":-1},{"k":0,"value":2},null]],"bSkew":[[],[{"k":1,"value":3}],[{"k":1,"value":2},{"k":0,"value":-1}],[{"k":1,"value":-2},{"k":0,"value":0},null]],"a":[[3,-2,1,null],[2,0,null,null],[-3,null,null,null],[null,null,null,null]],"b":[[1,3,-1,null],[-1,1,null,null],[2,null,null,null],[null,null,null,null]],"acc":[[4,1,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"final":[[false,false,false,false],[false,false,false,false],[false,false,false,false],[false,false,false,false]]},
+{"clock":4,"operandClock":3,"inputK":null,"macK":[[null,2,1,0],[2,1,0,null],[1,0,null,null],[0,null,null,null]],"macs":9,"busy":true,"tileDone":false,"aSkew":[[],[{"k":2,"value":-1}],[{"k":2,"value":2},{"k":1,"value":1}],[{"k":2,"value":-2},{"k":1,"value":-1},{"k":0,"value":2}]],"bSkew":[[],[{"k":2,"value":0}],[{"k":2,"value":-3},{"k":1,"value":2}],[{"k":2,"value":1},{"k":1,"value":-2},{"k":0,"value":0}]],"a":[[null,3,-2,1],[-1,2,0,null],[1,-3,null,null],[2,null,null,null]],"b":[[null,0,2,0],[1,3,-1,null],[-1,1,null,null],[2,null,null,null]],"acc":[[7,-5,-1,0],[-2,0,0,0],[-6,0,0,0],[0,0,0,0]],"final":[[true,false,false,false],[false,false,false,false],[false,false,false,false],[false,false,false,false]]},
+{"clock":5,"operandClock":4,"inputK":null,"macK":[[null,null,2,1],[null,2,1,0],[2,1,0,null],[1,0,null,null]],"macs":10,"busy":true,"tileDone":false,"aSkew":[[],[null],[null,{"k":2,"value":2}],[null,{"k":2,"value":-2},{"k":1,"value":-1}]],"bSkew":[[],[null],[null,{"k":2,"value":-3}],[null,{"k":2,"value":1},{"k":1,"value":-2}]],"a":[[null,null,3,-2],[null,-1,2,0],[2,1,-3,null],[-1,2,null,null]],"b":[[null,null,-3,-2],[null,0,2,0],[1,3,-1,null],[-1,1,null,null]],"acc":[[7,-5,-5,0],[-3,6,0,0],[-7,-3,0,0],[4,0,0,0]],"final":[[true,true,false,false],[true,false,false,false],[false,false,false,false],[false,false,false,false]]},
+{"clock":6,"operandClock":5,"inputK":null,"macK":[[null,null,null,2],[null,null,2,1],[null,2,1,0],[2,1,0,null]],"macs":9,"busy":true,"tileDone":false,"aSkew":[[],[null],[null,null],[null,null,{"k":2,"value":-2}]],"bSkew":[[],[null],[null,null],[null,null,{"k":2,"value":1}]],"a":[[null,null,null,3],[null,null,-1,2],[null,2,1,-3],[-2,-1,2,null]],"b":[[null,null,null,1],[null,null,-3,-2],[null,0,2,0],[1,3,-1,null]],"acc":[[7,-5,-14,4],[-3,6,4,0],[-5,0,3,0],[5,2,0,0]],"final":[[true,true,true,false],[true,true,false,false],[true,false,false,false],[false,false,false,false]]},
+{"clock":7,"operandClock":6,"inputK":null,"macK":[[null,null,null,null],[null,null,null,2],[null,null,2,1],[null,2,1,0]],"macs":6,"busy":true,"tileDone":false,"aSkew":[[],[null],[null,null],[null,null,null]],"bSkew":[[],[null],[null,null],[null,null,null]],"a":[[null,null,null,null],[null,null,null,-1],[null,null,2,1],[null,-2,-1,2]],"b":[[null,null,null,null],[null,null,null,1],[null,null,-3,-2],[null,0,2,0]],"acc":[[7,-5,-14,7],[-3,6,7,-4],[-5,0,5,0],[3,-1,-2,0]],"final":[[true,true,true,true],[true,true,true,false],[true,true,false,false],[true,false,false,false]]},
+{"clock":8,"operandClock":7,"inputK":null,"macK":[[null,null,null,null],[null,null,null,null],[null,null,null,2],[null,null,2,1]],"macs":3,"busy":true,"tileDone":false,"aSkew":[[],[null],[null,null],[null,null,null]],"bSkew":[[],[null],[null,null],[null,null,null]],"a":[[null,null,null,null],[null,null,null,null],[null,null,null,2],[null,null,-2,-1]],"b":[[null,null,null,null],[null,null,null,null],[null,null,null,1],[null,null,-3,-2]],"acc":[[7,-5,-14,7],[-3,6,7,-5],[-5,0,-1,-2],[3,-1,-4,0]],"final":[[true,true,true,true],[true,true,true,true],[true,true,true,false],[true,true,false,false]]},
+{"clock":9,"operandClock":8,"inputK":null,"macK":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,2]],"macs":1,"busy":true,"tileDone":false,"aSkew":[[],[null],[null,null],[null,null,null]],"bSkew":[[],[null],[null,null],[null,null,null]],"a":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,-2]],"b":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,1]],"acc":[[7,-5,-14,7],[-3,6,7,-5],[-5,0,-1,0],[3,-1,2,2]],"final":[[true,true,true,true],[true,true,true,true],[true,true,true,true],[true,true,true,false]]},
+{"clock":10,"operandClock":9,"inputK":null,"macK":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"macs":0,"busy":false,"tileDone":true,"aSkew":[[],[null],[null,null],[null,null,null]],"bSkew":[[],[null],[null,null],[null,null,null]],"a":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"b":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]],"acc":[[7,-5,-14,7],[-3,6,7,-5],[-5,0,-1,0],[3,-1,2,0]],"final":[[true,true,true,true],[true,true,true,true],[true,true,true,true],[true,true,true,true]]}
+]}
+</script>
+    <script>
+      'use strict';
+      (function () {
+        const trace = JSON.parse(document.getElementById('systolic-trace').textContent);
+        const { rows, cols, k: K, a: A, b: B, c: C, doneClock } = trace;
+        const last = trace.clocks.length - 1;
+        const fmt = (v) => (v < 0 ? '−' + String(-v) : String(v));
+        const $ = (id) => document.getElementById(id);
+
+        // Layout of the grid drawing, in SVG user units.
+        const CELL_W = 118;
+        const CELL_H = 76;
+        const PITCH_X = 132;
+        const PITCH_Y = 90;
+        const REG_W = 62;
+        const REG_H = 32;
+        const REG_PITCH_X = 72;
+        const REG_PITCH_Y = 44;
+        const IN_W = 66;
+        const IN_H = 34;
+        const gridX = IN_W + 14 + (rows - 1) * REG_PITCH_X + 14;
+        const gridY = IN_H + 14 + (cols - 1) * REG_PITCH_Y + 14;
+        const width = gridX + (cols - 1) * PITCH_X + CELL_W + 4;
+        const height = gridY + (rows - 1) * PITCH_Y + CELL_H + 4;
+
+        const svg = [];
+        const arrow = (x1, y1, x2, y2, flow) =>
+          svg.push(
+            `<line class="f${flow}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" marker-end="url(#arrow-${flow})"/>`,
+          );
+        const twoLines = (id, x, y, h, cls) =>
+          svg.push(
+            `<text id="${id}-1" x="${x}" y="${y + h / 2 - 3}" text-anchor="middle" class="small ${cls}"></text>`,
+            `<text id="${id}-2" x="${x}" y="${y + h / 2 + 10}" text-anchor="middle" class="small bold ${cls}"></text>`,
+          );
+        svg.push(
+          `<svg viewBox="0 0 ${width} ${height}">`,
+          '<defs>',
+          '<marker id="arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ma" d="M0,0 L10,5 L0,10 z"/></marker>',
+          '<marker id="arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mb" d="M0,0 L10,5 L0,10 z"/></marker>',
+          '</defs>',
+        );
+        // A edge: row i's input, then i skew registers (stage i next to the grid).
+        for (let i = 0; i < rows; i += 1) {
+          const cy = gridY + i * PITCH_Y + CELL_H / 2;
+          svg.push(
+            `<rect id="ina-${i}" class="in-a" x="0" y="${cy - IN_H / 2}" width="${IN_W}" height="${IN_H}" rx="4"/>`,
+          );
+          twoLines(`ina-${i}`, IN_W / 2, cy - IN_H / 2, IN_H, 'ta');
+          let fromX = IN_W;
+          for (let s = 1; s <= i; s += 1) {
+            const x = gridX - 14 - (i - s + 1) * REG_PITCH_X + (REG_PITCH_X - REG_W);
+            arrow(fromX, cy, x - 2, cy, 'a');
+            svg.push(
+              `<rect id="ra-${i}-${s}" class="reg-a" x="${x}" y="${cy - REG_H / 2}" width="${REG_W}" height="${REG_H}"/>`,
+            );
+            twoLines(`ra-${i}-${s}`, x + REG_W / 2, cy - REG_H / 2, REG_H, 'ta');
+            fromX = x + REG_W;
+          }
+          arrow(fromX, cy, gridX - 2, cy, 'a');
+        }
+        // B edge: column j's input, then j skew registers.
+        for (let j = 0; j < cols; j += 1) {
+          const cx = gridX + j * PITCH_X + CELL_W / 2;
+          svg.push(
+            `<rect id="inb-${j}" class="in-b" x="${cx - IN_W / 2}" y="0" width="${IN_W}" height="${IN_H}" rx="4"/>`,
+          );
+          twoLines(`inb-${j}`, cx, 0, IN_H, 'tb');
+          let fromY = IN_H;
+          for (let s = 1; s <= j; s += 1) {
+            const y = gridY - 14 - (j - s + 1) * REG_PITCH_Y + (REG_PITCH_Y - REG_H);
+            arrow(cx, fromY, cx, y - 2, 'b');
+            svg.push(
+              `<rect id="rb-${j}-${s}" class="reg-b" x="${cx - REG_W / 2}" y="${y}" width="${REG_W}" height="${REG_H}"/>`,
+            );
+            twoLines(`rb-${j}-${s}`, cx, y, REG_H, 'tb');
+            fromY = y + REG_H;
+          }
+          arrow(cx, fromY, cx, gridY - 2, 'b');
+        }
+        // Forwarding links and the PEs.
+        for (let i = 0; i < rows; i += 1) {
+          for (let j = 0; j < cols; j += 1) {
+            const x = gridX + j * PITCH_X;
+            const y = gridY + i * PITCH_Y;
+            if (j + 1 < cols)
+              arrow(x + CELL_W, y + CELL_H / 2, x + PITCH_X - 2, y + CELL_H / 2, 'a');
+            if (i + 1 < rows)
+              arrow(x + CELL_W / 2, y + CELL_H, x + CELL_W / 2, y + PITCH_Y - 2, 'b');
+            const cx = x + CELL_W / 2;
+            svg.push(
+              `<rect id="pe-${i}-${j}" class="pe" x="${x}" y="${y}" width="${CELL_W}" height="${CELL_H}" rx="7"/>`,
+              `<text id="pe-${i}-${j}-1" x="${cx}" y="${y + 17}" text-anchor="middle" class="bold"></text>`,
+              `<text id="pe-${i}-${j}-2" x="${cx}" y="${y + 35}" text-anchor="middle" class="bold"></text>`,
+              `<text id="pe-${i}-${j}-3" x="${cx}" y="${y + 53}" text-anchor="middle"></text>`,
+              `<text id="pe-${i}-${j}-4" x="${cx}" y="${y + 69}" text-anchor="middle" class="small muted"></text>`,
+            );
+          }
+        }
+        svg.push('</svg>');
+        $('array').innerHTML = svg.join('');
+
+        // The matrices.
+        const matrix = (id, name, r, c, cell) => {
+          let html = '<tr><th></th>';
+          for (let col = 0; col < c; col += 1) html += `<th>${col}</th>`;
+          html += '</tr>';
+          for (let row = 0; row < r; row += 1) {
+            html += `<tr><th>${row}</th>`;
+            for (let col = 0; col < c; col += 1) {
+              html += `<td id="${name}-${row}-${col}">${cell(row, col)}</td>`;
+            }
+            html += '</tr>';
+          }
+          $(id).innerHTML = html;
+        };
+        matrix('ma', 'a', rows, K, (i, k) => fmt(A[i * K + k]));
+        matrix('mb', 'b', K, cols, (k, j) => fmt(B[k * cols + j]));
+        matrix('mc', 'c', rows, cols, () => '·');
+
+        // The schedule table.
+        const kText = (v) => (v === null ? '·' : String(v));
+        $('schedule').innerHTML = trace.clocks
+          .map((step) => {
+            const inputs =
+              step.clock === 0
+                ? '<code>tile_start</code>, <code>tile_k</code> = K'
+                : step.inputK === null
+                  ? '–'
+                  : `A[·, ${step.inputK}], B[${step.inputK}, ·]`;
+            const ks = step.macK.map((row) => `<td class="k">${row.map(kText).join(' ')}</td>`);
+            return (
+              `<tr id="row-${step.clock}" tabindex="-1" data-clock="${step.clock}">` +
+              `<td>${step.clock}</td><td>${step.operandClock === null ? '–' : step.operandClock}</td>` +
+              `<td>${inputs}</td>${ks.join('')}<td>${step.macs}</td>` +
+              `<td>${Number(step.busy)}</td><td>${Number(step.tileDone)}</td></tr>`
+            );
+          })
+          .join('');
+        $('schedule').addEventListener('click', (event) => {
+          const row = event.target.closest('tr[data-clock]');
+          if (row) show(Number(row.dataset.clock));
+        });
+
+        const setText = (id, value) => {
+          $(id).textContent = value;
+        };
+        const setHeld = (id, rowOrCol, held, isA) => {
+          $(id).classList.toggle('held', held !== null);
+          if (held === null) {
+            setText(`${id}-1`, '·');
+            setText(`${id}-2`, '');
+          } else {
+            setText(`${id}-1`, isA ? `A[${rowOrCol},${held.k}]` : `B[${held.k},${rowOrCol}]`);
+            setText(`${id}-2`, fmt(held.value));
+          }
+        };
+
+        let current = 0;
+        let timer = null;
+
+        function show(clock) {
+          current = Math.max(0, Math.min(last, clock));
+          const step = trace.clocks[current];
+          setText('clock', String(current));
+          setText(
+            'operand',
+            step.operandClock === null ? '– (tile_start)' : String(step.operandClock),
+          );
+          setText(
+            'inputs',
+            step.inputK === null ? '–' : `A[·, ${step.inputK}], B[${step.inputK}, ·]`,
+          );
+          setText('macs', String(step.macs));
+          $('busy').classList.toggle('on', step.busy);
+          $('busy').querySelector('b').textContent = String(Number(step.busy));
+          $('done').classList.toggle('on', step.tileDone);
+          $('done').querySelector('b').textContent = String(Number(step.tileDone));
+
+          // Edge inputs and skew registers.
+          for (let i = 0; i < rows; i += 1) {
+            const input =
+              step.inputK === null ? null : { k: step.inputK, value: A[i * K + step.inputK] };
+            setHeld(`ina-${i}`, i, input, true);
+            for (let s = 1; s <= i; s += 1) setHeld(`ra-${i}-${s}`, i, step.aSkew[i][s - 1], true);
+          }
+          for (let j = 0; j < cols; j += 1) {
+            const input =
+              step.inputK === null ? null : { k: step.inputK, value: B[step.inputK * cols + j] };
+            setHeld(`inb-${j}`, j, input, false);
+            for (let s = 1; s <= j; s += 1) setHeld(`rb-${j}-${s}`, j, step.bSkew[j][s - 1], false);
+          }
+
+          // The PEs and the matrices.
+          for (const cell of document.querySelectorAll('.matrix td')) {
+            cell.classList.remove('in', 'use', 'done', 'pending');
+          }
+          let finals = 0;
+          let matches = 0;
+          for (let i = 0; i < rows; i += 1) {
+            for (let j = 0; j < cols; j += 1) {
+              const kk = step.macK[i][j];
+              const acc = step.acc[i][j];
+              const final = step.final[i][j];
+              const id = `pe-${i}-${j}`;
+              $(id).classList.toggle('active', kk !== null);
+              $(id).classList.toggle('final', kk === null && final);
+              setText(`${id}-1`, kk === null ? `PE(${i},${j})` : `PE(${i},${j}) k = ${kk}`);
+              if (kk !== null) {
+                const a = step.a[i][j];
+                const b = step.b[i][j];
+                $(`${id}-2`).innerHTML =
+                  `<tspan class="ta">${fmt(a)}</tspan> × <tspan class="tb">${fmt(b)}</tspan>`;
+                setText(`${id}-3`, `acc = ${fmt(acc)}`);
+                setText(`${id}-4`, `+= ${fmt(a * b)} → ${fmt((acc + a * b) | 0)}`);
+                $(`a-${i}-${kk}`).classList.add('use');
+                $(`b-${kk}-${j}`).classList.add('use');
+              } else {
+                setText(`${id}-2`, final ? '✓ final' : 'idle');
+                // In the tile_start clock the register still holds the previous tile; it clears at the end.
+                setText(`${id}-3`, current === 0 ? 'acc → 0 (clear)' : `acc = ${fmt(acc)}`);
+                setText(`${id}-4`, '');
+              }
+              const c = $(`c-${i}-${j}`);
+              if (final) {
+                finals += 1;
+                if (acc === C[i * cols + j]) matches += 1;
+                c.textContent = fmt(acc);
+                c.classList.add('done');
+              } else {
+                c.textContent = '·';
+                c.classList.add('pending');
+              }
+            }
+          }
+          if (step.inputK !== null) {
+            for (let i = 0; i < rows; i += 1) $(`a-${i}-${step.inputK}`).classList.add('in');
+            for (let j = 0; j < cols; j += 1) $(`b-${step.inputK}-${j}`).classList.add('in');
+          }
+          const check = $('check');
+          check.classList.toggle('ok', current === doneClock && matches === rows * cols);
+          check.classList.toggle('bad', matches !== finals);
+          check.textContent =
+            matches !== finals
+              ? `✗ ${finals - matches} final accumulator(s) differ from the reference C`
+              : current === doneClock
+                ? `✓ tile_done: all ${rows * cols} accumulators equal the reference C = A · B`
+                : `${finals} of ${rows * cols} accumulators final`;
+
+          for (const row of document.querySelectorAll('#schedule tr')) {
+            row.classList.toggle('current', Number(row.dataset.clock) === current);
+          }
+          $('prev').disabled = current === 0;
+          $('reset').disabled = current === 0;
+          $('next').disabled = current === last;
+          $('play').disabled = current === last && timer === null;
+          try {
+            history.replaceState(null, '', `#clock=${current}`);
+          } catch {
+            // Some browsers refuse replaceState on file: pages; the hash is only a convenience.
+          }
+        }
+
+        function stop() {
+          if (timer !== null) clearInterval(timer);
+          timer = null;
+          $('play').textContent = '▶ Play';
+          show(current);
+        }
+        function play() {
+          if (current === last) return;
+          $('play').textContent = '⏸ Pause';
+          timer = setInterval(
+            () => {
+              show(current + 1);
+              if (current === last) stop();
+            },
+            1000 / Number($('speed').value),
+          );
+        }
+        const toggle = () => (timer === null ? play() : stop());
+
+        $('reset').addEventListener('click', () => {
+          stop();
+          show(0);
+        });
+        $('prev').addEventListener('click', () => {
+          stop();
+          show(current - 1);
+        });
+        $('next').addEventListener('click', () => {
+          stop();
+          show(current + 1);
+        });
+        $('play').addEventListener('click', toggle);
+        $('speed').addEventListener('change', () => {
+          if (timer !== null) {
+            stop();
+            play();
+          }
+        });
+        document.addEventListener('keydown', (event) => {
+          if (event.target instanceof HTMLSelectElement) return;
+          if (event.altKey || event.metaKey || event.ctrlKey) return;
+          if (event.key === 'ArrowRight') {
+            stop();
+            show(current + 1);
+          } else if (event.key === 'ArrowLeft') {
+            stop();
+            show(current - 1);
+          } else if (event.key === 'Home') {
+            stop();
+            show(0);
+          } else if (event.key === 'End') {
+            stop();
+            show(last);
+          } else if (event.key === ' ' && !(event.target instanceof HTMLButtonElement)) {
+            toggle();
+          } else {
+            return;
+          }
+          event.preventDefault();
+        });
+
+        $('last').textContent = String(last);
+        const fromHash = () => {
+          const match = /^#clock=(\d+)$/.exec(location.hash);
+          return match ? Number(match[1]) : 0;
+        };
+        // replaceState in show() does not fire hashchange, so this only follows the reader's edits.
+        window.addEventListener('hashchange', () => {
+          stop();
+          show(fromHash());
+        });
+        show(fromHash());
+      })();
+    </script>
+  </body>
+</html>

@@ -13,6 +13,7 @@
     "gen-tile-vectors": "tsx src/cli.ts gen-tile-vectors",
     "gen-tile-suite": "tsx src/cli.ts gen-tile-suite",
     "gen-top-suite": "tsx src/cli.ts gen-top-suite",
+    "gen-viz": "tsx src/cli.ts gen-viz",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

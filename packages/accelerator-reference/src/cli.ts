@@ -3,6 +3,7 @@ import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { writeTopSuite } from './harness/top-vectors.js';
 import { writeCase } from './harness/vectors.js';
+import { writeVisualizations } from './viz/page.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
 import {
   GENERATOR_DESCRIPTIONS,
@@ -52,6 +53,9 @@ ${GENERATORS}
                                          first), then N random products (M, N, K and seed drawn
                                          from S), and <dir>/cases.txt, the case names in run order
                                          (' reuse' after a case that reuses the buffers).
+  gen-viz                                Regenerate docs/hardware/accelerators/images/: the 4 × 4
+                                         dataflow SVG and the trace embedded in systolic-4x4.html,
+                                         both from the timing rule in src/viz/schedule.ts.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -332,12 +336,24 @@ function genTopSuite(args: readonly string[]): number {
   return 0;
 }
 
+function genViz(args: readonly string[]): number {
+  if (args.length > 0) {
+    process.stderr.write(`gen-viz: takes no arguments, got ${args.join(' ')}\n`);
+    return 2;
+  }
+  for (const path of writeVisualizations()) {
+    process.stdout.write(`wrote ${path}\n`);
+  }
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
   'gen-tile-vectors': genTileVectors,
   'gen-tile-suite': genTileSuite,
   'gen-top-suite': genTopSuite,
+  'gen-viz': genViz,
 };
 
 const [name, ...rest] = process.argv.slice(2);

@@ -8,3 +8,4 @@ export * from './harness/vectors.js';
 export * from './model/matmul.js';
 export * from './model/pe.js';
 export * from './model/prng.js';
+export * from './viz/schedule.js';

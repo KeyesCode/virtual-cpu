@@ -1,0 +1,691 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1408" height="1536" viewBox="0 0 1408 1536" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title desc">
+<title id="title">Operand flow through a 4 × 4 output-stationary systolic array</title>
+<desc id="desc">The 16 processing elements with A rows entering from the left through i skew registers and B columns entering from the top through j skew registers; then clocks 1, 2, 3, 4 of a K = 2 tile, PE(i, j) multiplying A[i, k] by B[k, j] in clock k + i + j + 1 after tile_start.</desc>
+<defs>
+<marker id="arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1d4ed8"/></marker>
+<marker id="arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker>
+</defs>
+<rect x="0" y="0" width="1408" height="1536" fill="#ffffff"/>
+<text x="24" y="40" fill="#111827" font-size="20" font-weight="700">4 × 4 output-stationary systolic array: operand flow</text>
+<text x="24" y="64" fill="#111827" font-size="12">PE(i,j) keeps C[i,j] in its accumulator. The caller presents A[·,k] and B[k,·] unskewed in clock k + 1; the skew registers delay row i by i and column j by j clocks,</text>
+<text x="24" y="82" fill="#111827" font-size="12">so A[i,k] and B[k,j] meet at PE(i,j) in clock k + i + j + 1 (clocks counted from tile_start = 0). Each PE forwards A to the right and B down.</text>
+<rect x="24" y="264" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="281" text-anchor="middle" fill="#1d4ed8" font-size="11">A[0,k]</text>
+<line x1="80" y1="277" x2="274" y2="277" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="326" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="343" text-anchor="middle" fill="#1d4ed8" font-size="11">A[1,k]</text>
+<line x1="80" y1="339" x2="212" y2="339" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="328" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="343" text-anchor="middle" fill="#1d4ed8" font-size="10">reg</text>
+<line x1="262" y1="339" x2="274" y2="339" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="388" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="405" text-anchor="middle" fill="#1d4ed8" font-size="11">A[2,k]</text>
+<line x1="80" y1="401" x2="156" y2="401" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="158" y="390" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="182" y="405" text-anchor="middle" fill="#1d4ed8" font-size="10">reg</text>
+<line x1="206" y1="401" x2="212" y2="401" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="390" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="405" text-anchor="middle" fill="#1d4ed8" font-size="10">reg</text>
+<line x1="262" y1="401" x2="274" y2="401" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="450" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="467" text-anchor="middle" fill="#1d4ed8" font-size="11">A[3,k]</text>
+<line x1="80" y1="463" x2="100" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="102" y="452" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="126" y="467" text-anchor="middle" fill="#1d4ed8" font-size="10">reg</text>
+<line x1="150" y1="463" x2="156" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="158" y="452" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="182" y="467" text-anchor="middle" fill="#1d4ed8" font-size="10">reg</text>
+<line x1="206" y1="463" x2="212" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="452" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="467" text-anchor="middle" fill="#1d4ed8" font-size="10">reg</text>
+<line x1="262" y1="463" x2="274" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="294" y="96" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="322" y="113" text-anchor="middle" fill="#b45309" font-size="11">B[k,0]</text>
+<line x1="322" y1="122" x2="322" y2="250" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="398" y="96" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="426" y="113" text-anchor="middle" fill="#b45309" font-size="11">B[k,1]</text>
+<line x1="426" y1="122" x2="426" y2="214" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="402" y="216" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="426" y="231" text-anchor="middle" fill="#b45309" font-size="10">reg</text>
+<line x1="426" y1="238" x2="426" y2="250" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="502" y="96" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="530" y="113" text-anchor="middle" fill="#b45309" font-size="11">B[k,2]</text>
+<line x1="530" y1="122" x2="530" y2="180" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="506" y="182" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="530" y="197" text-anchor="middle" fill="#b45309" font-size="10">reg</text>
+<line x1="530" y1="204" x2="530" y2="214" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="506" y="216" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="530" y="231" text-anchor="middle" fill="#b45309" font-size="10">reg</text>
+<line x1="530" y1="238" x2="530" y2="250" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="606" y="96" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="634" y="113" text-anchor="middle" fill="#b45309" font-size="11">B[k,3]</text>
+<line x1="634" y1="122" x2="634" y2="146" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="148" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="163" text-anchor="middle" fill="#b45309" font-size="10">reg</text>
+<line x1="634" y1="170" x2="634" y2="180" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="182" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="197" text-anchor="middle" fill="#b45309" font-size="10">reg</text>
+<line x1="634" y1="204" x2="634" y2="214" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="216" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="231" text-anchor="middle" fill="#b45309" font-size="10">reg</text>
+<line x1="634" y1="238" x2="634" y2="250" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="277" x2="378" y2="277" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="302" x2="322" y2="312" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="277" x2="482" y2="277" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="302" x2="426" y2="312" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="277" x2="586" y2="277" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="302" x2="530" y2="312" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="302" x2="634" y2="312" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="339" x2="378" y2="339" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="364" x2="322" y2="374" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="339" x2="482" y2="339" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="364" x2="426" y2="374" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="339" x2="586" y2="339" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="364" x2="530" y2="374" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="364" x2="634" y2="374" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="401" x2="378" y2="401" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="426" x2="322" y2="436" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="401" x2="482" y2="401" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="426" x2="426" y2="436" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="401" x2="586" y2="401" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="426" x2="530" y2="436" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="426" x2="634" y2="436" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="463" x2="378" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="472" y1="463" x2="482" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="576" y1="463" x2="586" y2="463" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="276" y="252" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="322" y="272" text-anchor="middle" fill="#111827" font-size="12">PE(0,0)</text>
+<text x="322" y="290" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[0,0]</text>
+<rect x="380" y="252" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="426" y="272" text-anchor="middle" fill="#111827" font-size="12">PE(0,1)</text>
+<text x="426" y="290" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[0,1]</text>
+<rect x="484" y="252" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="530" y="272" text-anchor="middle" fill="#111827" font-size="12">PE(0,2)</text>
+<text x="530" y="290" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[0,2]</text>
+<rect x="588" y="252" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="634" y="272" text-anchor="middle" fill="#111827" font-size="12">PE(0,3)</text>
+<text x="634" y="290" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[0,3]</text>
+<rect x="276" y="314" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="322" y="334" text-anchor="middle" fill="#111827" font-size="12">PE(1,0)</text>
+<text x="322" y="352" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[1,0]</text>
+<rect x="380" y="314" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="426" y="334" text-anchor="middle" fill="#111827" font-size="12">PE(1,1)</text>
+<text x="426" y="352" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[1,1]</text>
+<rect x="484" y="314" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="530" y="334" text-anchor="middle" fill="#111827" font-size="12">PE(1,2)</text>
+<text x="530" y="352" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[1,2]</text>
+<rect x="588" y="314" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="634" y="334" text-anchor="middle" fill="#111827" font-size="12">PE(1,3)</text>
+<text x="634" y="352" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[1,3]</text>
+<rect x="276" y="376" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="322" y="396" text-anchor="middle" fill="#111827" font-size="12">PE(2,0)</text>
+<text x="322" y="414" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[2,0]</text>
+<rect x="380" y="376" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="426" y="396" text-anchor="middle" fill="#111827" font-size="12">PE(2,1)</text>
+<text x="426" y="414" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[2,1]</text>
+<rect x="484" y="376" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="530" y="396" text-anchor="middle" fill="#111827" font-size="12">PE(2,2)</text>
+<text x="530" y="414" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[2,2]</text>
+<rect x="588" y="376" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="634" y="396" text-anchor="middle" fill="#111827" font-size="12">PE(2,3)</text>
+<text x="634" y="414" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[2,3]</text>
+<rect x="276" y="438" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="322" y="458" text-anchor="middle" fill="#111827" font-size="12">PE(3,0)</text>
+<text x="322" y="476" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[3,0]</text>
+<rect x="380" y="438" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="426" y="458" text-anchor="middle" fill="#111827" font-size="12">PE(3,1)</text>
+<text x="426" y="476" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[3,1]</text>
+<rect x="484" y="438" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="530" y="458" text-anchor="middle" fill="#111827" font-size="12">PE(3,2)</text>
+<text x="530" y="476" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[3,2]</text>
+<rect x="588" y="438" width="92" height="50" rx="6" fill="#ffffff" stroke="#111827" stroke-width="1.4"/>
+<text x="634" y="458" text-anchor="middle" fill="#111827" font-size="12">PE(3,3)</text>
+<text x="634" y="476" text-anchor="middle" fill="#6b7280" font-size="11">acc = C[3,3]</text>
+<text x="728" y="116" fill="#111827" font-size="14" font-weight="700">Legend</text>
+<line x1="728" y1="142" x2="768" y2="142" stroke="#1d4ed8" stroke-width="1.6" marker-end="url(#arrow-a)"/>
+<text x="782" y="146" fill="#111827" font-size="12">A operand, moves right (solid)</text>
+<line x1="728" y1="172" x2="768" y2="172" stroke="#b45309" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<text x="782" y="176" fill="#111827" font-size="12">B operand, moves down (dashed)</text>
+<rect x="730" y="191" width="18" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/><rect x="752" y="191" width="18" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="782" y="206" fill="#111827" font-size="12">skew register, A | B (row i has i, column j has j)</text>
+<rect x="732" y="221" width="32" height="22" rx="4" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="782" y="236" fill="#111827" font-size="12">active PE: bold outline, does A[i,k]·B[k,j]</text>
+<rect x="732" y="251" width="32" height="22" rx="4" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="782" y="266" fill="#111827" font-size="12">idle PE: dashed outline</text>
+<rect x="732" y="281" width="32" height="22" rx="4" fill="#e5e7eb" stroke="#111827" stroke-width="1.2"/>
+<text x="782" y="296" fill="#111827" font-size="12">✓ accumulator final, holds C[i,j]</text>
+<text x="728" y="336" fill="#111827" font-size="12">Below: a K = 2 tile. tile_done pulses in clock</text>
+<text x="728" y="354" fill="#111827" font-size="12">K + ROWS + COLS − 1 = 9; the last MAC is in clock 8.</text>
+<text x="24" y="560" fill="#111827" font-size="14" font-weight="700">Clock 1 (operand clock 0): 1 MAC</text>
+<rect x="24" y="744" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="761" text-anchor="middle" fill="#1d4ed8" font-size="11">A[0,0]</text>
+<line x1="80" y1="757" x2="274" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="806" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="823" text-anchor="middle" fill="#1d4ed8" font-size="11">A[1,0]</text>
+<line x1="80" y1="819" x2="212" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="808" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="823" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="262" y1="819" x2="274" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="868" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="885" text-anchor="middle" fill="#1d4ed8" font-size="11">A[2,0]</text>
+<line x1="80" y1="881" x2="156" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="158" y="870" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="182" y="885" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="206" y1="881" x2="212" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="870" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="885" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="262" y1="881" x2="274" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="930" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="947" text-anchor="middle" fill="#1d4ed8" font-size="11">A[3,0]</text>
+<line x1="80" y1="943" x2="100" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="102" y="932" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="126" y="947" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="150" y1="943" x2="156" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="158" y="932" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="182" y="947" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="206" y1="943" x2="212" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="932" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="947" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="262" y1="943" x2="274" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="294" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="322" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[0,0]</text>
+<line x1="322" y1="602" x2="322" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="398" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="426" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[0,1]</text>
+<line x1="426" y1="602" x2="426" y2="694" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="402" y="696" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="426" y="711" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="426" y1="718" x2="426" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="502" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="530" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[0,2]</text>
+<line x1="530" y1="602" x2="530" y2="660" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="506" y="662" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="530" y="677" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="530" y1="684" x2="530" y2="694" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="506" y="696" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="530" y="711" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="530" y1="718" x2="530" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="606" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="634" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[0,3]</text>
+<line x1="634" y1="602" x2="634" y2="626" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="628" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="643" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="634" y1="650" x2="634" y2="660" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="662" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="677" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="634" y1="684" x2="634" y2="694" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="696" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="711" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="634" y1="718" x2="634" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="757" x2="378" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="782" x2="322" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="757" x2="482" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="782" x2="426" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="757" x2="586" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="782" x2="530" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="782" x2="634" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="819" x2="378" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="844" x2="322" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="819" x2="482" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="844" x2="426" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="819" x2="586" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="844" x2="530" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="844" x2="634" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="881" x2="378" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="906" x2="322" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="881" x2="482" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="906" x2="426" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="881" x2="586" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="906" x2="530" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="906" x2="634" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="943" x2="378" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="472" y1="943" x2="482" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="576" y1="943" x2="586" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="276" y="732" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="322" y="752" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,0) k=0</text>
+<text x="322" y="770" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,0]</tspan>·<tspan fill="#b45309">B[0,0]</tspan></text>
+<rect x="380" y="732" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="426" y="752" text-anchor="middle" fill="#6b7280" font-size="11">PE(0,1)</text>
+<text x="426" y="770" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="484" y="732" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="752" text-anchor="middle" fill="#6b7280" font-size="11">PE(0,2)</text>
+<text x="530" y="770" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="732" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="752" text-anchor="middle" fill="#6b7280" font-size="11">PE(0,3)</text>
+<text x="634" y="770" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="276" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="322" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,0)</text>
+<text x="322" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="380" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="426" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,1)</text>
+<text x="426" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="484" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,2)</text>
+<text x="530" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,3)</text>
+<text x="634" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="276" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="322" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,0)</text>
+<text x="322" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="380" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="426" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,1)</text>
+<text x="426" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="484" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,2)</text>
+<text x="530" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,3)</text>
+<text x="634" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="276" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="322" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,0)</text>
+<text x="322" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="380" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="426" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,1)</text>
+<text x="426" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="484" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,2)</text>
+<text x="530" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,3)</text>
+<text x="634" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<text x="728" y="560" fill="#111827" font-size="14" font-weight="700">Clock 2 (operand clock 1): 3 MACs</text>
+<rect x="728" y="744" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="761" text-anchor="middle" fill="#1d4ed8" font-size="11">A[0,1]</text>
+<line x1="784" y1="757" x2="978" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="728" y="806" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="823" text-anchor="middle" fill="#1d4ed8" font-size="11">A[1,1]</text>
+<line x1="784" y1="819" x2="916" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="918" y="808" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="942" y="823" text-anchor="middle" fill="#1d4ed8" font-size="10">A[1,0]</text>
+<line x1="966" y1="819" x2="978" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="728" y="868" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="885" text-anchor="middle" fill="#1d4ed8" font-size="11">A[2,1]</text>
+<line x1="784" y1="881" x2="860" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="862" y="870" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="886" y="885" text-anchor="middle" fill="#1d4ed8" font-size="10">A[2,0]</text>
+<line x1="910" y1="881" x2="916" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="918" y="870" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="942" y="885" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="966" y1="881" x2="978" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="728" y="930" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="947" text-anchor="middle" fill="#1d4ed8" font-size="11">A[3,1]</text>
+<line x1="784" y1="943" x2="804" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="806" y="932" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="830" y="947" text-anchor="middle" fill="#1d4ed8" font-size="10">A[3,0]</text>
+<line x1="854" y1="943" x2="860" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="862" y="932" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="886" y="947" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="910" y1="943" x2="916" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="918" y="932" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="942" y="947" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="966" y1="943" x2="978" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="998" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1026" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[1,0]</text>
+<line x1="1026" y1="602" x2="1026" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1102" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1130" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[1,1]</text>
+<line x1="1130" y1="602" x2="1130" y2="694" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1106" y="696" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1130" y="711" text-anchor="middle" fill="#b45309" font-size="10">B[0,1]</text>
+<line x1="1130" y1="718" x2="1130" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1206" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1234" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[1,2]</text>
+<line x1="1234" y1="602" x2="1234" y2="660" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1210" y="662" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1234" y="677" text-anchor="middle" fill="#b45309" font-size="10">B[0,2]</text>
+<line x1="1234" y1="684" x2="1234" y2="694" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1210" y="696" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1234" y="711" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="1234" y1="718" x2="1234" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1310" y="576" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1338" y="593" text-anchor="middle" fill="#b45309" font-size="11">B[1,3]</text>
+<line x1="1338" y1="602" x2="1338" y2="626" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1314" y="628" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1338" y="643" text-anchor="middle" fill="#b45309" font-size="10">B[0,3]</text>
+<line x1="1338" y1="650" x2="1338" y2="660" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1314" y="662" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1338" y="677" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="1338" y1="684" x2="1338" y2="694" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1314" y="696" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1338" y="711" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="1338" y1="718" x2="1338" y2="730" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="757" x2="1082" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1026" y1="782" x2="1026" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1176" y1="757" x2="1186" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1130" y1="782" x2="1130" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1280" y1="757" x2="1290" y2="757" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1234" y1="782" x2="1234" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1338" y1="782" x2="1338" y2="792" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="819" x2="1082" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1026" y1="844" x2="1026" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1176" y1="819" x2="1186" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1130" y1="844" x2="1130" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1280" y1="819" x2="1290" y2="819" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1234" y1="844" x2="1234" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1338" y1="844" x2="1338" y2="854" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="881" x2="1082" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1026" y1="906" x2="1026" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1176" y1="881" x2="1186" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1130" y1="906" x2="1130" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1280" y1="881" x2="1290" y2="881" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1234" y1="906" x2="1234" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1338" y1="906" x2="1338" y2="916" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="943" x2="1082" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1176" y1="943" x2="1186" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1280" y1="943" x2="1290" y2="943" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="980" y="732" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1026" y="752" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,0) k=1</text>
+<text x="1026" y="770" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,1]</tspan>·<tspan fill="#b45309">B[1,0]</tspan></text>
+<rect x="1084" y="732" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1130" y="752" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,1) k=0</text>
+<text x="1130" y="770" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,0]</tspan>·<tspan fill="#b45309">B[0,1]</tspan></text>
+<rect x="1188" y="732" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1234" y="752" text-anchor="middle" fill="#6b7280" font-size="11">PE(0,2)</text>
+<text x="1234" y="770" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1292" y="732" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="752" text-anchor="middle" fill="#6b7280" font-size="11">PE(0,3)</text>
+<text x="1338" y="770" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="980" y="794" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1026" y="814" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(1,0) k=0</text>
+<text x="1026" y="832" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[1,0]</tspan>·<tspan fill="#b45309">B[0,0]</tspan></text>
+<rect x="1084" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1130" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,1)</text>
+<text x="1130" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1188" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1234" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,2)</text>
+<text x="1234" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1292" y="794" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="814" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,3)</text>
+<text x="1338" y="832" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="980" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1026" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,0)</text>
+<text x="1026" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1084" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1130" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,1)</text>
+<text x="1130" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1188" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1234" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,2)</text>
+<text x="1234" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1292" y="856" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="876" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,3)</text>
+<text x="1338" y="894" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="980" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1026" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,0)</text>
+<text x="1026" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1084" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1130" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,1)</text>
+<text x="1130" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1188" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1234" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,2)</text>
+<text x="1234" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1292" y="918" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="938" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,3)</text>
+<text x="1338" y="956" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<text x="24" y="1016" fill="#111827" font-size="14" font-weight="700">Clock 3 (operand clock 2): 5 MACs, no new input</text>
+<rect x="24" y="1200" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="1217" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="80" y1="1213" x2="274" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="1262" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="1279" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="80" y1="1275" x2="212" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="1264" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="1279" text-anchor="middle" fill="#1d4ed8" font-size="10">A[1,1]</text>
+<line x1="262" y1="1275" x2="274" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="1324" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="1341" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="80" y1="1337" x2="156" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="158" y="1326" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="182" y="1341" text-anchor="middle" fill="#1d4ed8" font-size="10">A[2,1]</text>
+<line x1="206" y1="1337" x2="212" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="1326" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="1341" text-anchor="middle" fill="#1d4ed8" font-size="10">A[2,0]</text>
+<line x1="262" y1="1337" x2="274" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="24" y="1386" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="52" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="80" y1="1399" x2="100" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="102" y="1388" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="126" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="10">A[3,1]</text>
+<line x1="150" y1="1399" x2="156" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="158" y="1388" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="182" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="10">A[3,0]</text>
+<line x1="206" y1="1399" x2="212" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="214" y="1388" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="238" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="262" y1="1399" x2="274" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="294" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="322" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="322" y1="1058" x2="322" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="398" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="426" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="426" y1="1058" x2="426" y2="1150" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="402" y="1152" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="426" y="1167" text-anchor="middle" fill="#b45309" font-size="10">B[1,1]</text>
+<line x1="426" y1="1174" x2="426" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="502" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="530" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="530" y1="1058" x2="530" y2="1116" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="506" y="1118" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="530" y="1133" text-anchor="middle" fill="#b45309" font-size="10">B[1,2]</text>
+<line x1="530" y1="1140" x2="530" y2="1150" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="506" y="1152" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="530" y="1167" text-anchor="middle" fill="#b45309" font-size="10">B[0,2]</text>
+<line x1="530" y1="1174" x2="530" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="606" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="634" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="634" y1="1058" x2="634" y2="1082" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="1084" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="1099" text-anchor="middle" fill="#b45309" font-size="10">B[1,3]</text>
+<line x1="634" y1="1106" x2="634" y2="1116" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="1118" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="1133" text-anchor="middle" fill="#b45309" font-size="10">B[0,3]</text>
+<line x1="634" y1="1140" x2="634" y2="1150" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="610" y="1152" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="634" y="1167" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="634" y1="1174" x2="634" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="1213" x2="378" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="1238" x2="322" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="1213" x2="482" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="1238" x2="426" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="1213" x2="586" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="1238" x2="530" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="1238" x2="634" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="1275" x2="378" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="1300" x2="322" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="1275" x2="482" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="1300" x2="426" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="1275" x2="586" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="1300" x2="530" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="1300" x2="634" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="1337" x2="378" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="322" y1="1362" x2="322" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="472" y1="1337" x2="482" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="426" y1="1362" x2="426" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="576" y1="1337" x2="586" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="530" y1="1362" x2="530" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="634" y1="1362" x2="634" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="368" y1="1399" x2="378" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="472" y1="1399" x2="482" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="576" y1="1399" x2="586" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="276" y="1188" width="92" height="50" rx="6" fill="#e5e7eb" stroke="#111827" stroke-width="1.2"/>
+<text x="322" y="1208" text-anchor="middle" fill="#111827" font-size="11">PE(0,0)</text>
+<text x="322" y="1226" text-anchor="middle" fill="#111827" font-size="11">✓ C[0,0] final</text>
+<rect x="380" y="1188" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="426" y="1208" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,1) k=1</text>
+<text x="426" y="1226" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,1]</tspan>·<tspan fill="#b45309">B[1,1]</tspan></text>
+<rect x="484" y="1188" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="530" y="1208" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,2) k=0</text>
+<text x="530" y="1226" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,0]</tspan>·<tspan fill="#b45309">B[0,2]</tspan></text>
+<rect x="588" y="1188" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="1208" text-anchor="middle" fill="#6b7280" font-size="11">PE(0,3)</text>
+<text x="634" y="1226" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="276" y="1250" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="322" y="1270" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(1,0) k=1</text>
+<text x="322" y="1288" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[1,1]</tspan>·<tspan fill="#b45309">B[1,0]</tspan></text>
+<rect x="380" y="1250" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="426" y="1270" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(1,1) k=0</text>
+<text x="426" y="1288" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[1,0]</tspan>·<tspan fill="#b45309">B[0,1]</tspan></text>
+<rect x="484" y="1250" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="1270" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,2)</text>
+<text x="530" y="1288" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="1250" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="1270" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,3)</text>
+<text x="634" y="1288" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="276" y="1312" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="322" y="1332" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(2,0) k=0</text>
+<text x="322" y="1350" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[2,0]</tspan>·<tspan fill="#b45309">B[0,0]</tspan></text>
+<rect x="380" y="1312" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="426" y="1332" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,1)</text>
+<text x="426" y="1350" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="484" y="1312" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="1332" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,2)</text>
+<text x="530" y="1350" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="1312" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="1332" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,3)</text>
+<text x="634" y="1350" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="276" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="322" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,0)</text>
+<text x="322" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="380" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="426" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,1)</text>
+<text x="426" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="484" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="530" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,2)</text>
+<text x="530" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="588" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="634" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,3)</text>
+<text x="634" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<text x="728" y="1016" fill="#111827" font-size="14" font-weight="700">Clock 4 (operand clock 3): 7 MACs, no new input</text>
+<rect x="728" y="1200" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="1217" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="784" y1="1213" x2="978" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="728" y="1262" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="1279" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="784" y1="1275" x2="916" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="918" y="1264" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="942" y="1279" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="966" y1="1275" x2="978" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="728" y="1324" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="1341" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="784" y1="1337" x2="860" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="862" y="1326" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="886" y="1341" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="910" y1="1337" x2="916" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="918" y="1326" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="942" y="1341" text-anchor="middle" fill="#1d4ed8" font-size="10">A[2,1]</text>
+<line x1="966" y1="1337" x2="978" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="728" y="1386" width="56" height="26" rx="4" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.4"/>
+<text x="756" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="11">·</text>
+<line x1="784" y1="1399" x2="804" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="806" y="1388" width="48" height="22" fill="#ffffff" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="830" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="10">·</text>
+<line x1="854" y1="1399" x2="860" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="862" y="1388" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="886" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="10">A[3,1]</text>
+<line x1="910" y1="1399" x2="916" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="918" y="1388" width="48" height="22" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2"/>
+<text x="942" y="1403" text-anchor="middle" fill="#1d4ed8" font-size="10">A[3,0]</text>
+<line x1="966" y1="1399" x2="978" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="998" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1026" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="1026" y1="1058" x2="1026" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1102" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1130" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="1130" y1="1058" x2="1130" y2="1150" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1106" y="1152" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1130" y="1167" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="1130" y1="1174" x2="1130" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1206" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1234" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="1234" y1="1058" x2="1234" y2="1116" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1210" y="1118" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1234" y="1133" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="1234" y1="1140" x2="1234" y2="1150" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1210" y="1152" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1234" y="1167" text-anchor="middle" fill="#b45309" font-size="10">B[1,2]</text>
+<line x1="1234" y1="1174" x2="1234" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1310" y="1032" width="56" height="26" rx="4" fill="#ffffff" stroke="#b45309" stroke-width="1.4"/>
+<text x="1338" y="1049" text-anchor="middle" fill="#b45309" font-size="11">·</text>
+<line x1="1338" y1="1058" x2="1338" y2="1082" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1314" y="1084" width="48" height="22" fill="#ffffff" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1338" y="1099" text-anchor="middle" fill="#b45309" font-size="10">·</text>
+<line x1="1338" y1="1106" x2="1338" y2="1116" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1314" y="1118" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1338" y="1133" text-anchor="middle" fill="#b45309" font-size="10">B[1,3]</text>
+<line x1="1338" y1="1140" x2="1338" y2="1150" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<rect x="1314" y="1152" width="48" height="22" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" stroke-dasharray="4 2"/>
+<text x="1338" y="1167" text-anchor="middle" fill="#b45309" font-size="10">B[0,3]</text>
+<line x1="1338" y1="1174" x2="1338" y2="1186" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="1213" x2="1082" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1026" y1="1238" x2="1026" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1176" y1="1213" x2="1186" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1130" y1="1238" x2="1130" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1280" y1="1213" x2="1290" y2="1213" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1234" y1="1238" x2="1234" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1338" y1="1238" x2="1338" y2="1248" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="1275" x2="1082" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1026" y1="1300" x2="1026" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1176" y1="1275" x2="1186" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1130" y1="1300" x2="1130" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1280" y1="1275" x2="1290" y2="1275" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1234" y1="1300" x2="1234" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1338" y1="1300" x2="1338" y2="1310" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="1337" x2="1082" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1026" y1="1362" x2="1026" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1176" y1="1337" x2="1186" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1130" y1="1362" x2="1130" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1280" y1="1337" x2="1290" y2="1337" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1234" y1="1362" x2="1234" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1338" y1="1362" x2="1338" y2="1372" stroke-width="1.6" stroke="#b45309" stroke-dasharray="5 3" marker-end="url(#arrow-b)"/>
+<line x1="1072" y1="1399" x2="1082" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1176" y1="1399" x2="1186" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<line x1="1280" y1="1399" x2="1290" y2="1399" stroke-width="1.6" stroke="#1d4ed8" marker-end="url(#arrow-a)"/>
+<rect x="980" y="1188" width="92" height="50" rx="6" fill="#e5e7eb" stroke="#111827" stroke-width="1.2"/>
+<text x="1026" y="1208" text-anchor="middle" fill="#111827" font-size="11">PE(0,0)</text>
+<text x="1026" y="1226" text-anchor="middle" fill="#111827" font-size="11">✓ C[0,0] final</text>
+<rect x="1084" y="1188" width="92" height="50" rx="6" fill="#e5e7eb" stroke="#111827" stroke-width="1.2"/>
+<text x="1130" y="1208" text-anchor="middle" fill="#111827" font-size="11">PE(0,1)</text>
+<text x="1130" y="1226" text-anchor="middle" fill="#111827" font-size="11">✓ C[0,1] final</text>
+<rect x="1188" y="1188" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1234" y="1208" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,2) k=1</text>
+<text x="1234" y="1226" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,1]</tspan>·<tspan fill="#b45309">B[1,2]</tspan></text>
+<rect x="1292" y="1188" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1338" y="1208" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(0,3) k=0</text>
+<text x="1338" y="1226" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[0,0]</tspan>·<tspan fill="#b45309">B[0,3]</tspan></text>
+<rect x="980" y="1250" width="92" height="50" rx="6" fill="#e5e7eb" stroke="#111827" stroke-width="1.2"/>
+<text x="1026" y="1270" text-anchor="middle" fill="#111827" font-size="11">PE(1,0)</text>
+<text x="1026" y="1288" text-anchor="middle" fill="#111827" font-size="11">✓ C[1,0] final</text>
+<rect x="1084" y="1250" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1130" y="1270" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(1,1) k=1</text>
+<text x="1130" y="1288" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[1,1]</tspan>·<tspan fill="#b45309">B[1,1]</tspan></text>
+<rect x="1188" y="1250" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1234" y="1270" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(1,2) k=0</text>
+<text x="1234" y="1288" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[1,0]</tspan>·<tspan fill="#b45309">B[0,2]</tspan></text>
+<rect x="1292" y="1250" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="1270" text-anchor="middle" fill="#6b7280" font-size="11">PE(1,3)</text>
+<text x="1338" y="1288" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="980" y="1312" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1026" y="1332" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(2,0) k=1</text>
+<text x="1026" y="1350" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[2,1]</tspan>·<tspan fill="#b45309">B[1,0]</tspan></text>
+<rect x="1084" y="1312" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1130" y="1332" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(2,1) k=0</text>
+<text x="1130" y="1350" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[2,0]</tspan>·<tspan fill="#b45309">B[0,1]</tspan></text>
+<rect x="1188" y="1312" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1234" y="1332" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,2)</text>
+<text x="1234" y="1350" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1292" y="1312" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="1332" text-anchor="middle" fill="#6b7280" font-size="11">PE(2,3)</text>
+<text x="1338" y="1350" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="980" y="1374" width="92" height="50" rx="6" fill="#dcfce7" stroke="#15803d" stroke-width="3"/>
+<text x="1026" y="1394" text-anchor="middle" fill="#111827" font-size="11" font-weight="700">PE(3,0) k=0</text>
+<text x="1026" y="1412" text-anchor="middle" fill="#111827" font-size="11" font-weight="700"><tspan fill="#1d4ed8">A[3,0]</tspan>·<tspan fill="#b45309">B[0,0]</tspan></text>
+<rect x="1084" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1130" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,1)</text>
+<text x="1130" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1188" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1234" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,2)</text>
+<text x="1234" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+<rect x="1292" y="1374" width="92" height="50" rx="6" fill="#ffffff" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="1338" y="1394" text-anchor="middle" fill="#6b7280" font-size="11">PE(3,3)</text>
+<text x="1338" y="1412" text-anchor="middle" fill="#6b7280" font-size="11">idle</text>
+</svg>

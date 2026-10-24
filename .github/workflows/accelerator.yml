@@ -96,12 +96,13 @@ jobs:
         run: make -C "${HW}" test
 
       - name: verify (directed and seeded random cases on 4x4, 8x8 and 16x16)
+        # Not named COUNT: make takes an environment variable over `COUNT ?= 40`, even an empty one.
         env:
-          COUNT: ${{ inputs.count }}
+          VERIFY_COUNT: ${{ inputs.count }}
         run: |
-          if [[ -n "${COUNT}" ]]; then
-            [[ "${COUNT}" =~ ^[1-9][0-9]*$ ]] || { echo "count must be a positive integer, not '${COUNT}'" >&2; exit 2; }
-            make -C "${HW}" verify COUNT="${COUNT}"
+          if [[ -n "${VERIFY_COUNT}" ]]; then
+            [[ "${VERIFY_COUNT}" =~ ^[1-9][0-9]*$ ]] || { echo "count must be a positive integer, not '${VERIFY_COUNT}'" >&2; exit 2; }
+            make -C "${HW}" verify COUNT="${VERIFY_COUNT}"
           else
             make -C "${HW}" verify
           fi

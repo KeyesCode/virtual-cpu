@@ -6,18 +6,42 @@ Project 3 adds dedicated AI hardware to the monorepo: a synthesizable, parameter
 
 Start with the [architecture contract](architecture.md): the numerics, the dataflow and its cycle-by-cycle timing, tiling, the buffers and host port, and the handshake that every RTL module implements.
 
+New to hardware? Read [concepts.md](concepts.md) first, then [from-rtl-to-silicon.md](from-rtl-to-silicon.md): together they explain the fifteen topics below in plain language, with worked examples in this design's numbers.
+
+## Topics
+
+| #   | Topic                                     | Document and section                                                                               |
+| --- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1   | Matrix multiplication fundamentals        | [concepts.md § 1](concepts.md#1-matrix-multiplication-fundamentals)                                |
+| 2   | Why AI models use matrix operations       | [concepts.md § 2](concepts.md#2-why-ai-models-use-matrix-operations)                               |
+| 3   | What a multiply-accumulate unit is        | [concepts.md § 3](concepts.md#3-what-a-multiply-accumulate-unit-is)                                |
+| 4   | How a systolic array works                | [concepts.md § 4](concepts.md#4-how-a-systolic-array-works)                                        |
+| 5   | How operands move between PEs             | [concepts.md § 5](concepts.md#5-how-operands-move-between-processing-elements)                     |
+| 6   | Output-stationary dataflow                | [concepts.md § 6](concepts.md#6-output-stationary-dataflow)                                        |
+| 7   | Tiling                                    | [concepts.md § 7](concepts.md#7-tiling)                                                            |
+| 8   | Why memory bandwidth matters              | [concepts.md § 8](concepts.md#8-why-memory-bandwidth-matters)                                      |
+| 9   | Why utilisation matters                   | [concepts.md § 9](concepts.md#9-why-utilisation-matters)                                           |
+| 10  | How arithmetic precision affects hardware | [concepts.md § 10](concepts.md#10-how-arithmetic-precision-affects-hardware)                       |
+| 11  | How RTL becomes digital logic             | [from-rtl-to-silicon.md § 11](from-rtl-to-silicon.md#11-how-rtl-becomes-digital-logic)             |
+| 12  | How to interpret synthesis reports        | [from-rtl-to-silicon.md § 12](from-rtl-to-silicon.md#12-how-to-interpret-synthesis-reports)        |
+| 13  | How to compare accelerator designs fairly | [from-rtl-to-silicon.md § 13](from-rtl-to-silicon.md#13-how-to-compare-accelerator-designs-fairly) |
+| 14  | What FPGA implementation requires         | [from-rtl-to-silicon.md § 14](from-rtl-to-silicon.md#14-what-fpga-implementation-requires)         |
+| 15  | What ASIC fabrication requires            | [from-rtl-to-silicon.md § 15](from-rtl-to-silicon.md#15-what-asic-fabrication-requires)            |
+
 ## Documents
 
-| Document                                                             | Contents                                                                                                                                                                  |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [architecture.md](architecture.md)                                   | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured            |
-| [processing-element.md](processing-element.md)                       | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                                    |
-| [systolic-array.md](systolic-array.md)                               | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence              |
-| [controller.md](controller.md)                                       | The FSM and `matmul_top`: states, tile order, how K is handled, edge masks, read latency, handshake timing, cycle formulas and their measured values, `test-top` evidence |
-| [memory.md](memory.md)                                               | The buffers and the host port: sizes, layout, banking, bandwidth, read/write timing, maximum dimensions, transfer overhead, the RAM inference check                       |
-| [synthesis-guide.md](synthesis-guide.md)                             | Yosys and nextpnr for 4 × 4, 8 × 8 and 16 × 16: the flows, the FPGA wrapper, cells, multipliers, memories, logic depth, fit and Fmax estimates, warnings, baseline        |
-| [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                                        |
-| [images/systolic-4x4.html](images/systolic-4x4.html)                 | Animated page (open from disk): the 4 × 4 K = 3 tile clock by clock, operands, skew registers and accumulators                                                            |
+| Document                                                             | Contents                                                                                                                                                                                   |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [concepts.md](concepts.md)                                           | Topics 1–10 for a programmer new to hardware: matmul, why AI uses it, the MAC, the systolic array, operand movement, output-stationary dataflow, tiling, bandwidth, utilisation, precision |
+| [from-rtl-to-silicon.md](from-rtl-to-silicon.md)                     | Topics 11–15: how RTL becomes logic (the PE as the example), reading synthesis reports, fair comparison rules, what an FPGA build and an ASIC would require                                |
+| [architecture.md](architecture.md)                                   | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured                             |
+| [processing-element.md](processing-element.md)                       | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                                                     |
+| [systolic-array.md](systolic-array.md)                               | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence                               |
+| [controller.md](controller.md)                                       | The FSM and `matmul_top`: states, tile order, how K is handled, edge masks, read latency, handshake timing, cycle formulas and their measured values, `test-top` evidence                  |
+| [memory.md](memory.md)                                               | The buffers and the host port: sizes, layout, banking, bandwidth, read/write timing, maximum dimensions, transfer overhead, the RAM inference check                                        |
+| [synthesis-guide.md](synthesis-guide.md)                             | Yosys and nextpnr for 4 × 4, 8 × 8 and 16 × 16: the flows, the FPGA wrapper, cells, multipliers, memories, logic depth, fit and Fmax estimates, warnings, baseline                         |
+| [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                                                         |
+| [images/systolic-4x4.html](images/systolic-4x4.html)                 | Animated page (open from disk): the 4 × 4 K = 3 tile clock by clock, operands, skew registers and accumulators                                                                             |
 
 Research results live outside `docs/`, in [research/accelerators/matmul/](../../../research/accelerators/matmul/README.md).
 

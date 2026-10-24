@@ -1,0 +1,1124 @@
+{
+  "schemaVersion": 1,
+  "kind": "matmul-rtl-benchmark",
+  "revision": "matmul-os-r1",
+  "arraySizes": ["4x4", "8x8", "16x16"],
+  "labels": {
+    "mac": "One MAC is one multiply plus one accumulate: a signed INT8 × INT8 product added into a signed INT32 accumulator. A workload of M × K by K × N is M · N · K MACs. Ops count each MAC as two operations (ops = 2 × MACs).",
+    "cycles": "Cycles: rising clock edges of the Verilated matmul_top, counted by the Verilator runner (tb/sim/matmul_sim.cpp). They are clocks, not time: no clock frequency is assumed, so no time or throughput per second is reported.",
+    "transfer": "Transfer in and transfer out: the simplified testbench host port (A and B written in parallel, one element per port per clock; C read one element per clock). It is a testbench convenience, not a production memory system.",
+    "utilization": "PE utilization = MACs / (ROWS · COLS · compute cycles): the fraction of PE-clocks of the compute phase (PREPARE_TILE, COMPUTE and DRAIN of every tile) that did a useful MAC. STORE, transfer and handshake clocks are not in the denominator."
+  },
+  "formulas": {
+    "macs": "macs = M · N · K",
+    "tiles": "tiles = ⌈M / ROWS⌉ · ⌈N / COLS⌉",
+    "utilization": "utilization = macs / (ROWS · COLS · compute)",
+    "macsPerCycleCompute": "macsPerCycleCompute = macs / compute",
+    "macsPerCycleTotal": "macsPerCycleTotal = macs / total",
+    "opsPerCycleCompute": "opsPerCycleCompute = 2 · macs / compute",
+    "opsPerCycleTotal": "opsPerCycleTotal = 2 · macs / total",
+    "fillDrain": "fillDrain = compute − tiles · K (the PREPARE_TILE and DRAIN clocks)",
+    "bytesIn": "bytesIn = M · K + K · N (INT8 operands)",
+    "bytesOut": "bytesOut = 4 · M · N (INT32 results)"
+  },
+  "config": {
+    "notation": "M × K × N (A is M × K, B is K × N, C is M × N)",
+    "seed": 1,
+    "generator": "random",
+    "workloads": [
+      {
+        "name": "4x4x4",
+        "dims": {
+          "m": 4,
+          "n": 4,
+          "k": 4
+        },
+        "what": "cube: one 4 × 4 tile"
+      },
+      {
+        "name": "8x8x8",
+        "dims": {
+          "m": 8,
+          "n": 8,
+          "k": 8
+        },
+        "what": "cube"
+      },
+      {
+        "name": "16x16x16",
+        "dims": {
+          "m": 16,
+          "n": 16,
+          "k": 16
+        },
+        "what": "cube"
+      },
+      {
+        "name": "32x32x32",
+        "dims": {
+          "m": 32,
+          "n": 32,
+          "k": 32
+        },
+        "what": "cube"
+      },
+      {
+        "name": "64x64x64",
+        "dims": {
+          "m": 64,
+          "n": 64,
+          "k": 64
+        },
+        "what": "cube: the largest product within capacity"
+      },
+      {
+        "name": "13x19x11",
+        "dims": {
+          "m": 13,
+          "n": 11,
+          "k": 19
+        },
+        "what": "non-square, edge tiles in M and N on every array"
+      },
+      {
+        "name": "64x8x64",
+        "dims": {
+          "m": 64,
+          "n": 64,
+          "k": 8
+        },
+        "what": "large C, short reduction (K = 8)"
+      },
+      {
+        "name": "8x64x64",
+        "dims": {
+          "m": 8,
+          "n": 64,
+          "k": 64
+        },
+        "what": "few output rows, long reduction"
+      },
+      {
+        "name": "1x64x1",
+        "dims": {
+          "m": 1,
+          "n": 1,
+          "k": 64
+        },
+        "what": "one dot product of length 64"
+      }
+    ],
+    "correctnessGate": "Every case is generated from the seed, its C computed by @vcpu/accelerator-reference and run on the runner; a case gets numbers only when the controller reached done and every element of C equals the reference. A case that fails has the reason and no numbers, and the benchmark exits 1."
+  },
+  "verification": {
+    "gate": "passed",
+    "cases": 27,
+    "passed": 27,
+    "failed": 0,
+    "failedCases": []
+  },
+  "rows": [
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "4x4x4",
+      "dims": {
+        "m": 4,
+        "n": 4,
+        "k": 4
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 64,
+        "tiles": 1,
+        "peakMacsPerCycle": 16,
+        "transferIn": 16,
+        "compute": 12,
+        "store": 16,
+        "busy": 30,
+        "transferOut": 17,
+        "total": 64,
+        "fillDrain": 8,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 5.333333,
+        "macsPerCycleTotal": 1,
+        "opsPerCycleCompute": 10.666667,
+        "opsPerCycleTotal": 2,
+        "bytesIn": 32,
+        "bytesOut": 64
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "8x8x8",
+      "dims": {
+        "m": 8,
+        "n": 8,
+        "k": 8
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 512,
+        "tiles": 4,
+        "peakMacsPerCycle": 16,
+        "transferIn": 64,
+        "compute": 64,
+        "store": 64,
+        "busy": 133,
+        "transferOut": 65,
+        "total": 263,
+        "fillDrain": 32,
+        "utilization": 0.5,
+        "macsPerCycleCompute": 8,
+        "macsPerCycleTotal": 1.946768,
+        "opsPerCycleCompute": 16,
+        "opsPerCycleTotal": 3.893536,
+        "bytesIn": 128,
+        "bytesOut": 256
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "16x16x16",
+      "dims": {
+        "m": 16,
+        "n": 16,
+        "k": 16
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 4096,
+        "tiles": 16,
+        "peakMacsPerCycle": 16,
+        "transferIn": 256,
+        "compute": 384,
+        "store": 256,
+        "busy": 657,
+        "transferOut": 257,
+        "total": 1171,
+        "fillDrain": 128,
+        "utilization": 0.666667,
+        "macsPerCycleCompute": 10.666667,
+        "macsPerCycleTotal": 3.497865,
+        "opsPerCycleCompute": 21.333333,
+        "opsPerCycleTotal": 6.99573,
+        "bytesIn": 512,
+        "bytesOut": 1024
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "32x32x32",
+      "dims": {
+        "m": 32,
+        "n": 32,
+        "k": 32
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 64,
+        "peakMacsPerCycle": 16,
+        "transferIn": 1024,
+        "compute": 2560,
+        "store": 1024,
+        "busy": 3649,
+        "transferOut": 1025,
+        "total": 5699,
+        "fillDrain": 512,
+        "utilization": 0.8,
+        "macsPerCycleCompute": 12.8,
+        "macsPerCycleTotal": 5.749781,
+        "opsPerCycleCompute": 25.6,
+        "opsPerCycleTotal": 11.499561,
+        "bytesIn": 2048,
+        "bytesOut": 4096
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "64x64x64",
+      "dims": {
+        "m": 64,
+        "n": 64,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 262144,
+        "tiles": 256,
+        "peakMacsPerCycle": 16,
+        "transferIn": 4096,
+        "compute": 18432,
+        "store": 4096,
+        "busy": 22785,
+        "transferOut": 4097,
+        "total": 30979,
+        "fillDrain": 2048,
+        "utilization": 0.888889,
+        "macsPerCycleCompute": 14.222222,
+        "macsPerCycleTotal": 8.46199,
+        "opsPerCycleCompute": 28.444444,
+        "opsPerCycleTotal": 16.923981,
+        "bytesIn": 8192,
+        "bytesOut": 16384
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "13x19x11",
+      "dims": {
+        "m": 13,
+        "n": 11,
+        "k": 19
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 2717,
+        "tiles": 12,
+        "peakMacsPerCycle": 16,
+        "transferIn": 247,
+        "compute": 324,
+        "store": 143,
+        "busy": 480,
+        "transferOut": 144,
+        "total": 872,
+        "fillDrain": 96,
+        "utilization": 0.524113,
+        "macsPerCycleCompute": 8.385802,
+        "macsPerCycleTotal": 3.115826,
+        "opsPerCycleCompute": 16.771605,
+        "opsPerCycleTotal": 6.231651,
+        "bytesIn": 456,
+        "bytesOut": 572
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "64x8x64",
+      "dims": {
+        "m": 64,
+        "n": 64,
+        "k": 8
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 256,
+        "peakMacsPerCycle": 16,
+        "transferIn": 512,
+        "compute": 4096,
+        "store": 4096,
+        "busy": 8449,
+        "transferOut": 4097,
+        "total": 13059,
+        "fillDrain": 2048,
+        "utilization": 0.5,
+        "macsPerCycleCompute": 8,
+        "macsPerCycleTotal": 2.509227,
+        "opsPerCycleCompute": 16,
+        "opsPerCycleTotal": 5.018455,
+        "bytesIn": 1024,
+        "bytesOut": 16384
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "8x64x64",
+      "dims": {
+        "m": 8,
+        "n": 64,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 32,
+        "peakMacsPerCycle": 16,
+        "transferIn": 4096,
+        "compute": 2304,
+        "store": 512,
+        "busy": 2849,
+        "transferOut": 513,
+        "total": 7459,
+        "fillDrain": 256,
+        "utilization": 0.888889,
+        "macsPerCycleCompute": 14.222222,
+        "macsPerCycleTotal": 4.393082,
+        "opsPerCycleCompute": 28.444444,
+        "opsPerCycleTotal": 8.786164,
+        "bytesIn": 4608,
+        "bytesOut": 2048
+      }
+    },
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "workload": "1x64x1",
+      "dims": {
+        "m": 1,
+        "n": 1,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 64,
+        "tiles": 1,
+        "peakMacsPerCycle": 16,
+        "transferIn": 64,
+        "compute": 72,
+        "store": 1,
+        "busy": 75,
+        "transferOut": 2,
+        "total": 142,
+        "fillDrain": 8,
+        "utilization": 0.055556,
+        "macsPerCycleCompute": 0.888889,
+        "macsPerCycleTotal": 0.450704,
+        "opsPerCycleCompute": 1.777778,
+        "opsPerCycleTotal": 0.901408,
+        "bytesIn": 128,
+        "bytesOut": 4
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "4x4x4",
+      "dims": {
+        "m": 4,
+        "n": 4,
+        "k": 4
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 64,
+        "tiles": 1,
+        "peakMacsPerCycle": 64,
+        "transferIn": 16,
+        "compute": 20,
+        "store": 16,
+        "busy": 38,
+        "transferOut": 17,
+        "total": 72,
+        "fillDrain": 16,
+        "utilization": 0.05,
+        "macsPerCycleCompute": 3.2,
+        "macsPerCycleTotal": 0.888889,
+        "opsPerCycleCompute": 6.4,
+        "opsPerCycleTotal": 1.777778,
+        "bytesIn": 32,
+        "bytesOut": 64
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "8x8x8",
+      "dims": {
+        "m": 8,
+        "n": 8,
+        "k": 8
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 512,
+        "tiles": 1,
+        "peakMacsPerCycle": 64,
+        "transferIn": 64,
+        "compute": 24,
+        "store": 64,
+        "busy": 90,
+        "transferOut": 65,
+        "total": 220,
+        "fillDrain": 16,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 21.333333,
+        "macsPerCycleTotal": 2.327273,
+        "opsPerCycleCompute": 42.666667,
+        "opsPerCycleTotal": 4.654545,
+        "bytesIn": 128,
+        "bytesOut": 256
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "16x16x16",
+      "dims": {
+        "m": 16,
+        "n": 16,
+        "k": 16
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 4096,
+        "tiles": 4,
+        "peakMacsPerCycle": 64,
+        "transferIn": 256,
+        "compute": 128,
+        "store": 256,
+        "busy": 389,
+        "transferOut": 257,
+        "total": 903,
+        "fillDrain": 64,
+        "utilization": 0.5,
+        "macsPerCycleCompute": 32,
+        "macsPerCycleTotal": 4.535991,
+        "opsPerCycleCompute": 64,
+        "opsPerCycleTotal": 9.071982,
+        "bytesIn": 512,
+        "bytesOut": 1024
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "32x32x32",
+      "dims": {
+        "m": 32,
+        "n": 32,
+        "k": 32
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 16,
+        "peakMacsPerCycle": 64,
+        "transferIn": 1024,
+        "compute": 768,
+        "store": 1024,
+        "busy": 1809,
+        "transferOut": 1025,
+        "total": 3859,
+        "fillDrain": 256,
+        "utilization": 0.666667,
+        "macsPerCycleCompute": 42.666667,
+        "macsPerCycleTotal": 8.491319,
+        "opsPerCycleCompute": 85.333333,
+        "opsPerCycleTotal": 16.982638,
+        "bytesIn": 2048,
+        "bytesOut": 4096
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "64x64x64",
+      "dims": {
+        "m": 64,
+        "n": 64,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 262144,
+        "tiles": 64,
+        "peakMacsPerCycle": 64,
+        "transferIn": 4096,
+        "compute": 5120,
+        "store": 4096,
+        "busy": 9281,
+        "transferOut": 4097,
+        "total": 17475,
+        "fillDrain": 1024,
+        "utilization": 0.8,
+        "macsPerCycleCompute": 51.2,
+        "macsPerCycleTotal": 15.001087,
+        "opsPerCycleCompute": 102.4,
+        "opsPerCycleTotal": 30.002175,
+        "bytesIn": 8192,
+        "bytesOut": 16384
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "13x19x11",
+      "dims": {
+        "m": 13,
+        "n": 11,
+        "k": 19
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 2717,
+        "tiles": 4,
+        "peakMacsPerCycle": 64,
+        "transferIn": 247,
+        "compute": 140,
+        "store": 143,
+        "busy": 288,
+        "transferOut": 144,
+        "total": 680,
+        "fillDrain": 64,
+        "utilization": 0.303237,
+        "macsPerCycleCompute": 19.407143,
+        "macsPerCycleTotal": 3.995588,
+        "opsPerCycleCompute": 38.814286,
+        "opsPerCycleTotal": 7.991176,
+        "bytesIn": 456,
+        "bytesOut": 572
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "64x8x64",
+      "dims": {
+        "m": 64,
+        "n": 64,
+        "k": 8
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 64,
+        "peakMacsPerCycle": 64,
+        "transferIn": 512,
+        "compute": 1536,
+        "store": 4096,
+        "busy": 5697,
+        "transferOut": 4097,
+        "total": 10307,
+        "fillDrain": 1024,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 21.333333,
+        "macsPerCycleTotal": 3.179199,
+        "opsPerCycleCompute": 42.666667,
+        "opsPerCycleTotal": 6.358397,
+        "bytesIn": 1024,
+        "bytesOut": 16384
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "8x64x64",
+      "dims": {
+        "m": 8,
+        "n": 64,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 8,
+        "peakMacsPerCycle": 64,
+        "transferIn": 4096,
+        "compute": 640,
+        "store": 512,
+        "busy": 1161,
+        "transferOut": 513,
+        "total": 5771,
+        "fillDrain": 128,
+        "utilization": 0.8,
+        "macsPerCycleCompute": 51.2,
+        "macsPerCycleTotal": 5.678045,
+        "opsPerCycleCompute": 102.4,
+        "opsPerCycleTotal": 11.356091,
+        "bytesIn": 4608,
+        "bytesOut": 2048
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "workload": "1x64x1",
+      "dims": {
+        "m": 1,
+        "n": 1,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 64,
+        "tiles": 1,
+        "peakMacsPerCycle": 64,
+        "transferIn": 64,
+        "compute": 80,
+        "store": 1,
+        "busy": 83,
+        "transferOut": 2,
+        "total": 150,
+        "fillDrain": 16,
+        "utilization": 0.0125,
+        "macsPerCycleCompute": 0.8,
+        "macsPerCycleTotal": 0.426667,
+        "opsPerCycleCompute": 1.6,
+        "opsPerCycleTotal": 0.853333,
+        "bytesIn": 128,
+        "bytesOut": 4
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "4x4x4",
+      "dims": {
+        "m": 4,
+        "n": 4,
+        "k": 4
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 64,
+        "tiles": 1,
+        "peakMacsPerCycle": 256,
+        "transferIn": 16,
+        "compute": 36,
+        "store": 16,
+        "busy": 54,
+        "transferOut": 17,
+        "total": 88,
+        "fillDrain": 32,
+        "utilization": 0.006944,
+        "macsPerCycleCompute": 1.777778,
+        "macsPerCycleTotal": 0.727273,
+        "opsPerCycleCompute": 3.555556,
+        "opsPerCycleTotal": 1.454545,
+        "bytesIn": 32,
+        "bytesOut": 64
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "8x8x8",
+      "dims": {
+        "m": 8,
+        "n": 8,
+        "k": 8
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 512,
+        "tiles": 1,
+        "peakMacsPerCycle": 256,
+        "transferIn": 64,
+        "compute": 40,
+        "store": 64,
+        "busy": 106,
+        "transferOut": 65,
+        "total": 236,
+        "fillDrain": 32,
+        "utilization": 0.05,
+        "macsPerCycleCompute": 12.8,
+        "macsPerCycleTotal": 2.169492,
+        "opsPerCycleCompute": 25.6,
+        "opsPerCycleTotal": 4.338983,
+        "bytesIn": 128,
+        "bytesOut": 256
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "16x16x16",
+      "dims": {
+        "m": 16,
+        "n": 16,
+        "k": 16
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 4096,
+        "tiles": 1,
+        "peakMacsPerCycle": 256,
+        "transferIn": 256,
+        "compute": 48,
+        "store": 256,
+        "busy": 306,
+        "transferOut": 257,
+        "total": 820,
+        "fillDrain": 32,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 85.333333,
+        "macsPerCycleTotal": 4.995122,
+        "opsPerCycleCompute": 170.666667,
+        "opsPerCycleTotal": 9.990244,
+        "bytesIn": 512,
+        "bytesOut": 1024
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "32x32x32",
+      "dims": {
+        "m": 32,
+        "n": 32,
+        "k": 32
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 4,
+        "peakMacsPerCycle": 256,
+        "transferIn": 1024,
+        "compute": 256,
+        "store": 1024,
+        "busy": 1285,
+        "transferOut": 1025,
+        "total": 3335,
+        "fillDrain": 128,
+        "utilization": 0.5,
+        "macsPerCycleCompute": 128,
+        "macsPerCycleTotal": 9.825487,
+        "opsPerCycleCompute": 256,
+        "opsPerCycleTotal": 19.650975,
+        "bytesIn": 2048,
+        "bytesOut": 4096
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "64x64x64",
+      "dims": {
+        "m": 64,
+        "n": 64,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 262144,
+        "tiles": 16,
+        "peakMacsPerCycle": 256,
+        "transferIn": 4096,
+        "compute": 1536,
+        "store": 4096,
+        "busy": 5649,
+        "transferOut": 4097,
+        "total": 13843,
+        "fillDrain": 512,
+        "utilization": 0.666667,
+        "macsPerCycleCompute": 170.666667,
+        "macsPerCycleTotal": 18.936936,
+        "opsPerCycleCompute": 341.333333,
+        "opsPerCycleTotal": 37.873871,
+        "bytesIn": 8192,
+        "bytesOut": 16384
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "13x19x11",
+      "dims": {
+        "m": 13,
+        "n": 11,
+        "k": 19
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 2717,
+        "tiles": 1,
+        "peakMacsPerCycle": 256,
+        "transferIn": 247,
+        "compute": 51,
+        "store": 143,
+        "busy": 196,
+        "transferOut": 144,
+        "total": 588,
+        "fillDrain": 32,
+        "utilization": 0.208104,
+        "macsPerCycleCompute": 53.27451,
+        "macsPerCycleTotal": 4.620748,
+        "opsPerCycleCompute": 106.54902,
+        "opsPerCycleTotal": 9.241497,
+        "bytesIn": 456,
+        "bytesOut": 572
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "64x8x64",
+      "dims": {
+        "m": 64,
+        "n": 64,
+        "k": 8
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 16,
+        "peakMacsPerCycle": 256,
+        "transferIn": 512,
+        "compute": 640,
+        "store": 4096,
+        "busy": 4753,
+        "transferOut": 4097,
+        "total": 9363,
+        "fillDrain": 512,
+        "utilization": 0.2,
+        "macsPerCycleCompute": 51.2,
+        "macsPerCycleTotal": 3.499733,
+        "opsPerCycleCompute": 102.4,
+        "opsPerCycleTotal": 6.999466,
+        "bytesIn": 1024,
+        "bytesOut": 16384
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "8x64x64",
+      "dims": {
+        "m": 8,
+        "n": 64,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 32768,
+        "tiles": 4,
+        "peakMacsPerCycle": 256,
+        "transferIn": 4096,
+        "compute": 384,
+        "store": 512,
+        "busy": 901,
+        "transferOut": 513,
+        "total": 5511,
+        "fillDrain": 128,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 85.333333,
+        "macsPerCycleTotal": 5.945926,
+        "opsPerCycleCompute": 170.666667,
+        "opsPerCycleTotal": 11.891853,
+        "bytesIn": 4608,
+        "bytesOut": 2048
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "workload": "1x64x1",
+      "dims": {
+        "m": 1,
+        "n": 1,
+        "k": 64
+      },
+      "status": "passed",
+      "metrics": {
+        "macs": 64,
+        "tiles": 1,
+        "peakMacsPerCycle": 256,
+        "transferIn": 64,
+        "compute": 96,
+        "store": 1,
+        "busy": 99,
+        "transferOut": 2,
+        "total": 166,
+        "fillDrain": 32,
+        "utilization": 0.002604,
+        "macsPerCycleCompute": 0.666667,
+        "macsPerCycleTotal": 0.385542,
+        "opsPerCycleCompute": 1.333333,
+        "opsPerCycleTotal": 0.771084,
+        "bytesIn": 128,
+        "bytesOut": 4
+      }
+    }
+  ],
+  "provenance": {
+    "createdAt": "2026-10-24T09:16:31.576Z",
+    "gitCommit": "16e2ff19362e5139fae9dbe6bdddf3c83a8441e2",
+    "gitShortCommit": "16e2ff1",
+    "gitDirty": false,
+    "runners": {
+      "4x4": "hardware/accelerators/matmul/build/sim-4x4/matmul_sim",
+      "8x8": "hardware/accelerators/matmul/build/sim-8x8/matmul_sim",
+      "16x16": "hardware/accelerators/matmul/build/sim-16x16/matmul_sim"
+    },
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "verilator": "Verilator 5.053 devel rev v5.052-448-g1272f7355 (mod)",
+      "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0, Release, Clang /usr/local/osxcross/target/bin/aarch64-apple-darwin25.5-clang++ 21.1.8)",
+      "nextpnr-ice40": "\"nextpnr-ice40\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "nextpnr-ecp5": "\"nextpnr-ecp5\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "gtkwave": "GTKWave Analyzer v4.0.0-prealpha (f6d60e0) (w)1999-2022 BSI"
+    }
+  },
+  "host": {
+    "label": "Host: wall-clock time this machine took to run each runner process. It measures the simulator, not the accelerator, and varies from run to run.",
+    "runtime": "node 24.15.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpuModel": "Apple M2 Pro",
+    "jobs": 12,
+    "totalWallMs": 143,
+    "cases": [
+      {
+        "size": "4x4",
+        "workload": "4x4x4",
+        "runnerMs": 63.6
+      },
+      {
+        "size": "4x4",
+        "workload": "8x8x8",
+        "runnerMs": 58.1
+      },
+      {
+        "size": "4x4",
+        "workload": "16x16x16",
+        "runnerMs": 50.7
+      },
+      {
+        "size": "4x4",
+        "workload": "32x32x32",
+        "runnerMs": 35.6
+      },
+      {
+        "size": "4x4",
+        "workload": "64x64x64",
+        "runnerMs": 21.2
+      },
+      {
+        "size": "4x4",
+        "workload": "13x19x11",
+        "runnerMs": 12.7
+      },
+      {
+        "size": "4x4",
+        "workload": "64x8x64",
+        "runnerMs": 38.2
+      },
+      {
+        "size": "4x4",
+        "workload": "8x64x64",
+        "runnerMs": 59.9
+      },
+      {
+        "size": "4x4",
+        "workload": "1x64x1",
+        "runnerMs": 54.4
+      },
+      {
+        "size": "8x8",
+        "workload": "4x4x4",
+        "runnerMs": 45.5
+      },
+      {
+        "size": "8x8",
+        "workload": "8x8x8",
+        "runnerMs": 35.2
+      },
+      {
+        "size": "8x8",
+        "workload": "16x16x16",
+        "runnerMs": 29.5
+      },
+      {
+        "size": "8x8",
+        "workload": "32x32x32",
+        "runnerMs": 21.7
+      },
+      {
+        "size": "8x8",
+        "workload": "64x64x64",
+        "runnerMs": 61.2
+      },
+      {
+        "size": "8x8",
+        "workload": "13x19x11",
+        "runnerMs": 58.6
+      },
+      {
+        "size": "8x8",
+        "workload": "64x8x64",
+        "runnerMs": 55.8
+      },
+      {
+        "size": "8x8",
+        "workload": "8x64x64",
+        "runnerMs": 52.8
+      },
+      {
+        "size": "8x8",
+        "workload": "1x64x1",
+        "runnerMs": 47.8
+      },
+      {
+        "size": "16x16",
+        "workload": "4x4x4",
+        "runnerMs": 42.3
+      },
+      {
+        "size": "16x16",
+        "workload": "8x8x8",
+        "runnerMs": 40.9
+      },
+      {
+        "size": "16x16",
+        "workload": "16x16x16",
+        "runnerMs": 34.3
+      },
+      {
+        "size": "16x16",
+        "workload": "32x32x32",
+        "runnerMs": 20.5
+      },
+      {
+        "size": "16x16",
+        "workload": "64x64x64",
+        "runnerMs": 32.4
+      },
+      {
+        "size": "16x16",
+        "workload": "13x19x11",
+        "runnerMs": 20.3
+      },
+      {
+        "size": "16x16",
+        "workload": "64x8x64",
+        "runnerMs": 30.7
+      },
+      {
+        "size": "16x16",
+        "workload": "8x64x64",
+        "runnerMs": 23
+      },
+      {
+        "size": "16x16",
+        "workload": "1x64x1",
+        "runnerMs": 18.2
+      }
+    ]
+  }
+}

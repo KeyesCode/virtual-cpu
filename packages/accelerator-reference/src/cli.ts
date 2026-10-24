@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { writePeVectors } from './harness/pe-vectors.js';
 import { writeCase } from './harness/vectors.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
 import {
@@ -30,6 +31,11 @@ Commands:
                                          the default name <generator>-m<M>-n<N>-k<K>-s<S>.
   Generators:
 ${GENERATORS}
+  gen-pe-vectors --seed S --count N --out <file>
+                                         Write the processing-element unit-test vectors: the
+                                         directed segments, then N random clocks from seed S, one
+                                         line per clock with the outputs the clock-level PE model
+                                         expects (format in src/harness/pe-vectors.ts).
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -112,8 +118,58 @@ function genVectors(args: readonly string[]): number {
   return 0;
 }
 
+const GEN_PE_VECTORS_FLAGS = ['--seed', '--count', '--out'];
+
+function genPeVectors(args: readonly string[]): number {
+  const values = new Map<string, string>();
+  for (let i = 0; i < args.length; i += 2) {
+    const flag = args[i] ?? '';
+    const value = args[i + 1];
+    if (!GEN_PE_VECTORS_FLAGS.includes(flag)) {
+      process.stderr.write(`gen-pe-vectors: unexpected argument ${flag}\n${USAGE}`);
+      return 2;
+    }
+    if (value === undefined) {
+      process.stderr.write(`gen-pe-vectors: ${flag} needs a value\n${USAGE}`);
+      return 2;
+    }
+    if (values.has(flag)) {
+      process.stderr.write(`gen-pe-vectors: ${flag} given twice\n`);
+      return 2;
+    }
+    values.set(flag, value);
+  }
+  const missing = GEN_PE_VECTORS_FLAGS.filter((flag) => !values.has(flag));
+  if (missing.length > 0) {
+    process.stderr.write(`gen-pe-vectors: missing ${missing.join(', ')}\n${USAGE}`);
+    return 2;
+  }
+  const seedRaw = values.get('--seed') ?? '';
+  const seed = parseCount(seedRaw);
+  if (seed === undefined || !Number.isSafeInteger(seed)) {
+    process.stderr.write(
+      `gen-pe-vectors: --seed must be a non-negative integer, got '${seedRaw}'\n`,
+    );
+    return 2;
+  }
+  const countRaw = values.get('--count') ?? '';
+  const count = parseCount(countRaw);
+  if (count === undefined || !Number.isSafeInteger(count) || count < 1) {
+    process.stderr.write(`gen-pe-vectors: --count must be a positive integer, got '${countRaw}'\n`);
+    return 2;
+  }
+  const file = resolve(cwd, values.get('--out') ?? '');
+  const vectors = writePeVectors(file, seed, count);
+  const directed = vectors.segments.filter((segment) => !segment.random).length;
+  process.stdout.write(
+    `wrote ${file}: ${String(vectors.clocks)} clocks, ${String(vectors.clocks - vectors.randomClocks)} directed in ${String(directed)} segments and ${String(vectors.randomClocks)} random from seed ${String(seed)}\n`,
+  );
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
+  'gen-pe-vectors': genPeVectors,
 };
 
 const [name, ...rest] = process.argv.slice(2);

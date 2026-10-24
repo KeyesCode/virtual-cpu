@@ -130,7 +130,7 @@ flowchart LR
 | `b_out`, `b_valid_out` | out | 8 + 1 | `b_in` and `b_valid_in` registered: one clock later, downwards    |
 | `acc`                  | out | 32    | The accumulator register                                          |
 
-A processing element accumulates, `acc <= acc + a_in · b_in`, in a clock where both `a_valid_in` and `b_valid_in` are high, and holds `acc` otherwise. Its operand registers forward every clock, valid or not, so the array has no stalls: it is a **no-stall architecture**, with no back-pressure inside the array. The controller never starts a tile before the previous one has drained.
+[processing-element.md](processing-element.md) documents the module and its verification. A processing element accumulates, `acc <= acc + a_in · b_in`, in a clock where both `a_valid_in` and `b_valid_in` are high, and holds `acc` otherwise. Its operand registers forward every clock, valid or not, so the array has no stalls: it is a **no-stall architecture**, with no back-pressure inside the array. The controller never starts a tile before the previous one has drained.
 
 ## Output-stationary dataflow
 

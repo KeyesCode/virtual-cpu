@@ -2,15 +2,16 @@
 
 Project 3 adds dedicated AI hardware to the monorepo: a synthesizable, parameterized INT8 × INT8 → INT32 matrix multiplication accelerator, built as an output-stationary systolic array of 4 × 4, 8 × 8 or 16 × 16 processing elements from one RTL, with tiling for any M × K · K × N up to 64. It is verified element by element against a TypeScript reference model, and every performance number in its reports comes from the RTL or from synthesis, never from the reference.
 
-**Status: workspace and reference model.** The make workspace, the reference model, the vector format and the architecture contract exist. The processing element, the array, the buffers, the controller, the differential verification, synthesis and benchmarks are being built by the other Project 3 tickets; each adds its documents here.
+**Status: workspace, reference model and processing element.** The make workspace, the reference model, the vector format, the architecture contract and the verified processing element exist. The array, the buffers, the controller, the differential verification, synthesis and benchmarks are being built by the other Project 3 tickets; each adds its documents here.
 
 Start with the [architecture contract](architecture.md): the numerics, the dataflow and its cycle-by-cycle timing, tiling, the buffers and host port, and the handshake that every RTL module implements.
 
 ## Documents
 
-| Document                           | Contents                                                                                                                                                       |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [architecture.md](architecture.md) | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured |
+| Document                                       | Contents                                                                                                                                                       |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [architecture.md](architecture.md)             | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured |
+| [processing-element.md](processing-element.md) | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                         |
 
 Research results live outside `docs/`, in [research/accelerators/matmul/](../../../research/accelerators/matmul/README.md).
 
@@ -20,20 +21,23 @@ Research results live outside `docs/`, in [research/accelerators/matmul/](../../
 hardware/accelerators/matmul/
 ├── Makefile                 includes mk/*.mk; `make help` lists the targets; ROWS=4|8|16 picks the array size
 ├── REVISION                 the architecture revision (matmul-os-r1) every report records
-├── mk/                      one make fragment per topic, added by later tickets
+├── mk/                      one make fragment per topic (unit-pe.mk: gen-pe-vectors, test-pe, test-pe-corrupt)
 ├── scripts/tool-versions.sh `make tools-check`: tool versions to build/tool-versions.json
 ├── rtl/                     synthesizable RTL only; *_pkg.sv packages first
-│   └── matmul_pkg.sv        DATA_W, ACC_W, MAX_DIM, ADDR_W, error_code_t and ctrl_state_t
+│   ├── matmul_pkg.sv        DATA_W, ACC_W, MAX_DIM, ADDR_W, error_code_t and ctrl_state_t
+│   └── processing_element.sv the INT8 × INT8 → INT32 MAC cell with operand forwarding
+├── tb/unit/                 unit testbenches (tb_processing_element.sv)
 └── build/                   all outputs, per size (build/sim-8x8/, …), git-ignored
 packages/accelerator-reference/
 ├── src/model/               the pure reference: matmul.ts (wrapping INT32 matmul, exact matmul, fitsInt32, validation),
-│                            prng.ts (the seeded PRNG and the named matrix generators)
-├── src/harness/             vectors.ts: the .in/.expected/.out text format, the JSON sidecar, output comparison
-└── src/cli.ts               gen-vectors
+│                            prng.ts (the seeded PRNG and the named matrix generators), pe.ts (the clock-level PE)
+├── src/harness/             vectors.ts: the .in/.expected/.out text format, the JSON sidecar, output comparison;
+│                            pe-vectors.ts: the PE unit-test vectors
+└── src/cli.ts               gen-vectors, gen-pe-vectors
 research/accelerators/matmul/  committed small reports (see its README)
 ```
 
-Later tickets add `tb/unit/` (unit testbenches), `tb/sim/` (the Verilator runner), `tb/wave/` (the GTKWave view) and `synth/` (Yosys scripts and the reviewed warning allowlist).
+Later tickets add `tb/sim/` (the Verilator runner), `tb/wave/` (the GTKWave view) and `synth/` (Yosys scripts and the reviewed warning allowlist).
 
 ## Building
 
@@ -46,6 +50,8 @@ make -C hardware/accelerators/matmul help             # the targets
 make -C hardware/accelerators/matmul tools-check      # tool versions -> build/tool-versions.json
 make -C hardware/accelerators/matmul lint             # Verilator --lint-only -Wall over rtl/*.sv
 make -C hardware/accelerators/matmul lint ROWS=16     # from matmul_top at 16 x 16, once matmul_top exists
+make -C hardware/accelerators/matmul test-pe          # the processing element against the reference, cycle by cycle
+make -C hardware/accelerators/matmul test             # every registered unit test
 pnpm --filter @vcpu/accelerator-reference test        # the reference model's tests
 pnpm accel:gen-vectors --seed 1 --m 13 --n 11 --k 19 --out hardware/accelerators/matmul/build/vectors
 ```

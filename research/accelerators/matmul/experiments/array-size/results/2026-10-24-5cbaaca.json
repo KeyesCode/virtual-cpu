@@ -1,0 +1,1218 @@
+{
+  "schemaVersion": 1,
+  "kind": "matmul-experiment",
+  "experimentId": "array-size/2026-10-24-5cbaaca",
+  "experiment": "array-size",
+  "runId": "2026-10-24-5cbaaca",
+  "description": "4 × 4 versus 8 × 8 versus 16 × 16 processing elements, every other parameter at its default (MAX_DIM 64): the cycles each larger array saves on the benchmark workloads against the cells, flip-flops, multipliers and FPGA resources it costs.",
+  "revision": "matmul-os-r1",
+  "labels": {
+    "mac": "One MAC is one multiply plus one accumulate: a signed INT8 × INT8 product added into a signed INT32 accumulator. A workload of M × K by K × N is M · N · K MACs. Ops count each MAC as two operations (ops = 2 × MACs).",
+    "cycles": "Cycles: rising clock edges of the Verilated matmul_top, counted by the Verilator runner (tb/sim/matmul_sim.cpp). They are clocks, not time: no clock frequency is assumed, so no time or throughput per second is reported.",
+    "utilization": "PE utilization = MACs / (ROWS · COLS · compute cycles): the fraction of PE-clocks of the compute phase (PREPARE_TILE, COMPUTE and DRAIN of every tile) that did a useful MAC. STORE, transfer and handshake clocks are not in the denominator.",
+    "synthesis": "Synthesis: generic cells are Yosys internal cells, FPGA counts are what Yosys mapped the design to, and Fmax is nextpnr's estimate for a named device, all with the identical settings of `make synth` (docs/hardware/accelerators/synthesis-guide.md).",
+    "power": "not measured"
+  },
+  "config": {
+    "verify": {
+      "seed": 1,
+      "count": 40
+    },
+    "benchmark": {
+      "seed": 1,
+      "workloads": [
+        {
+          "name": "4x4x4",
+          "dims": {
+            "m": 4,
+            "n": 4,
+            "k": 4
+          },
+          "what": "cube: one 4 × 4 tile"
+        },
+        {
+          "name": "8x8x8",
+          "dims": {
+            "m": 8,
+            "n": 8,
+            "k": 8
+          },
+          "what": "cube"
+        },
+        {
+          "name": "16x16x16",
+          "dims": {
+            "m": 16,
+            "n": 16,
+            "k": 16
+          },
+          "what": "cube"
+        },
+        {
+          "name": "32x32x32",
+          "dims": {
+            "m": 32,
+            "n": 32,
+            "k": 32
+          },
+          "what": "cube"
+        },
+        {
+          "name": "64x64x64",
+          "dims": {
+            "m": 64,
+            "n": 64,
+            "k": 64
+          },
+          "what": "cube: the largest product within capacity"
+        },
+        {
+          "name": "13x19x11",
+          "dims": {
+            "m": 13,
+            "n": 11,
+            "k": 19
+          },
+          "what": "non-square, edge tiles in M and N on every array"
+        },
+        {
+          "name": "64x8x64",
+          "dims": {
+            "m": 64,
+            "n": 64,
+            "k": 8
+          },
+          "what": "large C, short reduction (K = 8)"
+        },
+        {
+          "name": "8x64x64",
+          "dims": {
+            "m": 8,
+            "n": 64,
+            "k": 64
+          },
+          "what": "few output rows, long reduction"
+        },
+        {
+          "name": "1x64x1",
+          "dims": {
+            "m": 1,
+            "n": 1,
+            "k": 64
+          },
+          "what": "one dot product of length 64"
+        }
+      ]
+    },
+    "baseline": "8x8"
+  },
+  "passed": true,
+  "variants": [
+    {
+      "name": "4x4",
+      "description": "16 PEs.",
+      "hash": "55ed3bedbb63",
+      "parameters": {
+        "COLS": 4,
+        "MAX_DIM": 64,
+        "ROWS": 4
+      },
+      "defines": {},
+      "status": "passed",
+      "failedStage": null,
+      "reason": null,
+      "stages": {
+        "config": {
+          "status": "passed",
+          "detail": null
+        },
+        "build": {
+          "status": "passed",
+          "detail": null
+        },
+        "verify": {
+          "status": "passed",
+          "detail": null
+        },
+        "benchmark": {
+          "status": "passed",
+          "detail": null
+        },
+        "synth": {
+          "status": "passed",
+          "detail": null
+        }
+      },
+      "verify": {
+        "passed": true,
+        "cases": 62,
+        "directed": 22,
+        "random": 40,
+        "failed": 0,
+        "firstFailures": []
+      },
+      "benchmark": {
+        "rows": [
+          {
+            "workload": "4x4x4",
+            "dims": {
+              "m": 4,
+              "n": 4,
+              "k": 4
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 64,
+              "tiles": 1,
+              "peakMacsPerCycle": 16,
+              "transferIn": 16,
+              "compute": 12,
+              "store": 16,
+              "busy": 30,
+              "transferOut": 17,
+              "total": 64,
+              "fillDrain": 8,
+              "utilization": 0.333333,
+              "macsPerCycleCompute": 5.333333,
+              "macsPerCycleTotal": 1,
+              "opsPerCycleCompute": 10.666667,
+              "opsPerCycleTotal": 2,
+              "bytesIn": 32,
+              "bytesOut": 64
+            }
+          },
+          {
+            "workload": "8x8x8",
+            "dims": {
+              "m": 8,
+              "n": 8,
+              "k": 8
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 512,
+              "tiles": 4,
+              "peakMacsPerCycle": 16,
+              "transferIn": 64,
+              "compute": 64,
+              "store": 64,
+              "busy": 133,
+              "transferOut": 65,
+              "total": 263,
+              "fillDrain": 32,
+              "utilization": 0.5,
+              "macsPerCycleCompute": 8,
+              "macsPerCycleTotal": 1.946768,
+              "opsPerCycleCompute": 16,
+              "opsPerCycleTotal": 3.893536,
+              "bytesIn": 128,
+              "bytesOut": 256
+            }
+          },
+          {
+            "workload": "16x16x16",
+            "dims": {
+              "m": 16,
+              "n": 16,
+              "k": 16
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 4096,
+              "tiles": 16,
+              "peakMacsPerCycle": 16,
+              "transferIn": 256,
+              "compute": 384,
+              "store": 256,
+              "busy": 657,
+              "transferOut": 257,
+              "total": 1171,
+              "fillDrain": 128,
+              "utilization": 0.666667,
+              "macsPerCycleCompute": 10.666667,
+              "macsPerCycleTotal": 3.497865,
+              "opsPerCycleCompute": 21.333333,
+              "opsPerCycleTotal": 6.99573,
+              "bytesIn": 512,
+              "bytesOut": 1024
+            }
+          },
+          {
+            "workload": "32x32x32",
+            "dims": {
+              "m": 32,
+              "n": 32,
+              "k": 32
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 64,
+              "peakMacsPerCycle": 16,
+              "transferIn": 1024,
+              "compute": 2560,
+              "store": 1024,
+              "busy": 3649,
+              "transferOut": 1025,
+              "total": 5699,
+              "fillDrain": 512,
+              "utilization": 0.8,
+              "macsPerCycleCompute": 12.8,
+              "macsPerCycleTotal": 5.749781,
+              "opsPerCycleCompute": 25.6,
+              "opsPerCycleTotal": 11.499561,
+              "bytesIn": 2048,
+              "bytesOut": 4096
+            }
+          },
+          {
+            "workload": "64x64x64",
+            "dims": {
+              "m": 64,
+              "n": 64,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 262144,
+              "tiles": 256,
+              "peakMacsPerCycle": 16,
+              "transferIn": 4096,
+              "compute": 18432,
+              "store": 4096,
+              "busy": 22785,
+              "transferOut": 4097,
+              "total": 30979,
+              "fillDrain": 2048,
+              "utilization": 0.888889,
+              "macsPerCycleCompute": 14.222222,
+              "macsPerCycleTotal": 8.46199,
+              "opsPerCycleCompute": 28.444444,
+              "opsPerCycleTotal": 16.923981,
+              "bytesIn": 8192,
+              "bytesOut": 16384
+            }
+          },
+          {
+            "workload": "13x19x11",
+            "dims": {
+              "m": 13,
+              "n": 11,
+              "k": 19
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 2717,
+              "tiles": 12,
+              "peakMacsPerCycle": 16,
+              "transferIn": 247,
+              "compute": 324,
+              "store": 143,
+              "busy": 480,
+              "transferOut": 144,
+              "total": 872,
+              "fillDrain": 96,
+              "utilization": 0.524113,
+              "macsPerCycleCompute": 8.385802,
+              "macsPerCycleTotal": 3.115826,
+              "opsPerCycleCompute": 16.771605,
+              "opsPerCycleTotal": 6.231651,
+              "bytesIn": 456,
+              "bytesOut": 572
+            }
+          },
+          {
+            "workload": "64x8x64",
+            "dims": {
+              "m": 64,
+              "n": 64,
+              "k": 8
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 256,
+              "peakMacsPerCycle": 16,
+              "transferIn": 512,
+              "compute": 4096,
+              "store": 4096,
+              "busy": 8449,
+              "transferOut": 4097,
+              "total": 13059,
+              "fillDrain": 2048,
+              "utilization": 0.5,
+              "macsPerCycleCompute": 8,
+              "macsPerCycleTotal": 2.509227,
+              "opsPerCycleCompute": 16,
+              "opsPerCycleTotal": 5.018455,
+              "bytesIn": 1024,
+              "bytesOut": 16384
+            }
+          },
+          {
+            "workload": "8x64x64",
+            "dims": {
+              "m": 8,
+              "n": 64,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 32,
+              "peakMacsPerCycle": 16,
+              "transferIn": 4096,
+              "compute": 2304,
+              "store": 512,
+              "busy": 2849,
+              "transferOut": 513,
+              "total": 7459,
+              "fillDrain": 256,
+              "utilization": 0.888889,
+              "macsPerCycleCompute": 14.222222,
+              "macsPerCycleTotal": 4.393082,
+              "opsPerCycleCompute": 28.444444,
+              "opsPerCycleTotal": 8.786164,
+              "bytesIn": 4608,
+              "bytesOut": 2048
+            }
+          },
+          {
+            "workload": "1x64x1",
+            "dims": {
+              "m": 1,
+              "n": 1,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 64,
+              "tiles": 1,
+              "peakMacsPerCycle": 16,
+              "transferIn": 64,
+              "compute": 72,
+              "store": 1,
+              "busy": 75,
+              "transferOut": 2,
+              "total": 142,
+              "fillDrain": 8,
+              "utilization": 0.055556,
+              "macsPerCycleCompute": 0.888889,
+              "macsPerCycleTotal": 0.450704,
+              "opsPerCycleCompute": 1.777778,
+              "opsPerCycleTotal": 0.901408,
+              "bytesIn": 128,
+              "bytesOut": 4
+            }
+          }
+        ]
+      },
+      "synth": {
+        "cells": 18130,
+        "flipFlops": 1049,
+        "mulCells": 16,
+        "memoryBanks": 9,
+        "memoryBits": 196608,
+        "abstractGates": 17524,
+        "logicDepth": 78,
+        "fpga": [
+          {
+            "family": "ecp5",
+            "status": "fits",
+            "device": "LFE5U-25F CABGA256",
+            "luts": 737,
+            "flipFlops": 1049,
+            "blockRam": 16,
+            "dsp": 16,
+            "fmaxMHz": 52.22,
+            "meetsConstraint": true,
+            "overUtilised": [],
+            "reason": null
+          },
+          {
+            "family": "ice40",
+            "status": "does-not-fit",
+            "device": "iCE40UP5K SG48",
+            "luts": 7286,
+            "flipFlops": 1047,
+            "blockRam": 48,
+            "dsp": 0,
+            "fmaxMHz": null,
+            "meetsConstraint": null,
+            "overUtilised": ["ICESTORM_LC", "ICESTORM_RAM"],
+            "reason": "ERROR: Unable to place cell 'u_matmul.u_c_buffer.mem.0.9_RAM', no BELs remaining to implement cell type 'ICESTORM_RAM'"
+          }
+        ]
+      },
+      "warnings": [
+        "synth warning (allowlisted): 4x4/generic.log: ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\"). (×69)",
+        "synth warning (allowlisted): 4x4/ice40.log: ABC: Warning: The network is combinational. (×1)",
+        "synth warning (allowlisted): 4x4/ecp5.log: ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and 2 carries. (×3)",
+        "synth warning (allowlisted): 4x4/ecp5.log: ABC: Warning: The network is combinational. (×1)"
+      ]
+    },
+    {
+      "name": "8x8",
+      "description": "64 PEs.",
+      "hash": "855fc9760675",
+      "parameters": {
+        "COLS": 8,
+        "MAX_DIM": 64,
+        "ROWS": 8
+      },
+      "defines": {},
+      "status": "passed",
+      "failedStage": null,
+      "reason": null,
+      "stages": {
+        "config": {
+          "status": "passed",
+          "detail": null
+        },
+        "build": {
+          "status": "passed",
+          "detail": null
+        },
+        "verify": {
+          "status": "passed",
+          "detail": null
+        },
+        "benchmark": {
+          "status": "passed",
+          "detail": null
+        },
+        "synth": {
+          "status": "passed",
+          "detail": null
+        }
+      },
+      "verify": {
+        "passed": true,
+        "cases": 62,
+        "directed": 22,
+        "random": 40,
+        "failed": 0,
+        "firstFailures": []
+      },
+      "benchmark": {
+        "rows": [
+          {
+            "workload": "4x4x4",
+            "dims": {
+              "m": 4,
+              "n": 4,
+              "k": 4
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 64,
+              "tiles": 1,
+              "peakMacsPerCycle": 64,
+              "transferIn": 16,
+              "compute": 20,
+              "store": 16,
+              "busy": 38,
+              "transferOut": 17,
+              "total": 72,
+              "fillDrain": 16,
+              "utilization": 0.05,
+              "macsPerCycleCompute": 3.2,
+              "macsPerCycleTotal": 0.888889,
+              "opsPerCycleCompute": 6.4,
+              "opsPerCycleTotal": 1.777778,
+              "bytesIn": 32,
+              "bytesOut": 64
+            }
+          },
+          {
+            "workload": "8x8x8",
+            "dims": {
+              "m": 8,
+              "n": 8,
+              "k": 8
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 512,
+              "tiles": 1,
+              "peakMacsPerCycle": 64,
+              "transferIn": 64,
+              "compute": 24,
+              "store": 64,
+              "busy": 90,
+              "transferOut": 65,
+              "total": 220,
+              "fillDrain": 16,
+              "utilization": 0.333333,
+              "macsPerCycleCompute": 21.333333,
+              "macsPerCycleTotal": 2.327273,
+              "opsPerCycleCompute": 42.666667,
+              "opsPerCycleTotal": 4.654545,
+              "bytesIn": 128,
+              "bytesOut": 256
+            }
+          },
+          {
+            "workload": "16x16x16",
+            "dims": {
+              "m": 16,
+              "n": 16,
+              "k": 16
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 4096,
+              "tiles": 4,
+              "peakMacsPerCycle": 64,
+              "transferIn": 256,
+              "compute": 128,
+              "store": 256,
+              "busy": 389,
+              "transferOut": 257,
+              "total": 903,
+              "fillDrain": 64,
+              "utilization": 0.5,
+              "macsPerCycleCompute": 32,
+              "macsPerCycleTotal": 4.535991,
+              "opsPerCycleCompute": 64,
+              "opsPerCycleTotal": 9.071982,
+              "bytesIn": 512,
+              "bytesOut": 1024
+            }
+          },
+          {
+            "workload": "32x32x32",
+            "dims": {
+              "m": 32,
+              "n": 32,
+              "k": 32
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 16,
+              "peakMacsPerCycle": 64,
+              "transferIn": 1024,
+              "compute": 768,
+              "store": 1024,
+              "busy": 1809,
+              "transferOut": 1025,
+              "total": 3859,
+              "fillDrain": 256,
+              "utilization": 0.666667,
+              "macsPerCycleCompute": 42.666667,
+              "macsPerCycleTotal": 8.491319,
+              "opsPerCycleCompute": 85.333333,
+              "opsPerCycleTotal": 16.982638,
+              "bytesIn": 2048,
+              "bytesOut": 4096
+            }
+          },
+          {
+            "workload": "64x64x64",
+            "dims": {
+              "m": 64,
+              "n": 64,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 262144,
+              "tiles": 64,
+              "peakMacsPerCycle": 64,
+              "transferIn": 4096,
+              "compute": 5120,
+              "store": 4096,
+              "busy": 9281,
+              "transferOut": 4097,
+              "total": 17475,
+              "fillDrain": 1024,
+              "utilization": 0.8,
+              "macsPerCycleCompute": 51.2,
+              "macsPerCycleTotal": 15.001087,
+              "opsPerCycleCompute": 102.4,
+              "opsPerCycleTotal": 30.002175,
+              "bytesIn": 8192,
+              "bytesOut": 16384
+            }
+          },
+          {
+            "workload": "13x19x11",
+            "dims": {
+              "m": 13,
+              "n": 11,
+              "k": 19
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 2717,
+              "tiles": 4,
+              "peakMacsPerCycle": 64,
+              "transferIn": 247,
+              "compute": 140,
+              "store": 143,
+              "busy": 288,
+              "transferOut": 144,
+              "total": 680,
+              "fillDrain": 64,
+              "utilization": 0.303237,
+              "macsPerCycleCompute": 19.407143,
+              "macsPerCycleTotal": 3.995588,
+              "opsPerCycleCompute": 38.814286,
+              "opsPerCycleTotal": 7.991176,
+              "bytesIn": 456,
+              "bytesOut": 572
+            }
+          },
+          {
+            "workload": "64x8x64",
+            "dims": {
+              "m": 64,
+              "n": 64,
+              "k": 8
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 64,
+              "peakMacsPerCycle": 64,
+              "transferIn": 512,
+              "compute": 1536,
+              "store": 4096,
+              "busy": 5697,
+              "transferOut": 4097,
+              "total": 10307,
+              "fillDrain": 1024,
+              "utilization": 0.333333,
+              "macsPerCycleCompute": 21.333333,
+              "macsPerCycleTotal": 3.179199,
+              "opsPerCycleCompute": 42.666667,
+              "opsPerCycleTotal": 6.358397,
+              "bytesIn": 1024,
+              "bytesOut": 16384
+            }
+          },
+          {
+            "workload": "8x64x64",
+            "dims": {
+              "m": 8,
+              "n": 64,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 8,
+              "peakMacsPerCycle": 64,
+              "transferIn": 4096,
+              "compute": 640,
+              "store": 512,
+              "busy": 1161,
+              "transferOut": 513,
+              "total": 5771,
+              "fillDrain": 128,
+              "utilization": 0.8,
+              "macsPerCycleCompute": 51.2,
+              "macsPerCycleTotal": 5.678045,
+              "opsPerCycleCompute": 102.4,
+              "opsPerCycleTotal": 11.356091,
+              "bytesIn": 4608,
+              "bytesOut": 2048
+            }
+          },
+          {
+            "workload": "1x64x1",
+            "dims": {
+              "m": 1,
+              "n": 1,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 64,
+              "tiles": 1,
+              "peakMacsPerCycle": 64,
+              "transferIn": 64,
+              "compute": 80,
+              "store": 1,
+              "busy": 83,
+              "transferOut": 2,
+              "total": 150,
+              "fillDrain": 16,
+              "utilization": 0.0125,
+              "macsPerCycleCompute": 0.8,
+              "macsPerCycleTotal": 0.426667,
+              "opsPerCycleCompute": 1.6,
+              "opsPerCycleTotal": 0.853333,
+              "bytesIn": 128,
+              "bytesOut": 4
+            }
+          }
+        ]
+      },
+      "synth": {
+        "cells": 70120,
+        "flipFlops": 3843,
+        "mulCells": 64,
+        "memoryBanks": 17,
+        "memoryBits": 196608,
+        "abstractGates": 68100,
+        "logicDepth": 77,
+        "fpga": [
+          {
+            "family": "ecp5",
+            "status": "does-not-fit",
+            "device": "LFE5U-25F CABGA256",
+            "luts": 2168,
+            "flipFlops": 3663,
+            "blockRam": 24,
+            "dsp": 64,
+            "fmaxMHz": null,
+            "meetsConstraint": null,
+            "overUtilised": ["MULT18X18D"],
+            "reason": "ERROR: Unable to place cell 'u_matmul.u_array.g_row[3].g_col[2].u_pe.product_MULT18X18D_P9', no BELs remaining to implement cell type 'MULT18X18D'"
+          },
+          {
+            "family": "ice40",
+            "status": "does-not-fit",
+            "device": "iCE40UP5K SG48",
+            "luts": 28003,
+            "flipFlops": 3661,
+            "blockRam": 48,
+            "dsp": 0,
+            "fmaxMHz": null,
+            "meetsConstraint": null,
+            "overUtilised": ["ICESTORM_LC", "ICESTORM_RAM"],
+            "reason": "ERROR: Unable to place cell 'u_matmul.u_c_buffer.mem.0.2_RAM', no BELs remaining to implement cell type 'ICESTORM_RAM'"
+          }
+        ]
+      },
+      "warnings": [
+        "synth warning (allowlisted): 8x8/generic.log: ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\"). (×205)",
+        "synth warning (allowlisted): 8x8/ice40.log: ABC: Warning: The network is combinational. (×1)",
+        "synth warning (allowlisted): 8x8/ecp5.log: ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and 2 carries. (×3)",
+        "synth warning (allowlisted): 8x8/ecp5.log: ABC: Warning: The network is combinational. (×1)"
+      ]
+    },
+    {
+      "name": "16x16",
+      "description": "256 PEs.",
+      "hash": "f0aeef3328be",
+      "parameters": {
+        "COLS": 16,
+        "MAX_DIM": 64,
+        "ROWS": 16
+      },
+      "defines": {},
+      "status": "passed",
+      "failedStage": null,
+      "reason": null,
+      "stages": {
+        "config": {
+          "status": "passed",
+          "detail": null
+        },
+        "build": {
+          "status": "passed",
+          "detail": null
+        },
+        "verify": {
+          "status": "passed",
+          "detail": null
+        },
+        "benchmark": {
+          "status": "passed",
+          "detail": null
+        },
+        "synth": {
+          "status": "passed",
+          "detail": null
+        }
+      },
+      "verify": {
+        "passed": true,
+        "cases": 62,
+        "directed": 22,
+        "random": 40,
+        "failed": 0,
+        "firstFailures": []
+      },
+      "benchmark": {
+        "rows": [
+          {
+            "workload": "4x4x4",
+            "dims": {
+              "m": 4,
+              "n": 4,
+              "k": 4
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 64,
+              "tiles": 1,
+              "peakMacsPerCycle": 256,
+              "transferIn": 16,
+              "compute": 36,
+              "store": 16,
+              "busy": 54,
+              "transferOut": 17,
+              "total": 88,
+              "fillDrain": 32,
+              "utilization": 0.006944,
+              "macsPerCycleCompute": 1.777778,
+              "macsPerCycleTotal": 0.727273,
+              "opsPerCycleCompute": 3.555556,
+              "opsPerCycleTotal": 1.454545,
+              "bytesIn": 32,
+              "bytesOut": 64
+            }
+          },
+          {
+            "workload": "8x8x8",
+            "dims": {
+              "m": 8,
+              "n": 8,
+              "k": 8
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 512,
+              "tiles": 1,
+              "peakMacsPerCycle": 256,
+              "transferIn": 64,
+              "compute": 40,
+              "store": 64,
+              "busy": 106,
+              "transferOut": 65,
+              "total": 236,
+              "fillDrain": 32,
+              "utilization": 0.05,
+              "macsPerCycleCompute": 12.8,
+              "macsPerCycleTotal": 2.169492,
+              "opsPerCycleCompute": 25.6,
+              "opsPerCycleTotal": 4.338983,
+              "bytesIn": 128,
+              "bytesOut": 256
+            }
+          },
+          {
+            "workload": "16x16x16",
+            "dims": {
+              "m": 16,
+              "n": 16,
+              "k": 16
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 4096,
+              "tiles": 1,
+              "peakMacsPerCycle": 256,
+              "transferIn": 256,
+              "compute": 48,
+              "store": 256,
+              "busy": 306,
+              "transferOut": 257,
+              "total": 820,
+              "fillDrain": 32,
+              "utilization": 0.333333,
+              "macsPerCycleCompute": 85.333333,
+              "macsPerCycleTotal": 4.995122,
+              "opsPerCycleCompute": 170.666667,
+              "opsPerCycleTotal": 9.990244,
+              "bytesIn": 512,
+              "bytesOut": 1024
+            }
+          },
+          {
+            "workload": "32x32x32",
+            "dims": {
+              "m": 32,
+              "n": 32,
+              "k": 32
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 4,
+              "peakMacsPerCycle": 256,
+              "transferIn": 1024,
+              "compute": 256,
+              "store": 1024,
+              "busy": 1285,
+              "transferOut": 1025,
+              "total": 3335,
+              "fillDrain": 128,
+              "utilization": 0.5,
+              "macsPerCycleCompute": 128,
+              "macsPerCycleTotal": 9.825487,
+              "opsPerCycleCompute": 256,
+              "opsPerCycleTotal": 19.650975,
+              "bytesIn": 2048,
+              "bytesOut": 4096
+            }
+          },
+          {
+            "workload": "64x64x64",
+            "dims": {
+              "m": 64,
+              "n": 64,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 262144,
+              "tiles": 16,
+              "peakMacsPerCycle": 256,
+              "transferIn": 4096,
+              "compute": 1536,
+              "store": 4096,
+              "busy": 5649,
+              "transferOut": 4097,
+              "total": 13843,
+              "fillDrain": 512,
+              "utilization": 0.666667,
+              "macsPerCycleCompute": 170.666667,
+              "macsPerCycleTotal": 18.936936,
+              "opsPerCycleCompute": 341.333333,
+              "opsPerCycleTotal": 37.873871,
+              "bytesIn": 8192,
+              "bytesOut": 16384
+            }
+          },
+          {
+            "workload": "13x19x11",
+            "dims": {
+              "m": 13,
+              "n": 11,
+              "k": 19
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 2717,
+              "tiles": 1,
+              "peakMacsPerCycle": 256,
+              "transferIn": 247,
+              "compute": 51,
+              "store": 143,
+              "busy": 196,
+              "transferOut": 144,
+              "total": 588,
+              "fillDrain": 32,
+              "utilization": 0.208104,
+              "macsPerCycleCompute": 53.27451,
+              "macsPerCycleTotal": 4.620748,
+              "opsPerCycleCompute": 106.54902,
+              "opsPerCycleTotal": 9.241497,
+              "bytesIn": 456,
+              "bytesOut": 572
+            }
+          },
+          {
+            "workload": "64x8x64",
+            "dims": {
+              "m": 64,
+              "n": 64,
+              "k": 8
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 16,
+              "peakMacsPerCycle": 256,
+              "transferIn": 512,
+              "compute": 640,
+              "store": 4096,
+              "busy": 4753,
+              "transferOut": 4097,
+              "total": 9363,
+              "fillDrain": 512,
+              "utilization": 0.2,
+              "macsPerCycleCompute": 51.2,
+              "macsPerCycleTotal": 3.499733,
+              "opsPerCycleCompute": 102.4,
+              "opsPerCycleTotal": 6.999466,
+              "bytesIn": 1024,
+              "bytesOut": 16384
+            }
+          },
+          {
+            "workload": "8x64x64",
+            "dims": {
+              "m": 8,
+              "n": 64,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 32768,
+              "tiles": 4,
+              "peakMacsPerCycle": 256,
+              "transferIn": 4096,
+              "compute": 384,
+              "store": 512,
+              "busy": 901,
+              "transferOut": 513,
+              "total": 5511,
+              "fillDrain": 128,
+              "utilization": 0.333333,
+              "macsPerCycleCompute": 85.333333,
+              "macsPerCycleTotal": 5.945926,
+              "opsPerCycleCompute": 170.666667,
+              "opsPerCycleTotal": 11.891853,
+              "bytesIn": 4608,
+              "bytesOut": 2048
+            }
+          },
+          {
+            "workload": "1x64x1",
+            "dims": {
+              "m": 1,
+              "n": 1,
+              "k": 64
+            },
+            "status": "passed",
+            "metrics": {
+              "macs": 64,
+              "tiles": 1,
+              "peakMacsPerCycle": 256,
+              "transferIn": 64,
+              "compute": 96,
+              "store": 1,
+              "busy": 99,
+              "transferOut": 2,
+              "total": 166,
+              "fillDrain": 32,
+              "utilization": 0.002604,
+              "macsPerCycleCompute": 0.666667,
+              "macsPerCycleTotal": 0.385542,
+              "opsPerCycleCompute": 1.333333,
+              "opsPerCycleTotal": 0.771084,
+              "bytesIn": 128,
+              "bytesOut": 4
+            }
+          }
+        ]
+      },
+      "synth": {
+        "cells": 273028,
+        "flipFlops": 15097,
+        "mulCells": 256,
+        "memoryBanks": 33,
+        "memoryBits": 196608,
+        "abstractGates": 270353,
+        "logicDepth": 78,
+        "fpga": [
+          {
+            "family": "ecp5",
+            "status": "does-not-fit",
+            "device": "LFE5U-25F CABGA256",
+            "luts": 8045,
+            "flipFlops": 14269,
+            "blockRam": 40,
+            "dsp": 256,
+            "fmaxMHz": null,
+            "meetsConstraint": null,
+            "overUtilised": ["MULT18X18D"],
+            "reason": "ERROR: Unable to place cell 'u_matmul.u_array.g_row[15].g_col[8].u_pe.product_MULT18X18D_P9', no BELs remaining to implement cell type 'MULT18X18D'"
+          },
+          {
+            "family": "ice40",
+            "status": "does-not-fit",
+            "device": "iCE40UP5K SG48",
+            "luts": 110587,
+            "flipFlops": 14267,
+            "blockRam": 64,
+            "dsp": 0,
+            "fmaxMHz": null,
+            "meetsConstraint": null,
+            "overUtilised": ["ICESTORM_LC", "ICESTORM_RAM"],
+            "reason": "ERROR: Unable to place cell 'u_matmul.u_c_buffer.mem.0.19_RAM', no BELs remaining to implement cell type 'ICESTORM_RAM'"
+          }
+        ]
+      },
+      "warnings": [
+        "synth warning (allowlisted): 16x16/generic.log: ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\"). (×749)",
+        "synth warning (allowlisted): 16x16/ice40.log: ABC: Warning: The network is combinational. (×1)",
+        "synth warning (allowlisted): 16x16/ecp5.log: ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and 2 carries. (×3)",
+        "synth warning (allowlisted): 16x16/ecp5.log: ABC: Warning: The network is combinational. (×1)"
+      ]
+    }
+  ],
+  "pareto": {
+    "axes": ["total cycles summed over the common workloads", "generic cells"],
+    "rule": "A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed variants are left out.",
+    "commonWorkloads": [
+      "4x4x4",
+      "8x8x8",
+      "16x16x16",
+      "32x32x32",
+      "64x64x64",
+      "13x19x11",
+      "64x8x64",
+      "8x64x64",
+      "1x64x1"
+    ],
+    "points": [
+      {
+        "variant": "4x4",
+        "totalCycles": 59708,
+        "cells": 18130,
+        "optimal": true
+      },
+      {
+        "variant": "8x8",
+        "totalCycles": 39437,
+        "cells": 70120,
+        "optimal": true
+      },
+      {
+        "variant": "16x16",
+        "totalCycles": 33950,
+        "cells": 273028,
+        "optimal": true
+      }
+    ]
+  },
+  "provenance": {
+    "createdAt": "2026-10-24T09:43:58.352Z",
+    "gitCommit": "5cbaaca96f3c9794b701a7e7c695c6785d00685e",
+    "gitShortCommit": "5cbaaca",
+    "gitDirty": false,
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "verilator": "Verilator 5.053 devel rev v5.052-448-g1272f7355 (mod)",
+      "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0, Release, Clang /usr/local/osxcross/target/bin/aarch64-apple-darwin25.5-clang++ 21.1.8)",
+      "nextpnr-ice40": "\"nextpnr-ice40\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "nextpnr-ecp5": "\"nextpnr-ecp5\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "gtkwave": "GTKWave Analyzer v4.0.0-prealpha (f6d60e0) (w)1999-2022 BSI"
+    },
+    "host": {
+      "label": "Host: wall-clock time this machine took to run each runner process. It measures the simulator, not the accelerator, and varies from run to run.",
+      "runtime": "node 24.15.0",
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpuModel": "Apple M2 Pro",
+      "jobs": 12,
+      "stageSeconds": {
+        "4x4": {
+          "build": 2.3,
+          "verify": 0.4,
+          "benchmark": 0,
+          "synth": 25.9
+        },
+        "8x8": {
+          "build": 3.4,
+          "verify": 0.4,
+          "benchmark": 0,
+          "synth": 54.3
+        },
+        "16x16": {
+          "build": 2.6,
+          "verify": 0.3,
+          "benchmark": 0,
+          "synth": 198.4
+        }
+      }
+    }
+  }
+}

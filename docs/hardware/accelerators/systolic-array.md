@@ -116,6 +116,14 @@ Reading it:
 - **Final values.** A PE's accumulator is final from the clock after its k = 2 MAC: PE(0, 0) from clock 4, an anti-diagonal later for each step towards the corner. Only when the corner is final, in clock 10 = K + `ROWS` + `COLS` − 1 after `tile_start`, does `tile_done` pulse; `busy` drops in the same clock.
 - The 48 MACs (4 · 4 · 3) are spread over 9 clocks (1 … 9) of 16 PEs.
 
+### Seeing it
+
+![Operand flow through the 4 × 4 array: the PE grid with its skew registers, then clocks 1 to 4 of a K = 2 tile](images/systolic-4x4-dataflow.svg)
+
+The diagram above, [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg), is the 4 × 4 array with its input skew registers (row i has i, column j has j), and then four clocks of a K = 2 tile: in each frame a green PE with a bold outline multiplies the A[i, k] · B[k, j] it names, a dashed PE is idle, a grey ✓ PE already holds C[i, j], and the skew registers show the operands still on their way. [images/systolic-4x4.html](images/systolic-4x4.html) animates the K = 3 tile of the table above with small signed values: open it from disk (it is one self-contained file and makes no network requests), step with ← / → or Prev / Next, or Play. Every clock shows the operands each PE multiplies, its accumulator, the skew registers' contents and the same schedule table with the current clock highlighted; at clock 10 (`tile_done`) all 16 accumulators equal C = A · B, which the page checks against the reference product.
+
+Both are teaching aids drawn from the timing rule of this document, not simulations of the RTL. `pnpm --filter @vcpu/accelerator-reference gen-viz` regenerates the SVG and the trace the page embeds from [src/viz/schedule.ts](../../../packages/accelerator-reference/src/viz/schedule.ts), and its Vitest test checks that the schedule equals the table above clock for clock, that the final accumulators equal `matmulInt8`, and that the page's embedded trace is the regenerated one.
+
 ## Utilisation of one tile
 
 A tile occupies the array for K + `ROWS` + `COLS` − 1 clocks, from `tile_start` through `tile_done`, and performs `ROWS` · `COLS` · K MACs, so its PE utilisation is

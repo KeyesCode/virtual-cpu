@@ -1,0 +1,16 @@
+# iCE40 synthesis of matmul_fpga_wrapper (hardware/fpga/), for nextpnr-ice40.
+#
+# `make synth` runs this once per array size, from build/synth-<R>x<C>/, after reading the sources
+# and the wrapper and setting the wrapper's ROWS and COLS (mk/synth.mk). The same structural gates
+# as generic.ys run first.
+
+hierarchy -check -top matmul_fpga_wrapper
+proc
+check -assert
+select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$_DLATCH_* t:$_DLATCHSR_*
+
+synth_ice40 -top matmul_fpga_wrapper
+check -assert
+tee -q -o ice40.stat.txt stat -width
+tee -q -o ice40.stat.json stat -json
+write_json ice40.json

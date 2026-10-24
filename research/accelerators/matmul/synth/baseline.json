@@ -1,0 +1,986 @@
+{
+  "schemaVersion": 1,
+  "format": "matmul-synth-summary/1",
+  "revision": "matmul-os-r1",
+  "provenance": {
+    "gitSha": "2d7cd520557b5bfbfc082308aa10cbca15f32e13",
+    "gitDirty": false,
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "nextpnr-ecp5": "nextpnr-0.11.1-63-g44a6c739",
+      "nextpnr-ice40": "nextpnr-0.11.1-63-g44a6c739",
+      "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0)"
+    }
+  },
+  "settings": {
+    "generic": "Yosys internal cells, no technology library; inferred memories kept as $mem_v2",
+    "freqMHz": 12,
+    "seed": 1,
+    "ice40": "iCE40UP5K SG48, pins from hardware/fpga/matmul_up5k_sg48.pcf",
+    "ecp5": "LFE5U-25F CABGA256, speed grade 6, IO placed by nextpnr",
+    "power": "not measured"
+  },
+  "sizes": [
+    {
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "pes": 16,
+      "generic": {
+        "top": "matmul_top",
+        "total": {
+          "cells": 18130,
+          "flipFlops": 1049,
+          "combinational": 17072,
+          "memories": 9
+        },
+        "byType": {
+          "$_ANDNOT_": 310,
+          "$_AND_": 2016,
+          "$_DFF_P_": 352,
+          "$_MUX_": 378,
+          "$_NAND_": 6929,
+          "$_NOR_": 171,
+          "$_NOT_": 76,
+          "$_ORNOT_": 424,
+          "$_OR_": 973,
+          "$_SDFFE_PP0P_": 653,
+          "$_SDFF_PP0_": 44,
+          "$_XNOR_": 1615,
+          "$_XOR_": 4180,
+          "$mem_v2": 9
+        },
+        "blocks": [
+          {
+            "cells": 18130,
+            "flipFlops": 1049,
+            "combinational": 17072,
+            "memories": 9,
+            "block": "matmul_top",
+            "module": "matmul_top",
+            "instances": 1
+          },
+          {
+            "cells": 11,
+            "flipFlops": 0,
+            "combinational": 7,
+            "memories": 4,
+            "block": "u_a_buffer",
+            "module": "input_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 16349,
+            "flipFlops": 926,
+            "combinational": 15423,
+            "memories": 0,
+            "block": "u_array",
+            "module": "systolic_array",
+            "instances": 1
+          },
+          {
+            "cells": 16128,
+            "flipFlops": 800,
+            "combinational": 15328,
+            "memories": 0,
+            "block": "u_array: all processing_element",
+            "module": "processing_element",
+            "instances": 16
+          },
+          {
+            "cells": 1008,
+            "flipFlops": 50,
+            "combinational": 958,
+            "memories": 0,
+            "block": "u_array: one processing_element",
+            "module": "processing_element",
+            "instances": 1
+          },
+          {
+            "cells": 10,
+            "flipFlops": 0,
+            "combinational": 6,
+            "memories": 4,
+            "block": "u_b_buffer",
+            "module": "input_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 1,
+            "flipFlops": 0,
+            "combinational": 0,
+            "memories": 1,
+            "block": "u_c_buffer",
+            "module": "output_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 1757,
+            "flipFlops": 123,
+            "combinational": 1634,
+            "memories": 0,
+            "block": "u_controller",
+            "module": "matmul_controller",
+            "instances": 1
+          }
+        ],
+        "mulCells": 16,
+        "mulCellsByModule": {
+          "processing_element": 16
+        },
+        "memoryBanks": 9,
+        "memoryBits": 196608,
+        "abstractGates": 17524,
+        "gateFlipFlops": 977,
+        "gatesByType": {
+          "$_AND_": 2648,
+          "$_DFF_P_": 288,
+          "$_MUX_": 378,
+          "$_NAND_": 6758,
+          "$_NOR_": 264,
+          "$_NOT_": 268,
+          "$_OR_": 1721,
+          "$_SDFFE_PP0P_": 653,
+          "$_SDFF_PP0_": 36,
+          "$_XNOR_": 1619,
+          "$_XOR_": 3868,
+          "$mem_v2": 9
+        },
+        "logicDepth": {
+          "length": 78,
+          "from": "u_controller.row0[4]",
+          "to": "$flatten\\u_array.\\g_row[0].g_col[0].u_pe.$auto$maccmap.cc:240:synth$7619.Y[31]",
+          "endFlipFlop": "u_array.g_row[0].g_col[0].u_pe.acc[31]",
+          "through": ["u_controller.row0[4]", "u_array.g_row[0].g_col[0].u_pe.a_in[3]"]
+        }
+      },
+      "memories": [
+        {
+          "instance": "u_a_buffer",
+          "module": "input_buffer",
+          "banks": 4,
+          "words": 1024,
+          "width": 8,
+          "bits": 32768,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        },
+        {
+          "instance": "u_b_buffer",
+          "module": "input_buffer",
+          "banks": 4,
+          "words": 1024,
+          "width": 8,
+          "bits": 32768,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        },
+        {
+          "instance": "u_c_buffer",
+          "module": "output_buffer",
+          "banks": 1,
+          "words": 4096,
+          "width": 32,
+          "bits": 131072,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        }
+      ],
+      "fpga": {
+        "ice40": {
+          "status": "ran",
+          "device": "iCE40UP5K SG48",
+          "top": "matmul_fpga_wrapper",
+          "seed": 1,
+          "constraintMHz": 12,
+          "synth": {
+            "luts": 7286,
+            "carry": 540,
+            "flipFlops": 1047,
+            "blockRam": 48,
+            "dsp": 0,
+            "wideMux": 0,
+            "other": 0,
+            "byType": {
+              "SB_CARRY": 540,
+              "SB_DFF": 364,
+              "SB_DFFESR": 626,
+              "SB_DFFSR": 57,
+              "SB_LUT4": 7286,
+              "SB_RAM40_4K": 48
+            }
+          },
+          "utilisation": {
+            "ICESTORM_LC": {
+              "used": 7721,
+              "available": 5280
+            },
+            "ICESTORM_RAM": {
+              "used": 48,
+              "available": 30
+            },
+            "SB_GB": {
+              "used": 7,
+              "available": 8
+            },
+            "SB_IO": {
+              "used": 25,
+              "available": 39
+            }
+          },
+          "fits": false,
+          "reason": "ERROR: Unable to place cell 'u_matmul.u_c_buffer.mem.0.9_RAM', no BELs remaining to implement cell type 'ICESTORM_RAM'",
+          "overUtilised": ["ICESTORM_LC", "ICESTORM_RAM"]
+        },
+        "ecp5": {
+          "status": "ran",
+          "device": "LFE5U-25F CABGA256",
+          "top": "matmul_fpga_wrapper",
+          "seed": 1,
+          "constraintMHz": 12,
+          "synth": {
+            "luts": 737,
+            "carry": 349,
+            "flipFlops": 1049,
+            "blockRam": 16,
+            "dsp": 16,
+            "wideMux": 90,
+            "other": 0,
+            "byType": {
+              "CCU2C": 349,
+              "DP16KD": 16,
+              "L6MUX21": 4,
+              "LUT4": 737,
+              "MULT18X18D": 16,
+              "PFUMX": 86,
+              "TRELLIS_FF": 1049
+            }
+          },
+          "utilisation": {
+            "DCCA": {
+              "used": 1,
+              "available": 56
+            },
+            "DP16KD": {
+              "used": 16,
+              "available": 56
+            },
+            "MULT18X18D": {
+              "used": 16,
+              "available": 28
+            },
+            "TRELLIS_COMB": {
+              "used": 1613,
+              "available": 24288
+            },
+            "TRELLIS_FF": {
+              "used": 1049,
+              "available": 24288
+            },
+            "TRELLIS_IO": {
+              "used": 25,
+              "available": 197
+            }
+          },
+          "fits": true,
+          "fmaxMHz": 52.22,
+          "fmaxIsEstimate": true,
+          "timingLabel": "LFE5U-25F CABGA256, speed grade 6, nextpnr-ecp5 timing model",
+          "meetsConstraint": true,
+          "criticalPath": {
+            "from": "u_matmul.u_controller.row0_TRELLIS_FF_Q_3",
+            "to": "u_matmul.u_controller.c_TRELLIS_FF_Q_2",
+            "delayNs": 19.15,
+            "logicNs": 9.31,
+            "routingNs": 9.31,
+            "logicStages": 47,
+            "rtlSources": [
+              {
+                "location": "hardware/accelerators/matmul/rtl/processing_element.sv:59",
+                "nets": 15
+              },
+              {
+                "location": "hardware/accelerators/matmul/rtl/matmul_controller.sv:110",
+                "nets": 2
+              },
+              {
+                "location": "hardware/accelerators/matmul/rtl/matmul_controller.sv:108",
+                "nets": 1
+              },
+              {
+                "location": "hardware/accelerators/matmul/rtl/matmul_controller.sv:114",
+                "nets": 1
+              },
+              {
+                "location": "hardware/accelerators/matmul/rtl/matmul_controller.sv:85",
+                "nets": 1
+              },
+              {
+                "location": "hardware/accelerators/matmul/rtl/processing_element.sv:38",
+                "nets": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "size": "8x8",
+      "rows": 8,
+      "cols": 8,
+      "pes": 64,
+      "generic": {
+        "top": "matmul_top",
+        "total": {
+          "cells": 70120,
+          "flipFlops": 3843,
+          "combinational": 66260,
+          "memories": 17
+        },
+        "byType": {
+          "$_ANDNOT_": 1056,
+          "$_AND_": 6903,
+          "$_DFF_P_": 1472,
+          "$_MUX_": 1456,
+          "$_NAND_": 28163,
+          "$_NOR_": 453,
+          "$_NOT_": 172,
+          "$_ORNOT_": 2236,
+          "$_OR_": 2937,
+          "$_SDFFE_PP0P_": 2187,
+          "$_SDFF_PP0_": 184,
+          "$_XNOR_": 6270,
+          "$_XOR_": 16614,
+          "$mem_v2": 17
+        },
+        "blocks": [
+          {
+            "cells": 70120,
+            "flipFlops": 3843,
+            "combinational": 66260,
+            "memories": 17,
+            "block": "matmul_top",
+            "module": "matmul_top",
+            "instances": 1
+          },
+          {
+            "cells": 22,
+            "flipFlops": 0,
+            "combinational": 14,
+            "memories": 8,
+            "block": "u_a_buffer",
+            "module": "input_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 65129,
+            "flipFlops": 3722,
+            "combinational": 61407,
+            "memories": 0,
+            "block": "u_array",
+            "module": "systolic_array",
+            "instances": 1
+          },
+          {
+            "cells": 64512,
+            "flipFlops": 3200,
+            "combinational": 61312,
+            "memories": 0,
+            "block": "u_array: all processing_element",
+            "module": "processing_element",
+            "instances": 64
+          },
+          {
+            "cells": 1008,
+            "flipFlops": 50,
+            "combinational": 958,
+            "memories": 0,
+            "block": "u_array: one processing_element",
+            "module": "processing_element",
+            "instances": 1
+          },
+          {
+            "cells": 22,
+            "flipFlops": 0,
+            "combinational": 14,
+            "memories": 8,
+            "block": "u_b_buffer",
+            "module": "input_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 1,
+            "flipFlops": 0,
+            "combinational": 0,
+            "memories": 1,
+            "block": "u_c_buffer",
+            "module": "output_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 4944,
+            "flipFlops": 121,
+            "combinational": 4823,
+            "memories": 0,
+            "block": "u_controller",
+            "module": "matmul_controller",
+            "instances": 1
+          }
+        ],
+        "mulCells": 64,
+        "mulCellsByModule": {
+          "processing_element": 64
+        },
+        "memoryBanks": 17,
+        "memoryBits": 196608,
+        "abstractGates": 68100,
+        "gateFlipFlops": 3699,
+        "gatesByType": {
+          "$_AND_": 10006,
+          "$_DFF_P_": 1344,
+          "$_MUX_": 1337,
+          "$_NAND_": 27813,
+          "$_NOR_": 604,
+          "$_NOT_": 852,
+          "$_OR_": 5879,
+          "$_SDFFE_PP0P_": 2187,
+          "$_SDFF_PP0_": 168,
+          "$_XNOR_": 5570,
+          "$_XOR_": 16039,
+          "$mem_v2": 17
+        },
+        "logicDepth": {
+          "length": 77,
+          "from": "u_controller.row0[5]",
+          "to": "$flatten\\u_array.\\g_row[0].g_col[0].u_pe.$auto$maccmap.cc:240:synth$11668.Y[31]",
+          "endFlipFlop": "u_array.g_row[0].g_col[0].u_pe.acc[31]",
+          "through": ["u_controller.row0[5]", "u_array.g_row[0].g_col[0].u_pe.a_in[3]"]
+        }
+      },
+      "memories": [
+        {
+          "instance": "u_a_buffer",
+          "module": "input_buffer",
+          "banks": 8,
+          "words": 512,
+          "width": 8,
+          "bits": 32768,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        },
+        {
+          "instance": "u_b_buffer",
+          "module": "input_buffer",
+          "banks": 8,
+          "words": 512,
+          "width": 8,
+          "bits": 32768,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        },
+        {
+          "instance": "u_c_buffer",
+          "module": "output_buffer",
+          "banks": 1,
+          "words": 4096,
+          "width": 32,
+          "bits": 131072,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        }
+      ],
+      "fpga": {
+        "ice40": {
+          "status": "ran",
+          "device": "iCE40UP5K SG48",
+          "top": "matmul_fpga_wrapper",
+          "seed": 1,
+          "constraintMHz": 12,
+          "synth": {
+            "luts": 28003,
+            "carry": 1824,
+            "flipFlops": 3661,
+            "blockRam": 48,
+            "dsp": 0,
+            "wideMux": 0,
+            "other": 0,
+            "byType": {
+              "SB_CARRY": 1824,
+              "SB_DFF": 1372,
+              "SB_DFFESR": 2160,
+              "SB_DFFSR": 129,
+              "SB_LUT4": 28003,
+              "SB_RAM40_4K": 48
+            }
+          },
+          "utilisation": {
+            "ICESTORM_LC": {
+              "used": 29492,
+              "available": 5280
+            },
+            "ICESTORM_RAM": {
+              "used": 48,
+              "available": 30
+            },
+            "SB_GB": {
+              "used": 7,
+              "available": 8
+            },
+            "SB_IO": {
+              "used": 25,
+              "available": 39
+            }
+          },
+          "fits": false,
+          "reason": "ERROR: Unable to place cell 'u_matmul.u_c_buffer.mem.0.2_RAM', no BELs remaining to implement cell type 'ICESTORM_RAM'",
+          "overUtilised": ["ICESTORM_LC", "ICESTORM_RAM"]
+        },
+        "ecp5": {
+          "status": "ran",
+          "device": "LFE5U-25F CABGA256",
+          "top": "matmul_fpga_wrapper",
+          "seed": 1,
+          "constraintMHz": 12,
+          "synth": {
+            "luts": 2168,
+            "carry": 1131,
+            "flipFlops": 3663,
+            "blockRam": 24,
+            "dsp": 64,
+            "wideMux": 189,
+            "other": 0,
+            "byType": {
+              "CCU2C": 1131,
+              "DP16KD": 24,
+              "L6MUX21": 6,
+              "LUT4": 2168,
+              "MULT18X18D": 64,
+              "PFUMX": 183,
+              "TRELLIS_FF": 3663
+            }
+          },
+          "utilisation": {
+            "DCCA": {
+              "used": 1,
+              "available": 56
+            },
+            "DP16KD": {
+              "used": 24,
+              "available": 56
+            },
+            "MULT18X18D": {
+              "used": 64,
+              "available": 28
+            },
+            "TRELLIS_COMB": {
+              "used": 4816,
+              "available": 24288
+            },
+            "TRELLIS_FF": {
+              "used": 3663,
+              "available": 24288
+            },
+            "TRELLIS_IO": {
+              "used": 25,
+              "available": 197
+            }
+          },
+          "fits": false,
+          "reason": "ERROR: Unable to place cell 'u_matmul.u_array.g_row[3].g_col[2].u_pe.product_MULT18X18D_P9', no BELs remaining to implement cell type 'MULT18X18D'",
+          "overUtilised": ["MULT18X18D"]
+        }
+      }
+    },
+    {
+      "size": "16x16",
+      "rows": 16,
+      "cols": 16,
+      "pes": 256,
+      "generic": {
+        "top": "matmul_top",
+        "total": {
+          "cells": 273028,
+          "flipFlops": 15097,
+          "combinational": 257898,
+          "memories": 33
+        },
+        "byType": {
+          "$_ANDNOT_": 3486,
+          "$_AND_": 25718,
+          "$_DFF_P_": 6016,
+          "$_MUX_": 7641,
+          "$_NAND_": 111286,
+          "$_NOR_": 1002,
+          "$_NOT_": 551,
+          "$_ORNOT_": 6917,
+          "$_OR_": 10064,
+          "$_SDFFE_PP0P_": 8329,
+          "$_SDFF_PP0_": 752,
+          "$_XNOR_": 24895,
+          "$_XOR_": 66338,
+          "$mem_v2": 33
+        },
+        "blocks": [
+          {
+            "cells": 273028,
+            "flipFlops": 15097,
+            "combinational": 257898,
+            "memories": 33,
+            "block": "matmul_top",
+            "module": "matmul_top",
+            "instances": 1
+          },
+          {
+            "cells": 42,
+            "flipFlops": 0,
+            "combinational": 26,
+            "memories": 16,
+            "block": "u_a_buffer",
+            "module": "input_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 260321,
+            "flipFlops": 14978,
+            "combinational": 245343,
+            "memories": 0,
+            "block": "u_array",
+            "module": "systolic_array",
+            "instances": 1
+          },
+          {
+            "cells": 258048,
+            "flipFlops": 12800,
+            "combinational": 245248,
+            "memories": 0,
+            "block": "u_array: all processing_element",
+            "module": "processing_element",
+            "instances": 256
+          },
+          {
+            "cells": 1008,
+            "flipFlops": 50,
+            "combinational": 958,
+            "memories": 0,
+            "block": "u_array: one processing_element",
+            "module": "processing_element",
+            "instances": 1
+          },
+          {
+            "cells": 42,
+            "flipFlops": 0,
+            "combinational": 26,
+            "memories": 16,
+            "block": "u_b_buffer",
+            "module": "input_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 1,
+            "flipFlops": 0,
+            "combinational": 0,
+            "memories": 1,
+            "block": "u_c_buffer",
+            "module": "output_buffer",
+            "instances": 1
+          },
+          {
+            "cells": 12620,
+            "flipFlops": 119,
+            "combinational": 12501,
+            "memories": 0,
+            "block": "u_controller",
+            "module": "matmul_controller",
+            "instances": 1
+          }
+        ],
+        "mulCells": 256,
+        "mulCellsByModule": {
+          "processing_element": 256
+        },
+        "memoryBanks": 33,
+        "memoryBits": 196608,
+        "abstractGates": 270353,
+        "gateFlipFlops": 14809,
+        "gatesByType": {
+          "$_AND_": 39380,
+          "$_DFF_P_": 5760,
+          "$_MUX_": 4493,
+          "$_NAND_": 113152,
+          "$_NOR_": 1958,
+          "$_NOT_": 3152,
+          "$_OR_": 22073,
+          "$_SDFFE_PP0P_": 8329,
+          "$_SDFF_PP0_": 720,
+          "$_XNOR_": 21803,
+          "$_XOR_": 64342,
+          "$mem_v2": 33
+        },
+        "logicDepth": {
+          "length": 78,
+          "from": "u_controller.row0[5]",
+          "to": "$flatten\\u_array.\\g_row[0].g_col[0].u_pe.$auto$maccmap.cc:240:synth$23707.Y[31]",
+          "endFlipFlop": "u_array.g_row[0].g_col[0].u_pe.acc[31]",
+          "through": ["u_controller.row0[5]", "u_array.g_row[0].g_col[0].u_pe.a_in[3]"]
+        }
+      },
+      "memories": [
+        {
+          "instance": "u_a_buffer",
+          "module": "input_buffer",
+          "banks": 16,
+          "words": 256,
+          "width": 8,
+          "bits": 32768,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        },
+        {
+          "instance": "u_b_buffer",
+          "module": "input_buffer",
+          "banks": 16,
+          "words": 256,
+          "width": 8,
+          "bits": 32768,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        },
+        {
+          "instance": "u_c_buffer",
+          "module": "output_buffer",
+          "banks": 1,
+          "words": 4096,
+          "width": 32,
+          "bits": 131072,
+          "readPorts": 1,
+          "syncReadPorts": 1,
+          "writePorts": 1,
+          "fpga": {
+            "ice40": "block RAM ($__ICE40_RAM4K_)",
+            "ecp5": "block RAM ($__DP16KD_)"
+          }
+        }
+      ],
+      "fpga": {
+        "ice40": {
+          "status": "ran",
+          "device": "iCE40UP5K SG48",
+          "top": "matmul_fpga_wrapper",
+          "seed": 1,
+          "constraintMHz": 12,
+          "synth": {
+            "luts": 110587,
+            "carry": 6887,
+            "flipFlops": 14267,
+            "blockRam": 64,
+            "dsp": 0,
+            "wideMux": 0,
+            "other": 0,
+            "byType": {
+              "SB_CARRY": 6887,
+              "SB_DFF": 5692,
+              "SB_DFFESR": 8302,
+              "SB_DFFSR": 273,
+              "SB_LUT4": 110587,
+              "SB_RAM40_4K": 64
+            }
+          },
+          "utilisation": {
+            "ICESTORM_LC": {
+              "used": 116472,
+              "available": 5280
+            },
+            "ICESTORM_RAM": {
+              "used": 64,
+              "available": 30
+            },
+            "SB_GB": {
+              "used": 7,
+              "available": 8
+            },
+            "SB_IO": {
+              "used": 25,
+              "available": 39
+            }
+          },
+          "fits": false,
+          "reason": "ERROR: Unable to place cell 'u_matmul.u_c_buffer.mem.0.19_RAM', no BELs remaining to implement cell type 'ICESTORM_RAM'",
+          "overUtilised": ["ICESTORM_LC", "ICESTORM_RAM"]
+        },
+        "ecp5": {
+          "status": "ran",
+          "device": "LFE5U-25F CABGA256",
+          "top": "matmul_fpga_wrapper",
+          "seed": 1,
+          "constraintMHz": 12,
+          "synth": {
+            "luts": 8045,
+            "carry": 4253,
+            "flipFlops": 14269,
+            "blockRam": 40,
+            "dsp": 256,
+            "wideMux": 772,
+            "other": 0,
+            "byType": {
+              "CCU2C": 4253,
+              "DP16KD": 40,
+              "L6MUX21": 86,
+              "LUT4": 8045,
+              "MULT18X18D": 256,
+              "PFUMX": 686,
+              "TRELLIS_FF": 14269
+            }
+          },
+          "utilisation": {
+            "DCCA": {
+              "used": 1,
+              "available": 56
+            },
+            "DP16KD": {
+              "used": 40,
+              "available": 56
+            },
+            "MULT18X18D": {
+              "used": 256,
+              "available": 28
+            },
+            "TRELLIS_COMB": {
+              "used": 17769,
+              "available": 24288
+            },
+            "TRELLIS_FF": {
+              "used": 14269,
+              "available": 24288
+            },
+            "TRELLIS_IO": {
+              "used": 25,
+              "available": 197
+            }
+          },
+          "fits": false,
+          "reason": "ERROR: Unable to place cell 'u_matmul.u_array.g_row[15].g_col[8].u_pe.product_MULT18X18D_P9', no BELs remaining to implement cell type 'MULT18X18D'",
+          "overUtilised": ["MULT18X18D"]
+        }
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "source": "4x4/generic.log",
+      "message": "ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\").",
+      "count": 69,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "4x4/ice40.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "4x4/ecp5.log",
+      "message": "ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and 2 carries.",
+      "count": 3,
+      "allowedBy": "^ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and [0-9]+ carries\\.$"
+    },
+    {
+      "source": "4x4/ecp5.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "8x8/generic.log",
+      "message": "ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\").",
+      "count": 205,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "8x8/ice40.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "8x8/ecp5.log",
+      "message": "ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and 2 carries.",
+      "count": 3,
+      "allowedBy": "^ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and [0-9]+ carries\\.$"
+    },
+    {
+      "source": "8x8/ecp5.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "16x16/generic.log",
+      "message": "ABC: Warning: The network is combinational (run \"fraig\" or \"fraig_sweep\").",
+      "count": 749,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "16x16/ice40.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    },
+    {
+      "source": "16x16/ecp5.log",
+      "message": "ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and 2 carries.",
+      "count": 3,
+      "allowedBy": "^ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and [0-9]+ carries\\.$"
+    },
+    {
+      "source": "16x16/ecp5.log",
+      "message": "ABC: Warning: The network is combinational.",
+      "count": 1,
+      "allowedBy": "^ABC: Warning: The network is combinational( \\(run \"fraig\" or \"fraig_sweep\"\\))?\\.$"
+    }
+  ],
+  "gate": {
+    "passed": true,
+    "failures": [],
+    "unusedAllowEntries": []
+  }
+}

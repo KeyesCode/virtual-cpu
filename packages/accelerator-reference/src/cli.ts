@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { parseTarget } from '@vcpu/rtl-tools';
 import {
   BENCHMARK_DEFAULTS,
   compareBenchmarkFiles,
@@ -9,6 +10,7 @@ import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { MUTANTS_DEFAULTS, runMutants } from './harness/mutants.js';
 import { writeTopSuite } from './harness/top-vectors.js';
+import { runMatmulSynthCompare, runMatmulSynthSummary } from './harness/synth-summary.js';
 import { writeCase } from './harness/vectors.js';
 import { defaultVerifyOptions, replayCase, runVerify, VERIFY_DEFAULTS } from './harness/verify.js';
 import { writeVisualizations } from './viz/page.js';
@@ -64,6 +66,16 @@ ${GENERATORS}
   gen-viz                                Regenerate docs/hardware/accelerators/images/: the 4 × 4
                                          dataflow SVG and the trace embedded in systolic-4x4.html,
                                          both from the timing rule in src/viz/schedule.ts.
+  synth-summary --dir <build> --sizes 4,8,16 --allow <warnings.allow> --toolchain T
+                --toolchain-version V --revision R --freq MHZ --seed S --ice40 DEV:PKG
+                --ecp5 DEV:PKG:SPEED
+                                         Read the outputs of make synth in <build>/synth-<R>x<C>/
+                                         for each size and write <build>/synth/summary.{json,md}
+                                         (src/harness/synth-summary.ts). Exits 1 when a warning
+                                         is not in the allowlist.
+  synth-compare --baseline <baseline.json> --summary <summary.json>
+                                         Print every difference between a fresh synthesis summary
+                                         and the committed baseline; exits 1 if there is any.
   verify --sim <bin> [--sim <bin> …] [--seed S] [--count N] [--jobs J] [--work <dir>]
          [--failures <dir>] [--reports <dir>] [--directed-only | --random-only]
                                          Differential verification: for each runner
@@ -380,6 +392,53 @@ function genViz(args: readonly string[]): number {
   return 0;
 }
 
+function synthSummary(args: readonly string[]): number {
+  const flags = [
+    '--dir',
+    '--sizes',
+    '--allow',
+    '--toolchain',
+    '--toolchain-version',
+    '--revision',
+    '--freq',
+    '--seed',
+    '--ice40',
+    '--ecp5',
+  ];
+  const values = parseFlags('synth-summary', args, flags, flags);
+  const numbers = values && parseCounts('synth-summary', values, ['freq', 'seed'] as const);
+  if (values === undefined || numbers === undefined) {
+    return 2;
+  }
+  const sizesRaw = values.get('--sizes') ?? '';
+  const sizes = sizesRaw.split(',').map(parseCount);
+  if (sizes.length === 0 || sizes.some((n) => n === undefined || n < 2)) {
+    process.stderr.write(`synth-summary: --sizes must be a list like 4,8,16, got '${sizesRaw}'\n`);
+    return 2;
+  }
+  const ice40 = parseTarget('ice40', values.get('--ice40') ?? '');
+  const ecp5 = parseTarget('ecp5', values.get('--ecp5') ?? '');
+  if (ice40 === undefined || ecp5 === undefined) {
+    process.stderr.write('synth-summary: --ice40 is DEVICE:PACKAGE, --ecp5 DEVICE:PACKAGE:SPEED\n');
+    return 2;
+  }
+  return runMatmulSynthSummary(
+    {
+      dir: resolve(cwd, values.get('--dir') ?? ''),
+      sizes: sizes.filter((n) => n !== undefined),
+      allow: resolve(cwd, values.get('--allow') ?? ''),
+      toolchain: values.get('--toolchain') ?? '',
+      toolchainVersion: values.get('--toolchain-version') ?? '',
+      revision: values.get('--revision') ?? '',
+      freqMHz: numbers.freq,
+      seed: numbers.seed,
+      ice40,
+      ecp5,
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
 /**
  * The arguments of `command`: `--flag value` pairs for `valued` (those in `repeatable` may repeat,
  * the others not) and bare `switches`; otherwise writes the problem to stderr and returns
@@ -521,6 +580,19 @@ async function mutants(args: readonly string[]): Promise<number> {
   );
 }
 
+function synthCompare(args: readonly string[]): number {
+  const flags = ['--baseline', '--summary'];
+  const values = parseFlags('synth-compare', args, flags, flags);
+  if (values === undefined) {
+    return 2;
+  }
+  return runMatmulSynthCompare(
+    resolve(cwd, values.get('--baseline') ?? ''),
+    resolve(cwd, values.get('--summary') ?? ''),
+    (text) => process.stdout.write(text),
+  );
+}
+
 async function benchmark(args: readonly string[]): Promise<number> {
   const parsed = parseArgs(
     'benchmark',
@@ -578,6 +650,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-tile-suite': genTileSuite,
   'gen-top-suite': genTopSuite,
   'gen-viz': genViz,
+  'synth-summary': synthSummary,
+  'synth-compare': synthCompare,
   verify,
   mutants,
   benchmark,

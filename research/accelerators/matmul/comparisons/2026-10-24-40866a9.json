@@ -1,0 +1,544 @@
+{
+  "schemaVersion": 1,
+  "kind": "vcpu8-vs-matmul-comparison",
+  "revision": "matmul-os-r1",
+  "cpuRevision": "vcpu8-mc-r1",
+  "labels": {
+    "mac": "One MAC is one signed INT8 × INT8 multiply plus one add into a signed INT32 accumulator that wraps; a workload of M × K by K × N is M · N · K MACs on both machines.",
+    "cpuCycles": "CPU cycles: clock cycles of the Verilated Project 2 RTL (vcpu8_top) from reset release to HLT, counted by hardware/rtl/vcpu8/tb/sim/vcpu8_sim.cpp. The emulator column is the ISA timing model’s estimate (docs/instruction-set.md), shown beside it, not a measurement.",
+    "cpuMemory": "CPU memory accesses: data-memory reads (LOAD, POP, RET) and writes (STORE, PUSH, CALL) of retired instructions, from the opcode table over the RTL trace and from the emulator’s counters. Instruction fetches are counted separately as fetched bytes.",
+    "acceleratorCycles": "Accelerator cycles: rising clock edges of the Verilated matmul_top at 4 × 4, counted by tb/sim/matmul_sim.cpp: transfer in (A and B through the testbench host port, one element of each per clock), compute (PREPARE_TILE, COMPUTE, DRAIN), store (the controller writing C into its output buffer), handshake (the start clock, LOAD and one NEXT_TILE per tile), transfer out (C through the host port) and their total, which the five parts add up to. Busy is the clocks `busy` was high: compute + store + LOAD + NEXT_TILE.",
+    "acceleratorMemory": "Accelerator memory accesses: host-port element transfers, M · K + K · N INT8 writes into the input buffers and M · N INT32 reads of C. The controller’s reads of its own banked buffers are not counted by the runner and not included.",
+    "ratio": "Cycle ratio = CPU RTL cycles ÷ accelerator total cycles. Both are clock counts of different designs at an unspecified clock; the ratio is not a speed-up."
+  },
+  "config": {
+    "notation": "M × K × N (A is M × K, B is K × N, C is M × N), then the operand generator",
+    "seed": 1,
+    "acceleratorArray": "4x4",
+    "memoryBytes": 256,
+    "correctnessGate": "A CPU workload has numbers only when its program halted on both the emulator and the Project 2 RTL, C read back from memory equals @vcpu/accelerator-reference element by element on both, both retired the same number of instructions with the same data reads, data writes and fetched bytes, and their end memories are identical. An accelerator workload has numbers only when the 4 × 4 runner reached done and C equals the reference. Any failure leaves the reason, no numbers, and exit 1."
+  },
+  "verification": {
+    "gate": "passed",
+    "cpuMeasured": 4,
+    "cpuUnsupported": 3,
+    "acceleratorMeasured": 7,
+    "failed": []
+  },
+  "rows": [
+    {
+      "workload": "2x2x2-random",
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "generator": "random",
+      "what": "cube",
+      "macs": 8,
+      "cpu": {
+        "status": "measured",
+        "program": {
+          "codeBytes": 147,
+          "dataBytes": 25,
+          "stackBytes": 1,
+          "totalBytes": 173,
+          "layout": {
+            "cptr": 147,
+            "a": 148,
+            "b": 152,
+            "c": 156,
+            "end": 172
+          }
+        },
+        "emulator": {
+          "instructions": 1114,
+          "estimatedCycles": 3716,
+          "memoryReads": 76,
+          "memoryWrites": 44,
+          "fetchedBytes": 2275
+        },
+        "rtl": {
+          "cycles": 5617,
+          "instructions": 1114,
+          "memoryReads": 76,
+          "memoryWrites": 44,
+          "fetchedBytes": 2275,
+          "cpi": 5.04219
+        },
+        "macsPerCycle": 0.001424,
+        "cyclesPerMac": 702.125,
+        "endMemoryAgrees": true
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 1,
+        "transferIn": 4,
+        "compute": 10,
+        "store": 4,
+        "handshake": 3,
+        "busy": 16,
+        "transferOut": 5,
+        "total": 26,
+        "utilization": 0.05,
+        "macsPerCycleCompute": 0.8,
+        "macsPerCycleTotal": 0.307692,
+        "hostWrites": 8,
+        "hostReads": 4
+      },
+      "cycleRatio": 216.038462
+    },
+    {
+      "workload": "3x3x3-random",
+      "dims": {
+        "m": 3,
+        "n": 3,
+        "k": 3
+      },
+      "generator": "random",
+      "what": "cube",
+      "macs": 27,
+      "cpu": {
+        "status": "measured",
+        "program": {
+          "codeBytes": 147,
+          "dataBytes": 55,
+          "stackBytes": 1,
+          "totalBytes": 203,
+          "layout": {
+            "cptr": 147,
+            "a": 148,
+            "b": 157,
+            "c": 166,
+            "end": 202
+          }
+        },
+        "emulator": {
+          "instructions": 3685,
+          "estimatedCycles": 12257,
+          "memoryReads": 258,
+          "memoryWrites": 144,
+          "fetchedBytes": 7500
+        },
+        "rtl": {
+          "cycles": 18555,
+          "instructions": 3685,
+          "memoryReads": 258,
+          "memoryWrites": 144,
+          "fetchedBytes": 7500,
+          "cpi": 5.035278
+        },
+        "macsPerCycle": 0.001455,
+        "cyclesPerMac": 687.222222,
+        "endMemoryAgrees": true
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 1,
+        "transferIn": 9,
+        "compute": 11,
+        "store": 9,
+        "handshake": 3,
+        "busy": 22,
+        "transferOut": 10,
+        "total": 42,
+        "utilization": 0.153409,
+        "macsPerCycleCompute": 2.454545,
+        "macsPerCycleTotal": 0.642857,
+        "hostWrites": 18,
+        "hostReads": 9
+      },
+      "cycleRatio": 441.785714
+    },
+    {
+      "workload": "4x4x4-random",
+      "dims": {
+        "m": 4,
+        "n": 4,
+        "k": 4
+      },
+      "generator": "random",
+      "what": "cube: the largest that fits in 256 bytes",
+      "macs": 64,
+      "cpu": {
+        "status": "measured",
+        "program": {
+          "codeBytes": 147,
+          "dataBytes": 97,
+          "stackBytes": 1,
+          "totalBytes": 245,
+          "layout": {
+            "cptr": 147,
+            "a": 148,
+            "b": 164,
+            "c": 180,
+            "end": 244
+          }
+        },
+        "emulator": {
+          "instructions": 8567,
+          "estimatedCycles": 28477,
+          "memoryReads": 612,
+          "memoryWrites": 336,
+          "fetchedBytes": 17411
+        },
+        "rtl": {
+          "cycles": 43112,
+          "instructions": 8567,
+          "memoryReads": 612,
+          "memoryWrites": 336,
+          "fetchedBytes": 17411,
+          "cpi": 5.032333
+        },
+        "macsPerCycle": 0.001485,
+        "cyclesPerMac": 673.625,
+        "endMemoryAgrees": true
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 1,
+        "transferIn": 16,
+        "compute": 12,
+        "store": 16,
+        "handshake": 3,
+        "busy": 30,
+        "transferOut": 17,
+        "total": 64,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 5.333333,
+        "macsPerCycleTotal": 1,
+        "hostWrites": 32,
+        "hostReads": 16
+      },
+      "cycleRatio": 673.625
+    },
+    {
+      "workload": "4x4x4-min",
+      "dims": {
+        "m": 4,
+        "n": 4,
+        "k": 4
+      },
+      "generator": "min",
+      "what": "every operand −128: the largest products, so every sum carries into byte 2",
+      "macs": 64,
+      "cpu": {
+        "status": "measured",
+        "program": {
+          "codeBytes": 147,
+          "dataBytes": 97,
+          "stackBytes": 1,
+          "totalBytes": 245,
+          "layout": {
+            "cptr": 147,
+            "a": 148,
+            "b": 164,
+            "c": 180,
+            "end": 244
+          }
+        },
+        "emulator": {
+          "instructions": 8071,
+          "estimatedCycles": 27437,
+          "memoryReads": 640,
+          "memoryWrites": 336,
+          "fetchedBytes": 16419
+        },
+        "rtl": {
+          "cycles": 40632,
+          "instructions": 8071,
+          "memoryReads": 640,
+          "memoryWrites": 336,
+          "fetchedBytes": 16419,
+          "cpi": 5.03432
+        },
+        "macsPerCycle": 0.001575,
+        "cyclesPerMac": 634.875,
+        "endMemoryAgrees": true
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 1,
+        "transferIn": 16,
+        "compute": 12,
+        "store": 16,
+        "handshake": 3,
+        "busy": 30,
+        "transferOut": 17,
+        "total": 64,
+        "utilization": 0.333333,
+        "macsPerCycleCompute": 5.333333,
+        "macsPerCycleTotal": 1,
+        "hostWrites": 32,
+        "hostReads": 16
+      },
+      "cycleRatio": 634.875
+    },
+    {
+      "workload": "5x5x5-random",
+      "dims": {
+        "m": 5,
+        "n": 5,
+        "k": 5
+      },
+      "generator": "random",
+      "what": "cube: the smallest that does not fit",
+      "macs": 125,
+      "cpu": {
+        "status": "unsupported",
+        "codeBytes": 147,
+        "dataBytes": 151,
+        "stackBytes": 1,
+        "totalBytes": 299,
+        "memoryBytes": 256,
+        "reason": "needs 299 bytes (code 147 + data 151 + stack 1), more than the 256 bytes of VCPU-8 memory"
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 4,
+        "transferIn": 25,
+        "compute": 52,
+        "store": 25,
+        "handshake": 6,
+        "busy": 82,
+        "transferOut": 26,
+        "total": 134,
+        "utilization": 0.15024,
+        "macsPerCycleCompute": 2.403846,
+        "macsPerCycleTotal": 0.932836,
+        "hostWrites": 50,
+        "hostReads": 25
+      },
+      "cycleRatio": null
+    },
+    {
+      "workload": "8x8x8-random",
+      "dims": {
+        "m": 8,
+        "n": 8,
+        "k": 8
+      },
+      "generator": "random",
+      "what": "benchmark cube",
+      "macs": 512,
+      "cpu": {
+        "status": "unsupported",
+        "codeBytes": 147,
+        "dataBytes": 385,
+        "stackBytes": 1,
+        "totalBytes": 533,
+        "memoryBytes": 256,
+        "reason": "needs 533 bytes (code 147 + data 385 + stack 1), more than the 256 bytes of VCPU-8 memory"
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 4,
+        "transferIn": 64,
+        "compute": 64,
+        "store": 64,
+        "handshake": 6,
+        "busy": 133,
+        "transferOut": 65,
+        "total": 263,
+        "utilization": 0.5,
+        "macsPerCycleCompute": 8,
+        "macsPerCycleTotal": 1.946768,
+        "hostWrites": 128,
+        "hostReads": 64
+      },
+      "cycleRatio": null
+    },
+    {
+      "workload": "16x16x16-random",
+      "dims": {
+        "m": 16,
+        "n": 16,
+        "k": 16
+      },
+      "generator": "random",
+      "what": "benchmark cube",
+      "macs": 4096,
+      "cpu": {
+        "status": "unsupported",
+        "codeBytes": 147,
+        "dataBytes": 1537,
+        "stackBytes": 1,
+        "totalBytes": 1685,
+        "memoryBytes": 256,
+        "reason": "needs 1685 bytes (code 147 + data 1537 + stack 1), more than the 256 bytes of VCPU-8 memory"
+      },
+      "accelerator": {
+        "status": "measured",
+        "size": "4x4",
+        "tiles": 16,
+        "transferIn": 256,
+        "compute": 384,
+        "store": 256,
+        "handshake": 18,
+        "busy": 657,
+        "transferOut": 257,
+        "total": 1171,
+        "utilization": 0.666667,
+        "macsPerCycleCompute": 10.666667,
+        "macsPerCycleTotal": 3.497865,
+        "hostWrites": 512,
+        "hostReads": 256
+      },
+      "cycleRatio": null
+    }
+  ],
+  "largestCpuCube": {
+    "side": 4,
+    "totalBytes": 245
+  },
+  "unsupported": [
+    {
+      "workload": "5x5x5-random",
+      "totalBytes": 299,
+      "reason": "needs 299 bytes (code 147 + data 151 + stack 1), more than the 256 bytes of VCPU-8 memory"
+    },
+    {
+      "workload": "8x8x8-random",
+      "totalBytes": 533,
+      "reason": "needs 533 bytes (code 147 + data 385 + stack 1), more than the 256 bytes of VCPU-8 memory"
+    },
+    {
+      "workload": "16x16x16-random",
+      "totalBytes": 1685,
+      "reason": "needs 1685 bytes (code 147 + data 1537 + stack 1), more than the 256 bytes of VCPU-8 memory"
+    }
+  ],
+  "resources": {
+    "cpu": {
+      "source": "research/cpu/synth/baseline.json",
+      "gitSha": "cb05946064e3b1df921c58ced049b8d4cc70829b",
+      "top": "vcpu8_top",
+      "generic": {
+        "cells": 7480,
+        "flipFlops": 2238,
+        "combinational": 5242,
+        "memories": 0
+      },
+      "core": {
+        "cells": 1981,
+        "flipFlops": 182,
+        "combinational": 1799,
+        "memories": 0
+      },
+      "ice40": {
+        "device": "iCE40UP5K SG48",
+        "luts": 727,
+        "carry": 143,
+        "flipFlops": 150,
+        "blockRam": 1,
+        "dsp": 0,
+        "fits": true
+      },
+      "ecp5": {
+        "device": "LFE5U-25F CABGA256",
+        "luts": 507,
+        "carry": 91,
+        "flipFlops": 124,
+        "blockRam": 1,
+        "dsp": 1,
+        "fits": true
+      }
+    },
+    "accelerator": {
+      "source": "research/accelerators/matmul/synth/baseline.json",
+      "gitSha": "2d7cd520557b5bfbfc082308aa10cbca15f32e13",
+      "size": "4x4",
+      "top": "matmul_top",
+      "generic": {
+        "cells": 18130,
+        "flipFlops": 1049,
+        "combinational": 17072,
+        "memories": 9
+      },
+      "compute": {
+        "cells": 18106,
+        "flipFlops": 1049,
+        "combinational": 17057,
+        "memories": 0
+      },
+      "memoryBits": 196608,
+      "multipliers": 16,
+      "ice40": {
+        "device": "iCE40UP5K SG48",
+        "luts": 7286,
+        "carry": 540,
+        "flipFlops": 1047,
+        "blockRam": 48,
+        "dsp": 0,
+        "fits": false
+      },
+      "ecp5": {
+        "device": "LFE5U-25F CABGA256",
+        "luts": 737,
+        "carry": 349,
+        "flipFlops": 1049,
+        "blockRam": 16,
+        "dsp": 16,
+        "fits": true
+      }
+    }
+  },
+  "caveats": [
+    {
+      "topic": "ISA vs fixed function",
+      "text": "VCPU-8 is a programmable 8-bit CPU running a generated program (loops, address arithmetic, branches); the accelerator is fixed-function hardware for exactly this operation. The CPU cycles include all of the program’s control overhead."
+    },
+    {
+      "topic": "Numeric format",
+      "text": "VCPU-8’s MUL is unsigned 8 × 8 and keeps only the low byte of the product, so the program forms each signed 16-bit product by shift-and-add (one loop pass per multiplier bit up to its highest set bit, eight for a negative multiplier) and corrects for a negative multiplier. The accelerator’s processing element multiplies signed INT8 directly. The CPU’s cycles therefore depend on the operand values; the accelerator’s do not."
+    },
+    {
+      "topic": "INT32 accumulation",
+      "text": "The CPU keeps each INT32 accumulator as 4 bytes in memory and adds the sign-extended product byte by byte, rippling the carry with branches because the ISA has no add-with-carry. The accelerator has a 32-bit adder per processing element. Both wrap on overflow like the reference."
+    },
+    {
+      "topic": "Memory",
+      "text": "VCPU-8 has 256 bytes for code, data and stack together, so only products up to 4 × 4 × 4 fit (unsupported workloads list their byte counts). The accelerator has separate on-chip buffers (A and B 64 × 64 INT8 elements each, banked one bank per array row or column, C 64 × 64 INT32) behind a simplified testbench host port, and its totals include the transfers through that port."
+    },
+    {
+      "topic": "No clock frequency",
+      "text": "Cycles are clocks, not time. The two designs would not run at the same clock, and no clock frequency is assumed for either, so no time, throughput per second or speed-up is reported. The synthesis baselines record Fmax estimates for named FPGAs; converting cycles with them later would give labelled estimates, and this report does not do it."
+    },
+    {
+      "topic": "No power",
+      "text": "Power was not measured for either design, so the report makes no energy or efficiency claim."
+    },
+    {
+      "topic": "Memory accesses",
+      "text": "The two access counts measure different things: the CPU’s are every data-memory read and write of the program (operands, the accumulator read-modify-write, the cptr variable and the one PUSH/POP), the accelerator’s are host-port transfers only."
+    },
+    {
+      "topic": "Resources",
+      "text": "The generic Yosys flows differ: the CPU baseline maps its 256-byte memory to flip-flops (2048 of its flip-flops), while the accelerator baseline keeps its buffers as memory cells outside the cell count. The ECP5 rows (both designs’ memories in block RAM, multipliers in DSP blocks) are the closest like-for-like resource comparison."
+    }
+  ],
+  "provenance": {
+    "createdAt": "2026-10-24T09:55:10.205Z",
+    "gitCommit": "40866a915f9fbed5d43f55071efcb27a251db7eb",
+    "gitShortCommit": "40866a9",
+    "gitDirty": false,
+    "runners": {
+      "vcpu8": "hardware/rtl/vcpu8/build/sim/vcpu8_sim",
+      "accelerator": "hardware/accelerators/matmul/build/sim-4x4/matmul_sim"
+    },
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "verilator": "Verilator 5.053 devel rev v5.052-448-g1272f7355 (mod)",
+      "yosys": "Yosys 0.70+145 (git sha1 a31d95ea0, Release, Clang /usr/local/osxcross/target/bin/aarch64-apple-darwin25.5-clang++ 21.1.8)",
+      "nextpnr-ice40": "\"nextpnr-ice40\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "nextpnr-ecp5": "\"nextpnr-ecp5\" -- Next Generation Place and Route (Version nextpnr-0.11.1-63-g44a6c739)",
+      "gtkwave": "GTKWave Analyzer v4.0.0-prealpha (f6d60e0) (w)1999-2022 BSI"
+    }
+  }
+}

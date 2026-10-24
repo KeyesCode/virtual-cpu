@@ -30,21 +30,22 @@ New to hardware? Read [concepts.md](concepts.md) first, then [from-rtl-to-silico
 
 ## Documents
 
-| Document                                                             | Contents                                                                                                                                                                                                                |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [concepts.md](concepts.md)                                           | Topics 1–10 for a programmer new to hardware: matmul, why AI uses it, the MAC, the systolic array, operand movement, output-stationary dataflow, tiling, bandwidth, utilisation, precision                              |
-| [from-rtl-to-silicon.md](from-rtl-to-silicon.md)                     | Topics 11–15: how RTL becomes logic (the PE as the example), reading synthesis reports, fair comparison rules, what an FPGA build and an ASIC would require                                                             |
-| [architecture.md](architecture.md)                                   | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured                                                          |
-| [processing-element.md](processing-element.md)                       | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                                                                                  |
-| [systolic-array.md](systolic-array.md)                               | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence                                                            |
-| [controller.md](controller.md)                                       | The FSM and `matmul_top`: states, tile order, how K is handled, edge masks, read latency, handshake timing, cycle formulas and their measured values, `test-top` evidence                                               |
-| [memory.md](memory.md)                                               | The buffers and the host port: sizes, layout, banking, bandwidth, read/write timing, maximum dimensions, transfer overhead, the RAM inference check                                                                     |
-| [synthesis-guide.md](synthesis-guide.md)                             | Yosys and nextpnr for 4 × 4, 8 × 8 and 16 × 16: the flows, the FPGA wrapper, cells, multipliers, memories, logic depth, fit and Fmax estimates, warnings, baseline                                                      |
-| [verification-strategy.md](verification-strategy.md)                 | The layers of checks, the Verilator runner and its clock breakdown, the directed and random corpora, reports, failure replay, the mutants and what is not covered                                                       |
-| [performance-analysis.md](performance-analysis.md)                   | The benchmark: the workloads, the correctness gate, every report column, the measured cycles and utilisation, fill and drain, edge tiles, stores, transfers and memory bandwidth, and why no clock frequency is assumed |
-| [simulation-guide.md](simulation-guide.md)                           | Running a case, `make wave` / `wave-check`, the GTKWave view, and the demo product clock by clock: skew, accumulators, drain, store, the 4 tile boundaries and the done pulse                                           |
-| [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                                                                                      |
-| [images/systolic-4x4.html](images/systolic-4x4.html)                 | Animated page (open from disk): the 4 × 4 K = 3 tile clock by clock, operands, skew registers and accumulators                                                                                                          |
+| Document                                                             | Contents                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [concepts.md](concepts.md)                                           | Topics 1–10 for a programmer new to hardware: matmul, why AI uses it, the MAC, the systolic array, operand movement, output-stationary dataflow, tiling, bandwidth, utilisation, precision                                                                             |
+| [from-rtl-to-silicon.md](from-rtl-to-silicon.md)                     | Topics 11–15: how RTL becomes logic (the PE as the example), reading synthesis reports, fair comparison rules, what an FPGA build and an ASIC would require                                                                                                            |
+| [architecture.md](architecture.md)                                   | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured                                                                                                         |
+| [processing-element.md](processing-element.md)                       | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                                                                                                                                 |
+| [systolic-array.md](systolic-array.md)                               | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence                                                                                                           |
+| [controller.md](controller.md)                                       | The FSM and `matmul_top`: states, tile order, how K is handled, edge masks, read latency, handshake timing, cycle formulas and their measured values, `test-top` evidence                                                                                              |
+| [memory.md](memory.md)                                               | The buffers and the host port: sizes, layout, banking, bandwidth, read/write timing, maximum dimensions, transfer overhead, the RAM inference check                                                                                                                    |
+| [synthesis-guide.md](synthesis-guide.md)                             | Yosys and nextpnr for 4 × 4, 8 × 8 and 16 × 16: the flows, the FPGA wrapper, cells, multipliers, memories, logic depth, fit and Fmax estimates, warnings, baseline                                                                                                     |
+| [verification-strategy.md](verification-strategy.md)                 | The layers of checks, the Verilator runner and its clock breakdown, the directed and random corpora, reports, failure replay, the mutants and what is not covered                                                                                                      |
+| [performance-analysis.md](performance-analysis.md)                   | The benchmark: the workloads, the correctness gate, every report column, the measured cycles and utilisation, fill and drain, edge tiles, stores, transfers and memory bandwidth, and why no clock frequency is assumed                                                |
+| [simulation-guide.md](simulation-guide.md)                           | Running a case, `make wave` / `wave-check`, the GTKWave view, and the demo product clock by clock: skew, accumulators, drain, store, the 4 tile boundaries and the done pulse                                                                                          |
+| [cpu-comparison.md](cpu-comparison.md)                               | VCPU-8 against the 4 × 4 accelerator on 2 × 2 × 2 to 4 × 4 × 4 products: the generated CPU program (shift-and-add signed multiply, INT32 accumulate without add-with-carry), its memory map, the correctness gate, cycles, memory accesses, resources and what differs |
+| [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                                                                                                                                     |
+| [images/systolic-4x4.html](images/systolic-4x4.html)                 | Animated page (open from disk): the 4 × 4 K = 3 tile clock by clock, operands, skew registers and accumulators                                                                                                                                                         |
 
 Research results live outside `docs/`, in [research/accelerators/matmul/](../../../research/accelerators/matmul/README.md).
 
@@ -60,6 +61,7 @@ hardware/accelerators/matmul/
 │                            synth.mk: synth, synth-size-4|8|16, synth-baseline, synth-compare, synth-latch-check;
 │                            sim.mk: sim, sim-all, simulate; verify.mk: verify, verify-size, replay, verify-mutant;
 │                            benchmark.mk: benchmark, benchmark-baseline, benchmark-compare;
+│                            compare.mk: compare-cpu, compare-cpu-publish;
 │                            wave.mk: sim-trace, wave, wave-check)
 ├── scripts/tool-versions.sh `make tools-check`: tool versions to build/tool-versions.json
 ├── scripts/mutants.txt      the RTL mutants `make verify-mutant` requires verify to catch
@@ -87,11 +89,12 @@ packages/accelerator-reference/
 │                            benchmark.ts: the benchmark workloads, runs, correctness gate, reports and compare;
 │                            report.ts: report schemas and provenance; mutants.ts: verify-mutant;
 │                            wave.ts: the demo case, the VCD reader, wave-check and wave-table;
-│                            wave-filters.ts: the GTKWave filters from matmul_pkg
+│                            wave-filters.ts: the GTKWave filters from matmul_pkg;
+│                            cpu-program.ts: the VCPU-8 matmul program generator; compare-cpu.ts: the CPU comparison
 ├── src/viz/                 schedule.ts: the documented tile timing rule for the visualizations; svg.ts, page.ts: gen-viz
 └── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite, gen-top-suite, gen-viz,
                              synth-summary, synth-compare, verify, mutants, benchmark, benchmark-compare,
-                             gen-wave-filters, gen-wave-demo, wave-check, wave-table
+                             gen-wave-filters, gen-wave-demo, wave-check, wave-table, compare-cpu
 hardware/fpga/matmul_fpga_wrapper.sv, matmul_up5k_sg48.pcf   the pin-legal top and iCE40 pins of the FPGA flows
 research/accelerators/matmul/  committed small reports (see its README)
 ```
@@ -115,6 +118,7 @@ make -C hardware/accelerators/matmul verify           # differential verificatio
 make -C hardware/accelerators/matmul verify-mutant    # every RTL mutant in scripts/mutants.txt must be caught
 make -C hardware/accelerators/matmul benchmark        # cycles, utilization, MACs/ops per cycle (build/reports/benchmark.*)
 make -C hardware/accelerators/matmul benchmark-compare  # rerun; the numbers must equal the committed baseline
+make -C hardware/accelerators/matmul compare-cpu      # VCPU-8 vs the 4x4 accelerator (build/reports/cpu-comparison.*)
 make -C hardware/accelerators/matmul test             # every registered unit test
 make -C hardware/accelerators/matmul synth            # Yosys + nextpnr for 4x4, 8x8 and 16x16 -> build/synth/summary.{json,md}
 make -C hardware/accelerators/matmul wave             # the demo's waveform -> build/waves/demo.fst (see simulation-guide.md)

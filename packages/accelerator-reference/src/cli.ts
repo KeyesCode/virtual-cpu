@@ -147,7 +147,9 @@ function genPeVectors(args: readonly string[]): number {
   const seedRaw = values.get('--seed') ?? '';
   const seed = parseCount(seedRaw);
   if (seed === undefined || !Number.isSafeInteger(seed)) {
-    process.stderr.write(`gen-pe-vectors: --seed must be a non-negative integer, got '${seedRaw}'\n`);
+    process.stderr.write(
+      `gen-pe-vectors: --seed must be a non-negative integer, got '${seedRaw}'\n`,
+    );
     return 2;
   }
   const countRaw = values.get('--count') ?? '';

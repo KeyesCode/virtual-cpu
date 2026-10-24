@@ -68,8 +68,7 @@ function int8At(i: number, step: number, offset: number): number {
 function overflowSegment(direction: string, a: number, b: number, extra: number): SegmentPlan {
   const product = a * b;
   // The first n with n · product > INT32_MAX (product > 0) or < INT32_MIN (product < 0).
-  const first =
-    product > 0 ? Math.ceil(2 ** 31 / product) : Math.floor(2 ** 31 / -product) + 1;
+  const first = product > 0 ? Math.ceil(2 ** 31 / product) : Math.floor(2 ** 31 / -product) + 1;
   const count = first + extra;
   const exact = count * product;
   const wrapped = exact | 0;
@@ -98,7 +97,8 @@ function directedPlans(): SegmentPlan[] {
   }
   return [
     {
-      description: 'reset: rst for 2 clocks with valid operands; acc 0, valid bits 0, data forwarded',
+      description:
+        'reset: rst for 2 clocks with valid operands; acc 0, valid bits 0, data forwarded',
       inputs: repeat(2, { ...mac(5, 7), rst: true }),
     },
     {
@@ -127,7 +127,8 @@ function directedPlans(): SegmentPlan[] {
       inputs: [{ ...IDLE, clear: true }, ...repeat(3, mac(127, 127)), mac(127, -1)],
     },
     {
-      description: 'min INT8: -128 x -128 = +16384 three times, then -128 x 1, -128 x -1, -1 x -128',
+      description:
+        'min INT8: -128 x -128 = +16384 three times, then -128 x 1, -128 x -1, -1 x -128',
       inputs: [
         { ...IDLE, clear: true },
         ...repeat(3, mac(-128, -128)),

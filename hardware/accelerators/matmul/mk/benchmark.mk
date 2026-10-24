@@ -8,11 +8,12 @@
 #   make benchmark                 build/reports/benchmark.{json,csv,md}: transfer-in, compute,
 #                                  store, transfer-out and total cycles, MACs, PE utilization and
 #                                  MACs and ops per cycle of every workload on every size (SEED)
-#   make benchmark-baseline        make benchmark, then commit-ready copies in
-#                                  research/accelerators/matmul/reports/<date>-<shortsha>.*;
+#   make benchmark-baseline        make benchmark, then (when every case passed) commit-ready copies
+#                                  in research/accelerators/matmul/reports/<date>-<shortsha>.*;
 #                                  refused from a dirty working tree unless ALLOW_DIRTY=1
 #   make benchmark-compare         make benchmark, then require its modelled sections to equal
-#                                  the newest committed reports/*.json, or BASELINE=<file> (a
+#                                  the newest committed reports/*.json (by createdAt; untracked
+#                                  reports never count), or BASELINE=<file> (a
 #                                  relative path is looked up from the repository root first,
 #                                  then from here)
 
@@ -23,7 +24,8 @@ BENCH_SIMS      := $(foreach size,$(BENCH_SIZES),$(BUILD_DIR)/sim-$(size)/matmul
 BENCH_OUT       := $(BUILD_DIR)/reports
 BENCH_REPORT    := $(BENCH_OUT)/benchmark.json
 BENCH_PUBLISHED := $(REPO_ROOT)/research/accelerators/matmul/reports
-BENCH_BASELINE   = $(if $(BASELINE),$(firstword $(wildcard $(REPO_ROOT)/$(BASELINE) $(abspath $(BASELINE)))),$(lastword $(sort $(wildcard $(BENCH_PUBLISHED)/*.json))))
+# BASELINE=<file>, or the newest report git tracks in reports/ (by createdAt, uncommitted ones never count).
+BENCH_BASELINE   = $(if $(BASELINE),--baseline $(firstword $(wildcard $(REPO_ROOT)/$(BASELINE) $(abspath $(BASELINE)))),--baseline-dir $(BENCH_PUBLISHED))
 BENCH_ARGS       = $(foreach sim,$(BENCH_SIMS),--sim $(sim)) --seed $(SEED) --out $(BENCH_OUT)
 # Tool versions for the report's provenance; a missing optional tool must not stop the benchmark.
 bench_tool_versions = @-$(MAKE) --no-print-directory tools-check > /dev/null 2>&1
@@ -40,5 +42,5 @@ benchmark-baseline: $(BENCH_SIMS) ## make benchmark, and write research/accelera
 	cd $(REPO_ROOT) && pnpm --silent exec prettier --log-level warn --write $(BENCH_PUBLISHED)
 
 benchmark-compare: benchmark ## make benchmark, then diff its modelled sections against the committed report
-	@test -n '$(BENCH_BASELINE)' || { echo "benchmark-compare: $(if $(BASELINE),$(BASELINE) not found,no research/accelerators/matmul/reports/*.json; run make benchmark-baseline)" >&2; exit 2; }
-	$(ACCEL_CLI) benchmark-compare --baseline $(BENCH_BASELINE) --report $(BENCH_REPORT)
+	@test '$(strip $(BENCH_BASELINE))' != --baseline || { echo "benchmark-compare: $(BASELINE) not found" >&2; exit 2; }
+	$(ACCEL_CLI) benchmark-compare $(BENCH_BASELINE) --report $(BENCH_REPORT)

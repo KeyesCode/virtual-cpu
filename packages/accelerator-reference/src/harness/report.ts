@@ -664,6 +664,14 @@ export function renderBenchmarkMarkdown(report: BenchmarkReport): string {
     '',
     `Revision \`${report.revision}\`, ${commit}, created ${p.createdAt}; toolchain: ${p.toolchain ?? 'unknown (no build/tool-versions.json)'}. Arrays ${report.arraySizes.join(', ')}; workloads are ${report.config.notation}, operands from the \`${report.config.generator}\` generator with seed ${String(report.config.seed)}.`,
     '',
+    `Tools: ${
+      p.tools === null
+        ? 'unknown (no build/tool-versions.json)'
+        : Object.entries(p.tools)
+            .map(([name, version]) => `${name} ${version ?? 'missing'}`)
+            .join('; ')
+    }.`,
+    '',
     `- ${report.labels.mac}`,
     `- ${report.labels.cycles}`,
     `- ${report.labels.transfer}`,

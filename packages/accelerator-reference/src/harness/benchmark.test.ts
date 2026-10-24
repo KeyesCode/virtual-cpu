@@ -1,9 +1,9 @@
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   BENCHMARK_WORKLOADS,
   buildBenchmarkReport,
+  newestCommittedReport,
   publishedName,
   readBenchmarkReport,
 } from './benchmark.js';
@@ -127,13 +127,11 @@ describe('benchmarkMetrics', () => {
 
 describe('the committed baseline', () => {
   it('measured the controller formula for the 4 × 4 × 4 workload on the 4 × 4 array', () => {
-    const dir = join(REPO, 'research', 'accelerators', 'matmul', 'reports');
-    const newest = readdirSync(dir)
-      .filter((name) => name.endsWith('.json'))
-      .sort()
-      .at(-1);
-    expect(newest).toBeDefined();
-    const report = readBenchmarkReport(join(dir, newest ?? ''));
+    const newest = newestCommittedReport(
+      join(REPO, 'research', 'accelerators', 'matmul', 'reports'),
+    );
+    expect(newest).not.toBeNull();
+    const report = readBenchmarkReport(newest ?? '');
     const row = report.rows.find((r) => r.size === '4x4' && r.workload === '4x4x4');
     expect(row?.status).toBe('passed');
     expect(row?.status === 'passed' ? row.metrics.compute : null).toBe(12);

@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { availableParallelism, cpus } from 'node:os';
 import { join, relative, resolve } from 'node:path';
@@ -98,7 +99,7 @@ function repoPath(path: string): string {
   return rel.startsWith('..') ? path : rel;
 }
 
-/** `2026-10-24-ab12cd3`: the published report's base name. */
+/** `2026-10-24-ab12cd3`: the published report's base name (the date of `createdAt`, in UTC). */
 export function publishedName(report: BenchmarkReport): string {
   return `${report.provenance.createdAt.slice(0, 10)}-${report.provenance.gitShortCommit ?? 'nogit'}`;
 }
@@ -329,18 +330,20 @@ export async function runBenchmark(
   const base = join(options.out, 'benchmark');
   writeBenchmarkFiles(base, report);
   write(`wrote ${base}.json, benchmark.csv and benchmark.md\n`);
-  if (options.publish !== undefined) {
-    mkdirSync(options.publish, { recursive: true });
-    const published = join(options.publish, publishedName(report));
-    writeBenchmarkFiles(published, report);
-    write(`wrote ${published}.json, .csv and .md\n`);
-  }
   const { verification: v } = report;
   if (v.gate === 'failed') {
     write(
       `benchmark: FAIL, ${String(v.failed)}/${String(v.cases)} cases failed the correctness gate and have no numbers: ${v.failedCases.join(', ')}\n`,
     );
+    if (options.publish !== undefined) write('benchmark: nothing published\n');
     return { exitCode: 1, report };
+  }
+  // Only a report whose every case passed the gate is published.
+  if (options.publish !== undefined) {
+    mkdirSync(options.publish, { recursive: true });
+    const published = join(options.publish, publishedName(report));
+    writeBenchmarkFiles(published, report);
+    write(`wrote ${published}.json, .csv and .md\n`);
   }
   write(`benchmark: PASS, the correctness gate passed for all ${String(v.cases)} cases\n`);
   return { exitCode: 0, report };
@@ -356,6 +359,27 @@ export function readBenchmarkReport(file: string): BenchmarkReport {
     );
   }
   return parsed.data;
+}
+
+/**
+ * The newest committed report in `dir`: of the `*.json` files git tracks there (an uncommitted
+ * report, such as one written with --allow-dirty, never counts), the one with the latest
+ * `provenance.createdAt`. Null when there is none.
+ */
+export function newestCommittedReport(dir: string): string | null {
+  const listed = spawnSync('git', ['ls-files', '-z', '--', '*.json'], {
+    cwd: dir,
+    encoding: 'utf8',
+  });
+  if (listed.status !== 0) return null;
+  let newest: { file: string; createdAt: string } | null = null;
+  for (const name of listed.stdout.split('\0').filter((n) => n !== '' && !n.includes('/'))) {
+    const file = join(dir, name);
+    if (!existsSync(file)) continue;
+    const { createdAt } = readBenchmarkReport(file).provenance;
+    if (newest === null || createdAt > newest.createdAt) newest = { file, createdAt };
+  }
+  return newest?.file ?? null;
 }
 
 /**

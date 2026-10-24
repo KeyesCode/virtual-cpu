@@ -4,6 +4,7 @@ import {
   BENCHMARK_DEFAULTS,
   compareBenchmarkFiles,
   defaultBenchmarkOptions,
+  newestCommittedReport,
   runBenchmark,
 } from './harness/benchmark.js';
 import { writePeVectors } from './harness/pe-vectors.js';
@@ -96,11 +97,14 @@ ${GENERATORS}
                                          Run the benchmark workloads on each runner, gate every case
                                          on the reference, and write --out/benchmark.{json,csv,md}
                                          (default build/reports). --publish also writes
-                                         <dir>/<date>-<shortsha>.{json,csv,md}, refused from a dirty
-                                         working tree unless --allow-dirty. Exit 1 on a failing case.
-  benchmark-compare --baseline <file> --report <file>
+                                         <dir>/<date>-<shortsha>.{json,csv,md} (UTC date) when every
+                                         case passed, refused from a dirty working tree unless
+                                         --allow-dirty. Exit 1 on a failing case.
+  benchmark-compare (--baseline <file> | --baseline-dir <dir>) --report <file>
                                          Validate two benchmark reports and exit 1 unless their
                                          modelled sections (all but provenance and host) are identical.
+                                         --baseline-dir takes the newest (by createdAt) report git
+                                         tracks in <dir>; uncommitted reports never count.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -632,14 +636,26 @@ function benchmarkCompare(args: readonly string[]): number {
   const values = parseFlags(
     'benchmark-compare',
     args,
-    ['--baseline', '--report'],
-    ['--baseline', '--report'],
+    ['--baseline', '--baseline-dir', '--report'],
+    ['--report'],
   );
   if (values === undefined) return 2;
-  return compareBenchmarkFiles(
-    resolve(cwd, values.get('--baseline') ?? ''),
-    resolve(cwd, values.get('--report') ?? ''),
-    (text) => process.stdout.write(text),
+  const file = values.get('--baseline');
+  const dir = values.get('--baseline-dir');
+  if ((file === undefined) === (dir === undefined)) {
+    process.stderr.write('benchmark-compare: give exactly one of --baseline and --baseline-dir\n');
+    return 2;
+  }
+  const baseline =
+    file === undefined ? newestCommittedReport(resolve(cwd, dir ?? '')) : resolve(cwd, file);
+  if (baseline === null) {
+    process.stderr.write(
+      `benchmark-compare: no committed report in ${dir ?? ''}; run make benchmark-baseline and commit it\n`,
+    );
+    return 2;
+  }
+  return compareBenchmarkFiles(baseline, resolve(cwd, values.get('--report') ?? ''), (text) =>
+    process.stdout.write(text),
   );
 }
 

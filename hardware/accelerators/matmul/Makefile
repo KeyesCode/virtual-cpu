@@ -65,7 +65,7 @@ RTL_SRCS := $(RTL_PKGS) $(sort $(filter-out $(RTL_PKGS),$(wildcard $(HW_DIR)/rtl
 # parameters; or only the packages while rtl/ holds nothing else.
 LINT_FLAGS   := --lint-only -Wall
 LINT_MODULES := $(basename $(notdir $(filter-out $(RTL_PKGS),$(RTL_SRCS))))
-LINT_SIZED   := $(basename $(notdir $(shell grep -l 'parameter int ROWS' $(filter-out $(RTL_PKGS),$(RTL_SRCS)) /dev/null)))
+LINT_SIZED   := $(basename $(notdir $(shell grep -lE 'parameter int ROWS( |=)' $(filter-out $(RTL_PKGS),$(RTL_SRCS)) /dev/null)))
 
 UNIT_TESTS   :=
 SYSTEM_TESTS :=

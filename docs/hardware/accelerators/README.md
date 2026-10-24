@@ -23,7 +23,7 @@ hardware/accelerators/matmul/
 ├── Makefile                 includes mk/*.mk; `make help` lists the targets; ROWS=4|8|16 picks the array size
 ├── REVISION                 the architecture revision (matmul-os-r1) every report records
 ├── mk/                      one make fragment per topic (unit-pe.mk: gen-pe-vectors, test-pe, test-pe-corrupt;
-│                            unit-array.mk: test-array, test-array-4|8|16, trace-array)
+│                            unit-array.mk: test-array, test-array-4|8|16|4x8, test-array-corrupt, trace-array)
 ├── scripts/tool-versions.sh `make tools-check`: tool versions to build/tool-versions.json
 ├── rtl/                     synthesizable RTL only; *_pkg.sv packages first
 │   ├── matmul_pkg.sv        DATA_W, ACC_W, MAX_DIM, ADDR_W, error_code_t and ctrl_state_t

@@ -1,8 +1,10 @@
 import { resolve } from 'node:path';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
+import { MUTANTS_DEFAULTS, runMutants } from './harness/mutants.js';
 import { writeTopSuite } from './harness/top-vectors.js';
 import { writeCase } from './harness/vectors.js';
+import { defaultVerifyOptions, replayCase, runVerify, VERIFY_DEFAULTS } from './harness/verify.js';
 import { writeVisualizations } from './viz/page.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
 import {
@@ -56,6 +58,21 @@ ${GENERATORS}
   gen-viz                                Regenerate docs/hardware/accelerators/images/: the 4 × 4
                                          dataflow SVG and the trace embedded in systolic-4x4.html,
                                          both from the timing rule in src/viz/schedule.ts.
+  verify --sim <bin> [--sim <bin> …] [--seed S] [--count N] [--jobs J] [--work <dir>]
+         [--failures <dir>] [--reports <dir>] [--directed-only | --random-only]
+                                         Differential verification: for each runner
+                                         (build/sim-<R>x<C>/matmul_sim, which reports its own size)
+                                         the directed corpus and N random cases (default ${String(VERIFY_DEFAULTS.count)}) from
+                                         seed S (default ${String(VERIFY_DEFAULTS.seed)}), C compared element by element with the
+                                         reference; failures saved under --failures, the report in
+                                         --reports/verify.{json,md}. Exit 1 on any failing case.
+  verify --replay <dir> [--sim <bin>] [--work <dir>]
+                                         Rerun a saved failure (on its own runner unless --sim) and
+                                         compare the report with its report.txt. Exit 1 while it fails.
+  mutants --verilator <bin> [--seed S] [--count N] [--only <id>] [--jobs J]
+                                         Build a runner from each mutant of rtl/ in
+                                         scripts/mutants.txt at 4x4, 8x8 and 16x16 and require
+                                         verify (directed + N random per size, default ${String(MUTANTS_DEFAULTS.count)}) to fail.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -347,6 +364,147 @@ function genViz(args: readonly string[]): number {
   return 0;
 }
 
+/**
+ * The arguments of `command`: `--flag value` pairs for `valued` (those in `repeatable` may repeat,
+ * the others not) and bare `switches`; otherwise writes the problem to stderr and returns
+ * undefined.
+ */
+function parseArgs(
+  command: string,
+  args: readonly string[],
+  valued: readonly string[],
+  switches: readonly string[],
+  repeatable: readonly string[] = [],
+): { values: Map<string, string[]>; set: Set<string> } | undefined {
+  const values = new Map<string, string[]>();
+  const set = new Set<string>();
+  for (let i = 0; i < args.length; i += 1) {
+    const flag = args[i] ?? '';
+    if (switches.includes(flag)) {
+      set.add(flag);
+      continue;
+    }
+    if (!valued.includes(flag)) {
+      process.stderr.write(`${command}: unexpected argument ${flag}\n${USAGE}`);
+      return undefined;
+    }
+    const value = args[i + 1];
+    if (value === undefined) {
+      process.stderr.write(`${command}: ${flag} needs a value\n${USAGE}`);
+      return undefined;
+    }
+    const list = values.get(flag) ?? [];
+    if (list.length > 0 && !repeatable.includes(flag)) {
+      process.stderr.write(`${command}: ${flag} given twice\n`);
+      return undefined;
+    }
+    list.push(value);
+    values.set(flag, list);
+    i += 1;
+  }
+  return { values, set };
+}
+
+/** The value of a count flag, `fallback` when absent, or undefined after reporting it. */
+function countFlag(
+  command: string,
+  values: ReadonlyMap<string, readonly string[]>,
+  flag: string,
+  fallback: number,
+  min = 0,
+): number | undefined {
+  const raw = values.get(flag)?.[0];
+  if (raw === undefined) return fallback;
+  const parsed = parseCount(raw);
+  if (parsed === undefined || !Number.isSafeInteger(parsed) || parsed < min) {
+    process.stderr.write(
+      `${command}: ${flag} must be an integer of at least ${String(min)}, got '${raw}'\n`,
+    );
+    return undefined;
+  }
+  return parsed;
+}
+
+async function verify(args: readonly string[]): Promise<number> {
+  const parsed = parseArgs(
+    'verify',
+    args,
+    ['--sim', '--seed', '--count', '--jobs', '--work', '--failures', '--reports', '--replay'],
+    ['--directed-only', '--random-only'],
+    ['--sim'],
+  );
+  if (parsed === undefined) return 2;
+  const { values, set } = parsed;
+  const path = (flag: string) => {
+    const value = values.get(flag)?.[0];
+    return value === undefined ? undefined : resolve(cwd, value);
+  };
+  const sims = (values.get('--sim') ?? []).map((sim) => resolve(cwd, sim));
+  const write = (text: string) => process.stdout.write(text);
+  const replay = path('--replay');
+  if (replay !== undefined) {
+    if (sims.length > 1) {
+      process.stderr.write('verify --replay: at most one --sim\n');
+      return 2;
+    }
+    return replayCase(replay, sims[0], path('--work') ?? VERIFY_DEFAULTS.work, write);
+  }
+  if (set.has('--directed-only') && set.has('--random-only')) {
+    process.stderr.write('verify: --directed-only and --random-only exclude each other\n');
+    return 2;
+  }
+  const defaults = defaultVerifyOptions(sims);
+  const seed = countFlag('verify', values, '--seed', defaults.seed);
+  const count = countFlag('verify', values, '--count', defaults.count);
+  const jobs = countFlag('verify', values, '--jobs', defaults.jobs, 1);
+  if (seed === undefined || count === undefined || jobs === undefined) return 2;
+  const outcome = await runVerify(
+    {
+      ...defaults,
+      seed,
+      count,
+      jobs,
+      directed: !set.has('--random-only'),
+      random: !set.has('--directed-only'),
+      work: path('--work') ?? defaults.work,
+      failures: path('--failures') ?? defaults.failures,
+      reports: path('--reports') ?? defaults.reports,
+    },
+    write,
+  );
+  return outcome.exitCode;
+}
+
+async function mutants(args: readonly string[]): Promise<number> {
+  const parsed = parseArgs(
+    'mutants',
+    args,
+    ['--verilator', '--seed', '--count', '--only', '--jobs'],
+    [],
+  );
+  if (parsed === undefined) return 2;
+  const { values } = parsed;
+  const verilator = values.get('--verilator')?.[0];
+  if (verilator === undefined) {
+    process.stderr.write(`mutants: missing --verilator\n${USAGE}`);
+    return 2;
+  }
+  const defaults = defaultVerifyOptions([]);
+  const seed = countFlag('mutants', values, '--seed', defaults.seed);
+  const count = countFlag('mutants', values, '--count', MUTANTS_DEFAULTS.count);
+  const jobs = countFlag('mutants', values, '--jobs', defaults.jobs, 1);
+  if (seed === undefined || count === undefined || jobs === undefined) return 2;
+  return runMutants(
+    {
+      ...MUTANTS_DEFAULTS,
+      verilator,
+      only: values.get('--only')?.[0],
+      verify: { ...defaults, seed, count, jobs },
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
@@ -354,6 +512,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-tile-suite': genTileSuite,
   'gen-top-suite': genTopSuite,
   'gen-viz': genViz,
+  verify,
+  mutants,
 };
 
 const [name, ...rest] = process.argv.slice(2);

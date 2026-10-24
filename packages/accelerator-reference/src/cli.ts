@@ -1,5 +1,12 @@
 import { resolve } from 'node:path';
 import { parseTarget } from '@vcpu/rtl-tools';
+import {
+  BENCHMARK_DEFAULTS,
+  compareBenchmarkFiles,
+  defaultBenchmarkOptions,
+  newestCommittedReport,
+  runBenchmark,
+} from './harness/benchmark.js';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { MUTANTS_DEFAULTS, runMutants } from './harness/mutants.js';
@@ -85,6 +92,19 @@ ${GENERATORS}
                                          Build a runner from each mutant of rtl/ in
                                          scripts/mutants.txt at 4x4, 8x8 and 16x16 and require
                                          verify (directed + N random per size, default ${String(MUTANTS_DEFAULTS.count)}) to fail.
+  benchmark --sim <bin> [--sim <bin> …] [--seed S] [--jobs J] [--work <dir>] [--out <dir>]
+            [--publish <dir> [--allow-dirty]]
+                                         Run the benchmark workloads on each runner, gate every case
+                                         on the reference, and write --out/benchmark.{json,csv,md}
+                                         (default build/reports). --publish also writes
+                                         <dir>/<date>-<shortsha>.{json,csv,md} (UTC date) when every
+                                         case passed, refused from a dirty working tree unless
+                                         --allow-dirty. Exit 1 on a failing case.
+  benchmark-compare (--baseline <file> | --baseline-dir <dir>) --report <file>
+                                         Validate two benchmark reports and exit 1 unless their
+                                         modelled sections (all but provenance and host) are identical.
+                                         --baseline-dir takes the newest (by createdAt) report git
+                                         tracks in <dir>; uncommitted reports never count.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -577,6 +597,68 @@ function synthCompare(args: readonly string[]): number {
   );
 }
 
+async function benchmark(args: readonly string[]): Promise<number> {
+  const parsed = parseArgs(
+    'benchmark',
+    args,
+    ['--sim', '--seed', '--jobs', '--work', '--out', '--publish'],
+    ['--allow-dirty'],
+    ['--sim'],
+  );
+  if (parsed === undefined) return 2;
+  const { values, set } = parsed;
+  const path = (flag: string) => {
+    const value = values.get(flag)?.[0];
+    return value === undefined ? undefined : resolve(cwd, value);
+  };
+  const defaults = defaultBenchmarkOptions(
+    (values.get('--sim') ?? []).map((sim) => resolve(cwd, sim)),
+  );
+  const seed = countFlag('benchmark', values, '--seed', defaults.seed);
+  const jobs = countFlag('benchmark', values, '--jobs', defaults.jobs, 1);
+  if (seed === undefined || jobs === undefined) return 2;
+  const outcome = await runBenchmark(
+    {
+      ...defaults,
+      seed,
+      jobs,
+      work: path('--work') ?? BENCHMARK_DEFAULTS.work,
+      out: path('--out') ?? BENCHMARK_DEFAULTS.out,
+      publish: path('--publish'),
+      allowDirty: set.has('--allow-dirty'),
+    },
+    (text) => process.stdout.write(text),
+  );
+  return outcome.exitCode;
+}
+
+function benchmarkCompare(args: readonly string[]): number {
+  const values = parseFlags(
+    'benchmark-compare',
+    args,
+    ['--baseline', '--baseline-dir', '--report'],
+    ['--report'],
+  );
+  if (values === undefined) return 2;
+  const file = values.get('--baseline');
+  const dir = values.get('--baseline-dir');
+  if ((file === undefined) === (dir === undefined)) {
+    process.stderr.write('benchmark-compare: give exactly one of --baseline and --baseline-dir\n');
+    return 2;
+  }
+  const baseline =
+    file === undefined ? newestCommittedReport(resolve(cwd, dir ?? '')) : resolve(cwd, file);
+  if (baseline === null) {
+    process.stderr.write(
+      `benchmark-compare: no committed report in ${dir ?? ''}; run make benchmark-baseline and commit it\n`,
+    );
+    return 2;
+  }
+  return compareBenchmarkFiles(baseline, resolve(cwd, values.get('--report') ?? ''), (text) =>
+    process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
@@ -588,6 +670,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'synth-compare': synthCompare,
   verify,
   mutants,
+  benchmark,
+  'benchmark-compare': benchmarkCompare,
 };
 
 const [name, ...rest] = process.argv.slice(2);

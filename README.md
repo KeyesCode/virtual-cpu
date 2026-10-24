@@ -1,6 +1,6 @@
 # VCPU-8
 
-[![ci](https://github.com/KeyesCode/virtual-cpu/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/KeyesCode/virtual-cpu/actions/workflows/ci.yml) [![hardware](https://github.com/KeyesCode/virtual-cpu/actions/workflows/hardware.yml/badge.svg?branch=master)](https://github.com/KeyesCode/virtual-cpu/actions/workflows/hardware.yml)
+[![ci](https://github.com/KeyesCode/virtual-cpu/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/KeyesCode/virtual-cpu/actions/workflows/ci.yml) [![hardware](https://github.com/KeyesCode/virtual-cpu/actions/workflows/hardware.yml/badge.svg?branch=master)](https://github.com/KeyesCode/virtual-cpu/actions/workflows/hardware.yml) [![accelerator](https://github.com/KeyesCode/virtual-cpu/actions/workflows/accelerator.yml/badge.svg?branch=master)](https://github.com/KeyesCode/virtual-cpu/actions/workflows/accelerator.yml)
 
 VCPU-8 is an educational 8-bit CPU, built from scratch in TypeScript. You write assembly, assemble it into real machine code, and watch the emulator fetch, decode and execute it one instruction at a time. You can do this from a web dashboard, a debugger or the command line.
 

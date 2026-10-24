@@ -136,7 +136,11 @@ export function matmulExact(
   return c;
 }
 
-/** True when every exact result is representable as a signed INT32, so nothing wrapped. */
+/**
+ * True when every exact result is representable as a signed INT32, so the final results need no
+ * wrap-around and the wrapped C equals the mathematical one. (A partial sum may still pass the INT32
+ * range on the way when this is true; wrap-around is modular, so the result is unaffected.)
+ */
 export function fitsInt32(exact: Iterable<number>): boolean {
   for (const value of exact) {
     if (value < INT32_MIN || value > INT32_MAX) {

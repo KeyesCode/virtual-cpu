@@ -21,8 +21,9 @@ hardware/accelerators/matmul/
 ├── Makefile                 includes mk/*.mk; `make help` lists the targets; ROWS=4|8|16 picks the array size
 ├── REVISION                 the architecture revision (matmul-os-r1) every report records
 ├── mk/                      one make fragment per topic, added by later tickets
+├── scripts/tool-versions.sh `make tools-check`: tool versions to build/tool-versions.json
 ├── rtl/                     synthesizable RTL only; *_pkg.sv packages first
-│   └── matmul_pkg.sv        DATA_W, ACC_W, MAX_DIM, error_code_t and ctrl_state_t
+│   └── matmul_pkg.sv        DATA_W, ACC_W, MAX_DIM, ADDR_W, error_code_t and ctrl_state_t
 └── build/                   all outputs, per size (build/sim-8x8/, …), git-ignored
 packages/accelerator-reference/
 ├── src/model/               the pure reference: matmul.ts (wrapping INT32 matmul, exact matmul, fitsInt32, validation),
@@ -32,11 +33,11 @@ packages/accelerator-reference/
 research/accelerators/matmul/  committed small reports (see its README)
 ```
 
-Later tickets add `tb/unit/` (unit testbenches), `tb/sim/` (the Verilator runner), `tb/wave/` (the GTKWave view), `synth/` (Yosys scripts and the reviewed warning allowlist) and `scripts/`.
+Later tickets add `tb/unit/` (unit testbenches), `tb/sim/` (the Verilator runner), `tb/wave/` (the GTKWave view) and `synth/` (Yosys scripts and the reviewed warning allowlist).
 
 ## Building
 
-The accelerator uses the same pinned OSS CAD Suite as Project 2 (`hardware/toolchain.env`), installed once with `pnpm hardware:setup`; Project 3 needs no other tools. It builds and tests on its own, independent of the Project 2 CPU.
+The accelerator uses the same pinned OSS CAD Suite as Project 2 (`hardware/toolchain.env`), installed once with `pnpm hardware:setup`; Project 3 needs no other tools. `tools-check` requires Verilator, Yosys, nextpnr-ice40 and nextpnr-ecp5 (GTKWave optional). `ROWS` and `COLS` must be powers of two from 2 to 64; any other value stops make with an error. It builds and tests on its own, independent of the Project 2 CPU.
 
 ```sh
 pnpm install
@@ -44,7 +45,7 @@ pnpm hardware:setup                                   # once: OSS CAD Suite into
 make -C hardware/accelerators/matmul help             # the targets
 make -C hardware/accelerators/matmul tools-check      # tool versions -> build/tool-versions.json
 make -C hardware/accelerators/matmul lint             # Verilator --lint-only -Wall over rtl/*.sv
-make -C hardware/accelerators/matmul lint ROWS=16     # the same at 16 x 16
+make -C hardware/accelerators/matmul lint ROWS=16     # from matmul_top at 16 x 16, once matmul_top exists
 pnpm --filter @vcpu/accelerator-reference test        # the reference model's tests
 pnpm accel:gen-vectors --seed 1 --m 13 --n 11 --k 19 --out hardware/accelerators/matmul/build/vectors
 ```

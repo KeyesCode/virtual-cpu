@@ -39,7 +39,7 @@ export const CaseMetaSchema = z.object({
   }),
   /** One MAC per (i, j, k): M·N·K. */
   macs: z.number().int().positive(),
-  /** Whether every exact result fits in INT32, so the expected output involved no wrap-around. */
+  /** Whether every exact result fits in INT32, so the expected output equals the mathematical C. */
   fitsInt32: z.boolean(),
   /** The largest |C[i][j]| before wrapping. */
   maxAbsExact: z.number().int().nonnegative(),
@@ -112,8 +112,10 @@ export function writeCase(
   provenance: CaseProvenance,
   options: MatmulOptions = {},
 ): WrittenCase {
-  if (!/^[A-Za-z0-9._-]+$/.test(name)) {
-    throw new RangeError(`A case name uses only letters, digits, '.', '_' and '-', got '${name}'`);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) {
+    throw new RangeError(
+      `A case name starts with a letter or digit and uses only letters, digits, '.', '_' and '-', got '${name}'`,
+    );
   }
   const c = matmulInt8(testCase.a, testCase.b, testCase, options);
   const meta = caseMeta(name, testCase, provenance, options);

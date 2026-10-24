@@ -35,7 +35,7 @@ M, N and K are each 1 … `MAX_DIM` (64), independently: non-square and non-mult
 | `ACC_W`   | 32      | Accumulator width                                                        |
 | `MAX_DIM` | 64      | The largest M, N or K; buffer depths derive from it                      |
 
-`DATA_W`, `PROD_W`, `ACC_W`, `MAX_DIM` and `CFG_W` (16, the width of the `cfg_*` ports) are also `localparam`s of [rtl/matmul_pkg.sv](../../../hardware/accelerators/matmul/rtl/matmul_pkg.sv), which holds the `error_code_t` and `ctrl_state_t` enums too.
+`DATA_W`, `PROD_W`, `ACC_W`, `MAX_DIM`, `CFG_W` (16, the width of the `cfg_*` ports) and `ADDR_W` (12, the width of the host addresses) are also `localparam`s of [rtl/matmul_pkg.sv](../../../hardware/accelerators/matmul/rtl/matmul_pkg.sv), which holds the `error_code_t` and `ctrl_state_t` enums too.
 
 The three required configurations, 4 × 4, 8 × 8 and 16 × 16, are one RTL with `ROWS` = `COLS` = 4, 8 or 16: Verilator builds them with `-GROWS=… -GCOLS=…` and Yosys with `chparam`. The make variable `ROWS` (and `COLS`, defaulting to `ROWS`) selects the size, and every per-size build directory carries it as a suffix (`build/sim-8x8/`, `build/synth-16x16/`). r1 requires `ROWS` and `COLS` to be powers of two no larger than `MAX_DIM`, so the buffer banks are selected by address bits.
 
@@ -46,7 +46,7 @@ Module names equal file names, one module per file in `hardware/accelerators/mat
 | `processing_element` | One MAC cell: registers and forwards its operands, accumulates into INT32                                  |
 | `systolic_array`     | `ROWS` × `COLS` processing elements, wired as the dataflow below, and `tile_done`                          |
 | `input_buffer`       | A and B storage, written by the host port, banked for one A element per row and one B per column per clock |
-| `output_buffer`      | C storage, written one element per clock during STORE, read by the host port                               |
+| `output_buffer`      | C storage, written one element per clock during DRAIN/STORE, read by the host port                         |
 | `matmul_controller`  | The FSM: configuration, dimension checks, tile scheduling, skew, accumulator clears, stores, handshake     |
 | `matmul_top`         | The accelerator: the controller, the buffers and the array, with the host port                             |
 
@@ -90,7 +90,7 @@ flowchart LR
 | `cfg_n`        | in  | 16                 | N, sampled on `start`                                                                               |
 | `cfg_k`        | in  | 16                 | K, sampled on `start`                                                                               |
 | `start`        | in  | 1                  | One-clock pulse: run one matmul. Ignored while `busy`                                               |
-| `busy`         | out | 1                  | High from the clock after an accepted `start` until `done`                                          |
+| `busy`         | out | 1                  | High from the clock after an accepted, valid `start`; already low in the clock `done` is high       |
 | `done`         | out | 1                  | One-clock pulse when C is complete in `output_buffer`                                               |
 | `error`        | out | 1                  | Level: the last `start` had an invalid configuration. Cleared by the next `start`                   |
 | `error_code`   | out | `error_code_t` (2) | `ERR_NONE`, `ERR_DIM_ZERO` (a dimension is 0), `ERR_DIM_TOO_LARGE` (a dimension is above `MAX_DIM`) |
@@ -139,7 +139,8 @@ Each processing element PE(i, j) holds C[i, j] of the current output tile in its
 - **A moves right.** Row i of the tile's A enters PE(i, 0) and moves one PE to the right per clock.
 - **B moves down.** Column j of B enters PE(0, j) and moves one PE down per clock.
 - **Skew.** The controller delays row i by i clocks and column j by j clocks: in tile clock t it presents A[i, t − i] on row i and B[t − j, j] on column j (valid only for 0 ≤ t − i < K and 0 ≤ t − j < K). A value presented at the edge in clock t reaches PE(i, j) in clock t + j (A) or t + i (B), so PE(i, j) multiplies **A[i, k] by B[k, j] in clock k + i + j** of the tile: the matching pair always arrives together.
-- **Completion.** PE(i, j) performs its last MAC (k = K − 1) in clock K − 1 + i + j, and its accumulator holds C[i, j] from the next clock. The far corner PE(`ROWS`−1, `COLS`−1) is last: its final MAC is in clock K + `ROWS` + `COLS` − 3, and **`tile_done` pulses in clock K + `ROWS` + `COLS` − 2**, the first clock in which every accumulator is final. A tile's array phase therefore lasts K + `ROWS` + `COLS` − 2 clocks: K clocks of streaming, `ROWS` + `COLS` − 2 clocks of pipeline fill and drain.
+- **Completion.** PE(i, j) performs its last MAC (k = K − 1) in clock K − 1 + i + j, and its accumulator holds C[i, j] from the next clock. The far corner PE(`ROWS`−1, `COLS`−1) is last: its final MAC is in clock K + `ROWS` + `COLS` − 3, and **`tile_done` pulses in clock K + `ROWS` + `COLS` − 2**, the first clock in which every accumulator is final. A tile's MACs therefore span K + `ROWS` + `COLS` − 2 clocks (0 … K + `ROWS` + `COLS` − 3): K clocks of streaming plus `ROWS` + `COLS` − 2 clocks of pipeline fill and drain, and `tile_done` follows in the next clock.
+- **Reading the decisions file.** The orchestrator decisions say the last product at PE(`ROWS`−1, `COLS`−1) is "at clock K + ROWS + COLS − 2 (+1 for the accumulator register)" and that the array raises `tile_done` then. With clocks numbered from 0 as above, that is the timing here: the last MAC is the (K + `ROWS` + `COLS` − 2)-th clock, clock K + `ROWS` + `COLS` − 3, and `tile_done` pulses one clock later, in clock K + `ROWS` + `COLS` − 2, when the accumulator register holds it. `tile_done` is never in clock K + `ROWS` + `COLS` − 1.
 - **Not all at once.** PEs on the same anti-diagonal (equal i + j) start, compute and finish together; a PE `d` anti-diagonals from the corner starts `d` clocks later. Nothing assumes every PE has valid operands in the same clock.
 
 ### A 4 × 4 tile with K = 3, clock by clock
@@ -159,13 +160,13 @@ Clock 0 is the first tile clock, in which A[0, 0] and B[0, 0] are at PE(0, 0). "
 |     8 | – – – –                | – – – –                   | i+j=6: k=2 (1)                                 |          1 | i+j=6 (PE(3, 3), the corner)       |
 |     9 | – – – –                | – – – –                   | none                                           |          0 | all: `tile_done` pulses            |
 
-The edge inputs stop after clock K + `ROWS` − 2 = 5 (A) and K + `COLS` − 2 = 5 (B); clocks 6 to 8 only drain operands already inside the array. The 48 MACs (4 · 4 · 3) take 10 clocks (0 to 9) of 16 PEs, a utilisation of 48 / 160 = 30 %: with K this small, fill and drain dominate. Utilisation rises with K, towards K / (K + `ROWS` + `COLS` − 2) for one tile.
+The edge inputs stop after clock K + `ROWS` − 2 = 5 (A) and K + `COLS` − 2 = 5 (B); clocks 6 to 8 only drain operands already inside the array. The 48 MACs (4 · 4 · 3) span 9 clocks (0 to 8) of 16 PEs, an array utilisation of 48 / 144 = 33 % over the MAC clocks: with K this small, fill and drain dominate. For one tile the array utilisation is K / (K + `ROWS` + `COLS` − 2), rising with K. (Reported PE utilisation divides by all the compute clocks the RTL actually spends, including clears and stores, so it is lower.)
 
 ## Tiling
 
 - **Output tiles.** C is split into output tiles of `ROWS` × `COLS`. There are ⌈M / `ROWS`⌉ · ⌈N / `COLS`⌉ of them, processed in row-major tile order: tile (tm, tn) covers rows tm · `ROWS` … and columns tn · `COLS` …, and tn varies fastest.
 - **K is never split in r1.** For one output tile, the whole reduction length K streams through the array. The accumulators are cleared once, at the tile's start, and never during K, so no partial sum is ever discarded or reset early, and no partial sum is written back to a buffer. K-chunking with read-modify-write partial sums is not in r1; it is a design-space experiment for a later revision.
-- **Edge tiles.** When M or N is not a multiple of the array size, the last tile row or column is partial. Rows i ≥ M of an edge tile are fed **valid zeros** for A and columns j ≥ N valid zeros for B, so every PE sees exactly K valid pairs and the tile's timing (and `tile_done`) does not depend on M or N. Those PEs compute 0, and STORE masks them out: only the R′ × C′ results with R′ = min(`ROWS`, M − tm · `ROWS`) and C′ = min(`COLS`, N − tn · `COLS`) are written to the output buffer.
+- **Edge tiles.** When M or N is not a multiple of the array size, the last tile row or column is partial. Rows i ≥ M of an edge tile are fed **valid zeros** for A and columns j ≥ N valid zeros for B, so every PE sees exactly K valid pairs and the tile's timing (and `tile_done`) does not depend on M or N. Those PEs compute 0, and the store masks them out: only the R′ × C′ results with R′ = min(`ROWS`, M − tm · `ROWS`) and C′ = min(`COLS`, N − tn · `COLS`) are written to the output buffer.
 
 An 8 × 8 array on A = 13 × 19, B = 19 × 11 has ⌈13/8⌉ · ⌈11/8⌉ = 2 · 2 = 4 tiles: (0, 0) is a full 8 × 8 tile, (0, 1) is 8 × 3, (1, 0) is 5 × 8 and (1, 1) is 5 × 3. Each streams all K = 19.
 
@@ -179,31 +180,31 @@ An 8 × 8 array on A = 13 × 19, B = 19 × 11 has ⌈13/8⌉ · ⌈11/8⌉ = 2 �
 
 - **RAM-friendly.** Every bank is a synthesizable RAM inference pattern: one `always_ff` write port, a registered read port, and no reset of the contents. Nothing is a giant combinational array of registers.
 - **Bandwidth.** In every streaming clock the array consumes one A element per row and one B element per column: `ROWS` + `COLS` bytes per clock (8 for 4 × 4, 32 for 16 × 16), which is why A is banked by row and B by column. A tile at row offset i₀ reads row i₀ + r from bank r, and column j₀ + c from bank c, so every bank serves one read per clock. Reads have one clock of latency; the controller issues each address one clock before the operand is needed.
-- **Writes of C.** The output buffer takes one element per clock during STORE: a tile stores R′ · C′ elements in R′ · C′ clocks.
+- **Writes of C.** The output buffer takes one element per clock during DRAIN/STORE: a tile stores R′ · C′ elements in R′ · C′ clocks. A PE's result may be stored as soon as it is final (its anti-diagonal finishes before the corner does), so a controller may start storing during DRAIN.
 - **The host port is a testbench convenience**, not a production memory system: one A write, one B write and one C read per clock, synchronous, with no burst, DMA, AXI or flow control. A production accelerator would stream A and B from an external memory with its own bandwidth limit. Transfers are therefore measured and reported separately from compute: loading A and B takes at least max(M · K, K · N) clocks if the host writes both ports in parallel (M · K + K · N if it writes them one after the other), and reading C takes M · N + 1 clocks (the read is registered). The runner records which it does.
 - **Capacity.** One matmul of up to 64 × 64 · 64 × 64 fits; a dimension above `MAX_DIM` is rejected with `ERR_DIM_TOO_LARGE`, never truncated.
 
 ## Control: the handshake and the FSM
 
 1. The host writes A and B through the host port while `busy` is low (or leaves them from a previous run).
-2. It drives `cfg_m`, `cfg_n`, `cfg_k` and pulses `start` for one clock. The controller samples the configuration in that clock; `start` while `busy` is ignored.
-3. If any dimension is 0 (`ERR_DIM_ZERO`) or above `MAX_DIM` (`ERR_DIM_TOO_LARGE`), the controller enters ERROR: `error` goes high with `error_code`, `busy` stays low, no tile runs, and `done` does not pulse. `ERR_DIM_ZERO` wins if both apply.
-4. Otherwise `busy` goes high and the controller runs every tile. When the last tile is stored, `done` pulses for one clock and `busy` falls.
+2. It drives `cfg_m`, `cfg_n`, `cfg_k` and pulses `start` for one clock. The controller samples and checks the configuration in that clock; `start` while `busy` is ignored.
+3. If any dimension is 0 (`ERR_DIM_ZERO`) or above `MAX_DIM` (`ERR_DIM_TOO_LARGE`), the controller goes from IDLE straight to ERROR: from the next clock `error` is high with `error_code`, `busy` is never high, no tile runs, and `done` does not pulse. `ERR_DIM_ZERO` wins if both apply.
+4. Otherwise the controller goes to LOAD and `busy` is high from the next clock while it runs every tile. When the last tile is stored, `done` pulses for one clock, and `busy` is already low in that clock: the host may pulse `start` again in the clock after `done`.
 5. The host reads C. `error` and `error_code` stay until the next `start`, which clears them; a second `start` after `done` runs again without a reset, with new or unchanged buffers.
 
 `ctrl_state_t` names the controller's states:
 
-| State          | What happens                                                                                                         |
-| -------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `IDLE`         | Waiting for `start`                                                                                                  |
-| `LOAD`         | The sampled configuration is checked; tile counters reset                                                            |
-| `PREPARE_TILE` | `clear` the accumulators; compute the tile's row and column offsets and its R′ × C′ mask                             |
-| `COMPUTE`      | Issue buffer reads and present the skewed operands (valid zeros past M or N), clocks 0 … K + max(`ROWS`, `COLS`) − 2 |
-| `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                            |
-| `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                            |
-| `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                           |
-| `DONE`         | `done` pulses; back to `IDLE`                                                                                        |
-| `ERROR`        | `error` and `error_code` set; back to `IDLE` waiting for the next `start`                                            |
+| State          | What happens                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `IDLE`         | Waiting for `start`                                                                                                       |
+| `LOAD`         | The configuration (checked when `start` was accepted) is held; tile counters reset                                        |
+| `PREPARE_TILE` | `clear` the accumulators; compute the tile's row and column offsets and its R′ × C′ mask                                  |
+| `COMPUTE`      | Issue buffer reads and present the skewed operands (valid zeros past M or N), clocks 0 … K + max(`ROWS`, `COLS`) − 2      |
+| `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                                 |
+| `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                                 |
+| `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                                |
+| `DONE`         | `done` pulses; back to `IDLE`                                                                                             |
+| `ERROR`        | Entered from `IDLE` on an invalid `start`: `error` and `error_code` set; back to `IDLE`, both held until the next `start` |
 
 The exact number of clocks each state takes is the controller's own design (its documentation records it); the array-level timing above is the contract. Clock counts in reports are always measured on the RTL, never computed from this table.
 

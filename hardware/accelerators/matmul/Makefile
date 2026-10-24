@@ -44,6 +44,14 @@ REVISION := $(shell cat $(HW_DIR)/REVISION)
 # a suffix (build/sim-8x8/, build/synth-16x16/, …), so sizes never overwrite each other.
 ROWS ?= 4
 COLS ?= $(ROWS)
+# r1 selects buffer banks by address bits, so each side is a power of two up to MAX_DIM (64).
+ARRAY_SIDES := 2 4 8 16 32 64
+ifeq ($(filter $(ARRAY_SIDES),$(ROWS)),)
+  $(error ROWS must be one of $(ARRAY_SIDES), not '$(ROWS)')
+endif
+ifeq ($(filter $(ARRAY_SIDES),$(COLS)),)
+  $(error COLS must be one of $(ARRAY_SIDES), not '$(COLS)')
+endif
 SIZE := $(ROWS)x$(COLS)
 SIZE_GFLAGS := -GROWS=$(ROWS) -GCOLS=$(COLS)
 
@@ -51,13 +59,11 @@ SIZE_GFLAGS := -GROWS=$(ROWS) -GCOLS=$(COLS)
 RTL_PKGS := $(sort $(wildcard $(HW_DIR)/rtl/*_pkg.sv))
 RTL_SRCS := $(RTL_PKGS) $(sort $(filter-out $(RTL_PKGS),$(wildcard $(HW_DIR)/rtl/*.sv)))
 
-# Lint the whole accelerator from matmul_top at the chosen size once it exists; until then, lint
-# whatever rtl/ holds (the packages) on its own.
-ifneq ($(wildcard $(HW_DIR)/rtl/matmul_top.sv),)
-  LINT_FLAGS := --lint-only -Wall --top-module matmul_top $(SIZE_GFLAGS)
-else
-  LINT_FLAGS := --lint-only -Wall
-endif
+# Lint the whole accelerator from matmul_top at ROWS x COLS once it exists. Until then, lint each
+# other module as its own top at its default parameters (two modules with no common top would
+# otherwise stop -Wall with MULTITOP), or only the packages while rtl/ holds nothing else.
+LINT_FLAGS   := --lint-only -Wall
+LINT_MODULES := $(basename $(notdir $(filter-out $(RTL_PKGS),$(RTL_SRCS))))
 
 UNIT_TESTS   :=
 SYSTEM_TESTS :=
@@ -78,11 +84,21 @@ help: ## List the targets
 tools-check: ## Print the tool versions and write build/tool-versions.json
 	@mkdir -p $(BUILD_DIR)
 	@TOOLCHAIN='$(TOOLCHAIN)' OSS_CAD_SUITE_VERSION='$(OSS_CAD_SUITE_VERSION)' \
-	  bash $(REPO_ROOT)/hardware/rtl/vcpu8/scripts/tool-versions.sh $(BUILD_DIR)/tool-versions.json
+	  bash $(HW_DIR)/scripts/tool-versions.sh $(BUILD_DIR)/tool-versions.json
 
 lint: ## Verilator --lint-only -Wall over every rtl/*.sv (from matmul_top at ROWS x COLS)
 	$(call need,$(VERILATOR))
+ifneq ($(filter matmul_top,$(LINT_MODULES)),)
+	$(VERILATOR) $(LINT_FLAGS) --top-module matmul_top $(SIZE_GFLAGS) $(RTL_SRCS)
+else ifneq ($(strip $(LINT_MODULES)),)
+	@echo "No matmul_top yet: linting each module at its default parameters (ROWS/COLS not applied)"
+	@set -e; for m in $(LINT_MODULES); do \
+	  echo "$(VERILATOR) $(LINT_FLAGS) --top-module $$m"; \
+	  $(VERILATOR) $(LINT_FLAGS) --top-module $$m $(RTL_SRCS); \
+	done
+else
 	$(VERILATOR) $(LINT_FLAGS) $(RTL_SRCS)
+endif
 
 test: ## Run every registered unit test (UNIT_TESTS), then the system tests (SYSTEM_TESTS)
 ifeq ($(strip $(UNIT_TESTS)),)

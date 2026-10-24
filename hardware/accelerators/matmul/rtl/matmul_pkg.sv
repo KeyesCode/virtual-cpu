@@ -20,6 +20,9 @@ package matmul_pkg;
   localparam int MAX_DIM = 64;
   // Width of the cfg_m, cfg_n and cfg_k ports.
   localparam int CFG_W = 16;
+  // Width of the host and buffer addresses: every matrix is row-major with a row stride of
+  // MAX_DIM, so an element (r, c) is at r * MAX_DIM + c.
+  localparam int ADDR_W = $clog2(MAX_DIM * MAX_DIM);
 
   /* verilator lint_on UNUSEDPARAM */
 

@@ -11,6 +11,8 @@ import {
 
 // `pnpm --filter @vcpu/accelerator-reference …` runs this from packages/accelerator-reference;
 // INIT_CWD is the directory pnpm was started in, so a relative --out resolves where the user typed it.
+// A make recipe that runs this under a root `pnpm accel:*` script inherits the repo root as INIT_CWD,
+// so recipes pass absolute paths ($(BUILD_DIR)/…).
 const cwd = process.env.INIT_CWD ?? process.cwd();
 
 const GENERATORS = GENERATOR_NAMES.map(
@@ -37,14 +39,23 @@ function parseCount(value: string): number | undefined {
   return /^\d+$/.test(value) ? Number(value) : undefined;
 }
 
+const GEN_VECTORS_FLAGS = ['--seed', '--m', '--n', '--k', '--out', '--generator', '--name'];
+
 function genVectors(args: readonly string[]): number {
   const values = new Map<string, string>();
   for (let i = 0; i < args.length; i += 2) {
     const flag = args[i] ?? '';
     const value = args[i + 1];
-    const known = ['--seed', '--m', '--n', '--k', '--out', '--generator', '--name'];
-    if (!known.includes(flag) || value === undefined || values.has(flag)) {
+    if (!GEN_VECTORS_FLAGS.includes(flag)) {
       process.stderr.write(`gen-vectors: unexpected argument ${flag}\n${USAGE}`);
+      return 2;
+    }
+    if (value === undefined) {
+      process.stderr.write(`gen-vectors: ${flag} needs a value\n${USAGE}`);
+      return 2;
+    }
+    if (values.has(flag)) {
+      process.stderr.write(`gen-vectors: ${flag} given twice\n`);
       return 2;
     }
     values.set(flag, value);

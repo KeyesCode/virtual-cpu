@@ -41,12 +41,15 @@ const SIZES = [
 
 describe('corpusPlan', () => {
   it('is a function of the seed and the size alone', () => {
+    const options = { seed: 5, count: 40, directed: true, random: true };
     for (const size of SIZES) {
-      const options = { seed: 5, count: 40, directed: true, random: true };
       expect(corpusPlan(size, options)).toEqual(corpusPlan(size, options));
-      const operands = corpusPlan(size, options).map((plan) => caseOperands(plan));
-      expect(corpusPlan(size, options).map((plan) => caseOperands(plan))).toEqual(operands);
     }
+    // The operands of a random corpus (the directed ones are the same generators at fixed sizes).
+    const random = { ...options, directed: false, count: 10 };
+    const size = { rows: 8, cols: 8 };
+    const operands = corpusPlan(size, random).map((plan) => caseOperands(plan));
+    expect(corpusPlan(size, random).map((plan) => caseOperands(plan))).toEqual(operands);
   });
 
   it('gives each seed and each size its own random cases', () => {

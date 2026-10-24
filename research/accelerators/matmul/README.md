@@ -2,7 +2,7 @@
 
 This folder holds small, committed summaries of measurements on the INT8 matmul accelerator RTL (Project 3), so that a change to the design shows up as a reviewable diff. Raw tool output does not belong here: full logs, netlists, waveforms, runner outputs and per-size builds stay in `hardware/accelerators/matmul/build/`, which is git-ignored and rebuilt by the make targets.
 
-Every file here is written by a make target, never by hand, and records the git commit, the architecture revision, the array size and the tool versions it came from. Every number in it comes from a command that was actually run: cycle counts from the Verilator runner, resources from Yosys, Fmax estimates from nextpnr for a named FPGA. Simulator wall-clock time is never reported as hardware speed, and power is "not measured".
+Every report here is written by a make target, never by hand (the exceptions are an experiment's `experiment.json` and `README.md`, which say what to run and what it showed), and records the git commit, the architecture revision, the array size and the tool versions it came from. Every number in it comes from a command that was actually run: cycle counts from the Verilator runner, resources from Yosys, Fmax estimates from nextpnr for a named FPGA. Simulator wall-clock time is never reported as hardware speed, and power is "not measured".
 
 The Project 3 tickets add reports here, and each documents its files in the table below:
 

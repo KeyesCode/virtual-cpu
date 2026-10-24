@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { availableParallelism, cpus } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import { MAX_DIM, type MatmulDims } from '../model/matmul.js';
 import {
@@ -169,7 +169,7 @@ export function paretoOptimal(points: readonly ParetoPoint[]): string[] {
 }
 
 export const PARETO_RULE =
-  'A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed variants are left out.';
+  'A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed and incomplete variants are left out.';
 
 // ---------------------------------------------------------------------------------------------
 // The result
@@ -355,12 +355,16 @@ function repoPath(path: string): string {
 /**
  * This process's environment without the variables of the `pnpm --filter … cli` run that started
  * it: make synth runs `pnpm --filter … cli synth-summary` itself, and a pnpm that inherits the
- * outer run's `npm_config_*` settings fails (the same as Project 2's experiment runner).
+ * outer run's `npm_config_*` settings fails (the same as Project 2's experiment runner). The outer
+ * make's MAKEFLAGS go too, so a variable given to `make experiment` (say SYNTH_SEED) cannot change
+ * a variant's flows without the results recording it.
  */
 function cleanEnv(): NodeJS.ProcessEnv {
   return Object.fromEntries(
     Object.entries(process.env).filter(
-      ([key]) => !/^(npm_|pnpm_)/i.test(key) && key !== 'INIT_CWD' && key !== 'PNPM_SCRIPT_SRC_DIR',
+      ([key]) =>
+        !/^(npm_|pnpm_)/i.test(key) &&
+        !['INIT_CWD', 'PNPM_SCRIPT_SRC_DIR', 'MAKEFLAGS', 'MFLAGS', 'MAKELEVEL'].includes(key),
     ),
   );
 }
@@ -496,7 +500,10 @@ async function runVariant(
       synth: null,
     };
   };
+  // The stage running now, so an exception in it fails the variant at that stage.
+  let current: Stage = 'config';
   const timed = async <T>(stage: Stage, run: () => T | Promise<T>): Promise<T> => {
+    current = stage;
     const t0 = performance.now();
     try {
       return await run();
@@ -510,212 +517,226 @@ async function runVariant(
     .join(' ');
   write(`  ${variant.name} (${hash}): ${label}\n`);
 
-  const problem = parameterProblem(parameters);
-  if (problem !== null) return fail('config', problem);
-  stages.config = { status: 'passed', detail: null };
-  const maxDim = parameters.MAX_DIM ?? MAX_DIM;
-  const rows = parameters.ROWS ?? 0;
+  const body = async (): Promise<VariantResult> => {
+    const problem = parameterProblem(parameters);
+    if (problem !== null) return fail('config', problem);
+    stages.config = { status: 'passed', detail: null };
+    const maxDim = parameters.MAX_DIM ?? MAX_DIM;
+    const rows = parameters.ROWS ?? 0;
 
-  // Build: mk/sim.mk's sim-variant, every parameter as -G and every define as -D.
-  const simDir = join(variantDir, 'sim');
-  const sim = join(simDir, 'matmul_sim');
-  const buildLog = join(variantDir, 'sim-build.log');
-  const build = await timed('build', () =>
-    runMake(
-      options.make,
-      [
-        'sim-variant',
-        `SIM_DIR=${simDir}`,
-        `SIM_GFLAGS=${sorted(parameters)
-          .map(([k, v]) => `-G${k}=${String(v)}`)
-          .join(' ')}`,
-        `SIM_DEFINES=${defineFlags(variant.defines).join(' ')}`,
-      ],
-      buildLog,
-    ),
-  );
-  if (!build.ok || !existsSync(sim)) {
-    const log = existsSync(join(simDir, 'build.log')) ? join(simDir, 'build.log') : buildLog;
-    return fail(
-      'build',
-      `the runner does not build (${build.status})${firstError(log)}; see ${repoPath(log)}`,
+    // Build: mk/sim.mk's sim-variant, every parameter as -G and every define as -D.
+    const simDir = join(variantDir, 'sim');
+    const sim = join(simDir, 'matmul_sim');
+    const buildLog = join(variantDir, 'sim-build.log');
+    const build = await timed('build', () =>
+      runMake(
+        options.make,
+        [
+          'sim-variant',
+          `SIM_DIR=${simDir}`,
+          `SIM_GFLAGS=${sorted(parameters)
+            .map(([k, v]) => `-G${k}=${String(v)}`)
+            .join(' ')}`,
+          `SIM_DEFINES=${defineFlags(variant.defines).join(' ')}`,
+        ],
+        buildLog,
+      ),
     );
-  }
-  stages.build = { status: 'passed', detail: null };
+    if (!build.ok || !existsSync(sim)) {
+      const log = existsSync(join(simDir, 'build.log')) ? join(simDir, 'build.log') : buildLog;
+      return fail(
+        'build',
+        `the runner does not build (${build.status})${firstError(log)}; see ${repoPath(log)}`,
+      );
+    }
+    stages.build = { status: 'passed', detail: null };
 
-  // Verify: the directed corpus and the random cases, as `make verify`, at this MAX_DIM.
-  write(
-    `  ${variant.name}: verify (directed + ${String(spec.verify.count)} random from seed ${String(spec.verify.seed)})\n`,
-  );
-  let verifyLog = '';
-  const verify = await timed('verify', () =>
-    runVerify(
-      {
-        ...defaultVerifyOptions([sim]),
-        seed: spec.verify.seed,
-        count: spec.verify.count,
-        maxDim,
-        jobs: options.jobs,
-        work: join(work, 'verify', 'cases'),
-        failures: join(work, 'verify', 'failures'),
-        reports: join(work, 'verify'),
-        provenance: context.provenance,
-      },
-      (text) => {
-        verifyLog += text;
-      },
-    ),
-  );
-  mkdirSync(work, { recursive: true });
-  writeFileSync(join(work, 'verify.log'), verifyLog);
-  const totals = verify.report?.totals;
-  result.verify = {
-    passed: verify.exitCode === 0,
-    cases: totals?.cases ?? 0,
-    directed: totals?.directed ?? 0,
-    random: totals?.random ?? 0,
-    failed: totals?.failed ?? 0,
-    firstFailures: verify.failures.slice(0, 5).map((f) => `${f.size} ${f.name}`),
-  };
-  if (verify.exitCode !== 0) {
-    return fail(
-      'verify',
-      verify.report === null
-        ? `verify could not run (exit ${String(verify.exitCode)}); see ${repoPath(join(work, 'verify.log'))}`
-        : `${String(result.verify.failed)}/${String(result.verify.cases)} cases differ from the reference; see ${repoPath(join(work, 'verify.log'))}`,
+    // Verify: the directed corpus and the random cases, as `make verify`, at this MAX_DIM.
+    write(
+      `  ${variant.name}: verify (directed + ${String(spec.verify.count)} random from seed ${String(spec.verify.seed)})\n`,
     );
-  }
-  stages.verify = { status: 'passed', detail: null };
-  write(`  ${variant.name}: verify passed, ${String(result.verify.cases)} cases\n`);
-
-  // Benchmark: the workloads this capacity supports; the others are recorded as unsupported.
-  const supported = workloads.filter((w) => unsupportedReason(w.dims, maxDim) === null);
-  const benchRows: z.output<typeof BenchmarkRowSchema>[] = [];
-  if (supported.length === 0) {
-    stages.benchmark = { status: 'skipped', detail: `no workload fits MAX_DIM ${String(maxDim)}` };
-  } else {
-    write(`  ${variant.name}: benchmark (${String(supported.length)} workloads)\n`);
-    let benchLog = '';
-    const bench = await timed('benchmark', () =>
-      runBenchmark(
+    let verifyLog = '';
+    const verify = await timed('verify', () =>
+      runVerify(
         {
-          ...BENCHMARK_DEFAULTS,
-          sims: [sim],
-          seed: spec.benchmark.seed,
-          workloads: supported,
+          ...defaultVerifyOptions([sim]),
+          seed: spec.verify.seed,
+          count: spec.verify.count,
           maxDim,
           jobs: options.jobs,
-          work: join(work, 'benchmark', 'cases'),
-          out: join(work, 'benchmark'),
+          work: join(work, 'verify', 'cases'),
+          failures: join(work, 'verify', 'failures'),
+          reports: join(work, 'verify'),
           provenance: context.provenance,
-          now: context.now,
         },
         (text) => {
-          benchLog += text;
+          verifyLog += text;
         },
       ),
     );
-    writeFileSync(join(work, 'benchmark.log'), benchLog);
-    if (bench.report === null || bench.exitCode !== 0) {
-      const failed = bench.report?.verification.failedCases ?? [];
+    mkdirSync(work, { recursive: true });
+    writeFileSync(join(work, 'verify.log'), verifyLog);
+    const totals = verify.report?.totals;
+    result.verify = {
+      passed: verify.exitCode === 0,
+      cases: totals?.cases ?? 0,
+      directed: totals?.directed ?? 0,
+      random: totals?.random ?? 0,
+      failed: totals?.failed ?? 0,
+      firstFailures: verify.failures.slice(0, 5).map((f) => `${f.size} ${f.name}`),
+    };
+    if (verify.exitCode !== 0) {
       return fail(
-        'benchmark',
-        `${failed.length > 0 ? `${failed.join(', ')} failed the correctness gate` : `the benchmark exited ${String(bench.exitCode)}`}; see ${repoPath(join(work, 'benchmark.log'))}`,
+        'verify',
+        verify.report === null
+          ? `verify could not run (exit ${String(verify.exitCode)}); see ${repoPath(join(work, 'verify.log'))}`
+          : `${String(result.verify.failed)}/${String(result.verify.cases)} cases differ from the reference; see ${repoPath(join(work, 'verify.log'))}`,
       );
     }
-    stages.benchmark = { status: 'passed', detail: null };
-    for (const r of bench.report.rows) {
-      if (r.status === 'passed') {
-        benchRows.push({
-          workload: r.workload,
-          dims: r.dims,
-          status: 'passed',
-          metrics: r.metrics,
-        });
+    stages.verify = { status: 'passed', detail: null };
+    write(`  ${variant.name}: verify passed, ${String(result.verify.cases)} cases\n`);
+
+    // Benchmark: the workloads this capacity supports; the others are recorded as unsupported.
+    const supported = workloads.filter((w) => unsupportedReason(w.dims, maxDim) === null);
+    const benchRows: z.output<typeof BenchmarkRowSchema>[] = [];
+    if (supported.length === 0) {
+      stages.benchmark = {
+        status: 'skipped',
+        detail: `no workload fits MAX_DIM ${String(maxDim)}`,
+      };
+    } else {
+      write(`  ${variant.name}: benchmark (${String(supported.length)} workloads)\n`);
+      let benchLog = '';
+      const bench = await timed('benchmark', () =>
+        runBenchmark(
+          {
+            ...BENCHMARK_DEFAULTS,
+            sims: [sim],
+            seed: spec.benchmark.seed,
+            workloads: supported,
+            maxDim,
+            jobs: options.jobs,
+            work: join(work, 'benchmark', 'cases'),
+            out: join(work, 'benchmark'),
+            provenance: context.provenance,
+            now: context.now,
+          },
+          (text) => {
+            benchLog += text;
+          },
+        ),
+      );
+      writeFileSync(join(work, 'benchmark.log'), benchLog);
+      if (bench.report === null || bench.exitCode !== 0) {
+        const failed = bench.report?.verification.failedCases ?? [];
+        return fail(
+          'benchmark',
+          `${failed.length > 0 ? `${failed.join(', ')} failed the correctness gate` : `the benchmark exited ${String(bench.exitCode)}`}; see ${repoPath(join(work, 'benchmark.log'))}`,
+        );
+      }
+      stages.benchmark = { status: 'passed', detail: null };
+      for (const r of bench.report.rows) {
+        if (r.status === 'passed') {
+          benchRows.push({
+            workload: r.workload,
+            dims: r.dims,
+            status: 'passed',
+            metrics: r.metrics,
+          });
+        }
       }
     }
-  }
-  const benchmark = {
-    rows: workloads.map((w) => {
-      const reason = unsupportedReason(w.dims, maxDim);
-      if (reason !== null) {
-        return { workload: w.name, dims: w.dims, status: 'unsupported' as const, reason };
-      }
-      const row = benchRows.find((r) => r.workload === w.name);
-      if (row === undefined) throw new Error(`benchmark: no row for ${w.name}`);
-      return row;
-    }),
-  };
+    const benchmark = {
+      rows: workloads.map((w) => {
+        const reason = unsupportedReason(w.dims, maxDim);
+        if (reason !== null) {
+          return { workload: w.name, dims: w.dims, status: 'unsupported' as const, reason };
+        }
+        const row = benchRows.find((r) => r.workload === w.name);
+        if (row === undefined) throw new Error(`benchmark: no row for ${w.name}`);
+        return row;
+      }),
+    };
 
-  // Synth: make synth for this one size, with the variant's other parameters and its defines.
-  write(`  ${variant.name}: synth\n`);
-  const synthLog = join(variantDir, 'synth.log');
-  const synth = await timed('synth', () =>
-    runMake(
-      options.make,
-      [
+    // Synth: make synth for this one size, with the variant's other parameters and its defines.
+    write(`  ${variant.name}: synth\n`);
+    current = 'synth';
+    const synthLog = join(variantDir, 'synth.log');
+    const synth = await timed('synth', () =>
+      runMake(
+        options.make,
+        [
+          'synth',
+          `SYNTH_SIZES=${String(rows)}`,
+          `SYNTH_ROOT=${variantDir}`,
+          `SYNTH_PARAMS=${sorted(parameters)
+            .filter(([k]) => k !== 'ROWS' && k !== 'COLS')
+            .map(([k, v]) => `${k}=${String(v)}`)
+            .join(' ')}`,
+          `SYNTH_DEFINES=${defineFlags(variant.defines).join(' ')}`,
+        ],
+        synthLog,
+      ),
+    );
+    const summaryFile = join(variantDir, 'synth', 'summary.json');
+    if (!synth.ok && synth.missingTool !== null) {
+      const detail = `${synth.missingTool} is not installed (pnpm hardware:setup)`;
+      stages.synth = { status: 'skipped', detail };
+      write(`  ${variant.name}: synth skipped: ${detail}\n`);
+      return {
+        ...result,
+        status: 'incomplete',
+        benchmark,
+        warnings: [...result.warnings, `synth skipped: ${detail}`],
+      };
+    }
+    if (!synth.ok || !existsSync(summaryFile)) {
+      return fail(
         'synth',
-        `SYNTH_SIZES=${String(rows)}`,
-        `SYNTH_ROOT=${variantDir}`,
-        `SYNTH_PARAMS=${sorted(parameters)
-          .filter(([k]) => k !== 'ROWS' && k !== 'COLS')
-          .map(([k, v]) => `${k}=${String(v)}`)
-          .join(' ')}`,
-        `SYNTH_DEFINES=${defineFlags(variant.defines).join(' ')}`,
-      ],
-      synthLog,
-    ),
-  );
-  const summaryFile = join(variantDir, 'synth', 'summary.json');
-  if (!synth.ok && synth.missingTool !== null) {
-    const detail = `${synth.missingTool} is not installed (pnpm hardware:setup)`;
-    stages.synth = { status: 'skipped', detail };
-    write(`  ${variant.name}: synth skipped: ${detail}\n`);
+        `make synth failed (${synth.status})${firstError(synthLog)}; see ${repoPath(synthLog)}`,
+      );
+    }
+    current = 'synth';
+    const summary = MatmulSynthSummarySchema.parse(JSON.parse(readFileSync(summaryFile, 'utf8')));
+    const size = summary.sizes[0];
+    if (size === undefined) return fail('synth', `${repoPath(summaryFile)} has no size`);
+    stages.synth = { status: 'passed', detail: null };
+    const g = size.generic;
+    const fpga = fpgaSummaries(size.fpga);
+    const warnings = [
+      ...summary.warnings.map(
+        (w) => `synth warning (allowlisted): ${w.source}: ${w.message} (×${String(w.count)})`,
+      ),
+      ...fpga
+        .filter((f) => f.status === 'absent')
+        .map((f) => `${f.family} flow not run: ${f.reason ?? ''}`),
+    ];
+    write(
+      `  ${variant.name}: passed: ${String(g.total.cells)} generic cells, ${String(g.memoryBits)} memory bits\n`,
+    );
     return {
       ...result,
-      status: 'incomplete',
+      status: STAGES.some((s) => stages[s].status === 'skipped') ? 'incomplete' : 'passed',
       benchmark,
-      warnings: [...result.warnings, `synth skipped: ${detail}`],
+      synth: {
+        cells: g.total.cells,
+        flipFlops: g.total.flipFlops,
+        mulCells: g.mulCells,
+        memoryBanks: g.memoryBanks,
+        memoryBits: g.memoryBits,
+        abstractGates: g.abstractGates,
+        logicDepth: g.logicDepth.length,
+        fpga,
+      },
+      warnings,
     };
-  }
-  if (!synth.ok || !existsSync(summaryFile)) {
-    return fail(
-      'synth',
-      `make synth failed (${synth.status})${firstError(synthLog)}; see ${repoPath(synthLog)}`,
-    );
-  }
-  const summary = MatmulSynthSummarySchema.parse(JSON.parse(readFileSync(summaryFile, 'utf8')));
-  const size = summary.sizes[0];
-  if (size === undefined) return fail('synth', `${repoPath(summaryFile)} has no size`);
-  stages.synth = { status: 'passed', detail: null };
-  const g = size.generic;
-  const fpga = fpgaSummaries(size.fpga);
-  const warnings = [
-    ...summary.warnings.map(
-      (w) => `synth warning (allowlisted): ${w.source}: ${w.message} (×${String(w.count)})`,
-    ),
-    ...fpga
-      .filter((f) => f.status === 'absent')
-      .map((f) => `${f.family} flow not run: ${f.reason ?? ''}`),
-  ];
-  write(
-    `  ${variant.name}: passed: ${String(g.total.cells)} generic cells, ${String(g.memoryBits)} memory bits\n`,
-  );
-  return {
-    ...result,
-    benchmark,
-    synth: {
-      cells: g.total.cells,
-      flipFlops: g.total.flipFlops,
-      mulCells: g.mulCells,
-      memoryBanks: g.memoryBanks,
-      memoryBits: g.memoryBits,
-      abstractGates: g.abstractGates,
-      logicDepth: g.logicDepth.length,
-      fpga,
-    },
-    warnings,
   };
+  try {
+    return await body();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return fail(current, `the ${current} stage threw: ${message.split('\n')[0] ?? ''}`);
+  }
 }
 
 /** The Pareto section: Σ total cycles over the workloads every passed variant ran, and cells. */
@@ -727,7 +748,8 @@ export function paretoSection(variants: readonly VariantResult[]): ExperimentRes
   const common = names.filter((name) =>
     measured.every((v) => v.benchmark?.rows.find((r) => r.workload === name)?.status === 'passed'),
   );
-  const points = measured.map((v) => ({
+  // Without a workload every variant ran, there is nothing to compare the cycles on.
+  const points = (common.length === 0 ? [] : measured).map((v) => ({
     name: v.name,
     cycles: (v.benchmark?.rows ?? []).reduce(
       (sum, r) =>
@@ -768,7 +790,7 @@ function delta(value: number, base: number | null | undefined, digits: number, i
   if (isBase || base === null || base === undefined) return '';
   const d = value - base;
   const sign = d > 0 ? '+' : d < 0 ? '−' : '±';
-  const abs = Math.abs(d).toFixed(digits);
+  const abs = digits === 0 ? Math.abs(d).toLocaleString('en-US') : Math.abs(d).toFixed(digits);
   const rel = base === 0 ? '' : `, ${sign}${Math.abs((100 * d) / base).toFixed(1)} %`;
   return ` (${sign}${abs}${rel})`;
 }
@@ -791,7 +813,13 @@ export function renderExperimentMarkdown(result: ExperimentResult): string {
     '',
     result.description,
     '',
-    `Experiment ID \`${result.experimentId}\`. Revision \`${result.revision}\`, commit \`${p.gitShortCommit ?? 'unknown'}\`${p.gitDirty === true ? ' (dirty working tree)' : ''}. ${result.passed ? 'Every variant passed every stage.' : 'Not every variant passed every stage (see the Result column).'}`,
+    `Experiment ID \`${result.experimentId}\`. Revision \`${result.revision}\`, commit \`${p.gitShortCommit ?? 'unknown'}\`${p.gitDirty === true ? ' (dirty working tree)' : ''}. ${
+      !result.passed
+        ? 'Not every variant passed every stage (see the Result column).'
+        : result.variants.some((v) => v.status === 'incomplete')
+          ? 'No variant failed, but some stages were skipped for a missing tool (see the Result column).'
+          : 'Every variant passed every stage.'
+    }`,
     '',
     `Each variant was built, then verified against \`@vcpu/accelerator-reference\` (the directed corpus and ${String(result.config.verify.count)} random cases from seed ${String(result.config.verify.seed)}), then benchmarked (operand seed ${String(result.config.benchmark.seed)}, every case gated on the reference), then synthesised with every flow of \`make synth\`. A variant that fails a stage has no metrics. Deltas are against the baseline, \`${result.config.baseline}\`.`,
     '',
@@ -981,7 +1009,7 @@ export function renderExperimentMarkdown(result: ExperimentResult): string {
     `Axes: (1) ${result.pareto.axes[0]} and (2) ${result.pareto.axes[1]}; lower is better on both. ${result.pareto.rule}`,
     '',
     result.pareto.points.length === 0
-      ? 'No variant passed every stage, so there is no frontier.'
+      ? 'No two-axis comparison: no variant passed every stage, or no workload ran on every variant that did.'
       : `Common workloads (${String(result.pareto.commonWorkloads.length)}): ${result.pareto.commonWorkloads.map((w) => `\`${w}\``).join(', ')}. Pareto-optimal: **${optimal.join(', ')}**.`,
     '',
     '## Variants',
@@ -1033,6 +1061,10 @@ export function readExperimentSpec(file: string): ExperimentSpec {
     );
   }
   const spec = parsed.data;
+  const dir = dirname(resolve(file));
+  if (dirname(dir) === EXPERIMENTS_DIR && basename(dir) !== spec.id) {
+    throw new Error(`${repoPath(file)}: id is ${spec.id}, but the directory is ${basename(dir)}`);
+  }
   const names = spec.variants.map((v) => v.name);
   const duplicate = names.find((n, i) => names.indexOf(n) !== i);
   if (duplicate !== undefined)

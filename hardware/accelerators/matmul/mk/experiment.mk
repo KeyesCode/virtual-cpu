@@ -16,16 +16,23 @@
 # failed a stage.
 
 EXPERIMENTS_DIR := $(REPO_ROOT)/research/accelerators/matmul/experiments
+# The make the runner calls for each variant. Named through a variable so that the recipe below
+# does not mention $(MAKE) directly, which would make `make -n experiment` run the experiment.
+EXPERIMENT_MAKE  = $(MAKE)
 
 .PHONY: experiment
 
 # tools-check records the tool versions for the results' provenance; a missing optional tool must
-# not stop the experiment, so its exit status is ignored.
+# not stop the experiment, so its exit status is ignored. The results are formatted even when a
+# variant failed, and the recipe then exits with the runner's status.
 experiment: ## Verify, benchmark and synth each variant of research/accelerators/matmul/experiments/$(NAME)/
 	@test -n "$(NAME)" || { echo "experiment: set NAME=<dir in research/accelerators/matmul/experiments/>" >&2; exit 2; }
 	@test -f $(EXPERIMENTS_DIR)/$(NAME)/experiment.json || { echo "experiment: no $(EXPERIMENTS_DIR)/$(NAME)/experiment.json" >&2; exit 2; }
 	$(call need,$(VERILATOR))
 	@-$(MAKE) --no-print-directory tools-check > /dev/null 2>&1
-	$(ACCEL_CLI) experiment --spec $(EXPERIMENTS_DIR)/$(NAME)/experiment.json \
-	  --out $(EXPERIMENTS_DIR)/$(NAME)/results --make $(MAKE) $(if $(filter 1,$(ALLOW_DIRTY)),--allow-dirty)
-	cd $(REPO_ROOT) && pnpm --silent exec prettier --log-level warn --write $(EXPERIMENTS_DIR)/$(NAME)/results
+	@status=0; ( $(ACCEL_CLI) experiment --spec $(EXPERIMENTS_DIR)/$(NAME)/experiment.json \
+	  --out $(EXPERIMENTS_DIR)/$(NAME)/results --make $(EXPERIMENT_MAKE) \
+	  $(if $(filter 1,$(ALLOW_DIRTY)),--allow-dirty) ) || status=$$?; \
+	if [ -d $(EXPERIMENTS_DIR)/$(NAME)/results ]; then \
+	  cd $(REPO_ROOT) && pnpm --silent exec prettier --log-level warn --write $(EXPERIMENTS_DIR)/$(NAME)/results; fi; \
+	exit $$status

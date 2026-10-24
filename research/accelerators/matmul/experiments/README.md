@@ -43,7 +43,7 @@ This is, apart from the description, [array-size/experiment.json](array-size/exp
 | Field                    | Meaning                                                                                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `schemaVersion`          | `1`                                                                                                                                                                                                                 |
-| `id`                     | The experiment's name, lower-case letters, digits and dashes; the directory name. The result's experiment ID is `<id>/<date>-<shortsha>`                                                                            |
+| `id`                     | The experiment's name, lower-case letters, digits and dashes; it must equal the directory name. The result's experiment ID is `<id>/<date>-<shortsha>`                                                              |
 | `description`            | What the experiment asks, in a sentence or two                                                                                                                                                                      |
 | `verify.seed`, `.count`  | The random cases each variant's verify runs besides the directed corpus (default seed 1, 40 cases, as `make verify`)                                                                                                |
 | `benchmark.seed`         | The operand seed of the benchmark workloads (default 1, as `make benchmark`)                                                                                                                                        |
@@ -78,7 +78,7 @@ For each variant, in order:
 4. **Benchmark.** It runs the workloads with the benchmark's correctness gate, as `make benchmark` does. A workload with M, K or N above the variant's MAX_DIM is not run. It is recorded as "not supported by this variant", which is a property of the design, not a failure.
 5. **Synth.** It runs `make synth` for the variant's size, with `SYNTH_ROOT=build/variants/<hash>`, `SYNTH_PARAMS` (every parameter but ROWS and COLS) and `SYNTH_DEFINES` ([mk/synth.mk](../../../../hardware/accelerators/matmul/mk/synth.mk)). That is the generic Yosys flow on `matmul_top`, then iCE40 and ECP5 synthesis and place and route of the FPGA wrapper, with every gate of the normal synthesis and the same settings, frequency target and nextpnr seed. A design that does not fit an FPGA is a result (`fits: false`), not a failure. If Yosys or nextpnr-ice40 is missing, the stage is skipped with the reason and the variant is reported as incomplete.
 
-The full reports and logs stay in the git-ignored `build/`. Each variant's `verify.{json,md,log}` and `benchmark.{json,csv,md,log}` go to `build/experiments/<id>/<variant>/`. The build and synthesis logs go to `build/variants/<hash>/` (`sim-build.log`, `sim/build.log`, `synth.log`), along with `synth/summary.{json,md}`. Synthesis is the slow stage: the 16 × 16 array takes minutes, so a full `array-size` run takes about ten minutes or more.
+The full reports and logs stay in the git-ignored `build/`. Each variant's `verify/verify.{json,md}` and `benchmark/benchmark.{json,csv,md}` go to `build/experiments/<id>/<variant>/`, beside `verify.log` and `benchmark.log`. The build and synthesis logs go to `build/variants/<hash>/` (`sim-build.log`, `sim/build.log`, `synth.log`), along with `synth/summary.{json,md}`. Synthesis is the slow stage, and the 16 × 16 array takes the longest: a full `array-size` run took about five minutes on an Apple M-series laptop, with 16 × 16 synthesis more than three of them. The results record the seconds per stage.
 
 `make experiment` exits 0 when no variant failed a stage, and 1 when one did. The comparison is still written and names the variant and the stage.
 
@@ -105,7 +105,7 @@ The full reports and logs stay in the git-ignored `build/`. Each variant's `veri
 - the generic synthesis and FPGA tables;
 - the Pareto-optimal variants.
 
-Every number of a variant other than the baseline carries its delta against the baseline.
+Every number of a variant other than the baseline carries its delta against the baseline, wherever the baseline has that number too (a workload above the baseline's MAX_DIM has none).
 
 Everything except `provenance` is deterministic for a given commit: the seeds are fixed, nextpnr runs with a fixed seed, and the toolchain is pinned. A rerun of the same commit gives the same file apart from the run ID, the experiment ID and the provenance.
 

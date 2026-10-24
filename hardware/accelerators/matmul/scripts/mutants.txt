@@ -1,0 +1,47 @@
+# Mutants for `make verify-mutant`: each block plants one bug in a copy of rtl/ under
+# build/mutants/<id>/rtl/, builds its own runner at 4x4, 8x8 and 16x16 and requires `verify` to
+# report at least one failing case. `from` must occur exactly once in `file`, or the run fails: a
+# mutant that no longer applies is an error, never a skip. rtl/ itself is never modified. The same
+# format as hardware/rtl/vcpu8/scripts/mutants.txt.
+#
+#   [id]
+#   file: <file in rtl/>
+#   what: <the bug, in words>
+#   from: <text that occurs exactly once>
+#   to:   <its replacement>
+
+[pe-sign-extension]
+file: processing_element.sv
+what: the PE zero-extends A instead of sign-extending it before the multiply
+from: assign product = PROD_W'(a_in) * PROD_W'(b_in);
+to:   assign product = PROD_W'($unsigned(a_in)) * PROD_W'(b_in);
+
+[skew-off-by-one]
+file: systolic_array.sv
+what: rows 2 and below of A get one skew register too few, so they meet B a clock early
+from: assign a_h[i][0]  = data_q[(i-1)*DATA_W +: DATA_W];
+to:   assign a_h[i][0]  = data_q[((i > 1) ? i - 2 : 0)*DATA_W +: DATA_W];
+
+[edge-row-mask-uses-n]
+file: matmul_controller.sv
+what: the edge mask of A's rows compares with N instead of M, zeroing valid rows when N < M
+from: if (row0 + IDX_W'(i) < m_q) a_data[i] = a_rd_data[i];
+to:   if (row0 + IDX_W'(i) < n_q) a_data[i] = a_rd_data[i];
+
+[pe-clear-ignored]
+file: processing_element.sv
+what: tile_start does not clear the accumulators, so every tile after the first adds to stale sums
+from: if (rst || clear) begin
+to:   if (rst) begin
+
+[edge-col-store-short]
+file: matmul_controller.sv
+what: an edge tile stores one column too few
+from: assign cols_here  = (cols_left >= IDX_W'(COLS)) ? IDX_W'(COLS) : cols_left;
+to:   assign cols_here  = (cols_left >= IDX_W'(COLS)) ? IDX_W'(COLS) : cols_left - 1'b1;
+
+[last-k-dropped]
+file: matmul_controller.sv
+what: COMPUTE ends one operand clock early, dropping k = K - 1 (and never ends when K = 1)
+from: assign last_k     = k_cnt == k_q - 1'b1;
+to:   assign last_k     = k_cnt == k_q - 2'd2;

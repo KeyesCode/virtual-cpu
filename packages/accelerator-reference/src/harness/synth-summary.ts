@@ -292,7 +292,10 @@ interface Hierarchy {
   readonly local: (raw: string) => CellCounts;
   /** Every hardware cell type of a module's subtree, with counts. */
   readonly byType: (raw: string) => Record<string, number>;
-  /** How many times each module (plain name) occurs below `raw`, counting `raw` itself once. */
+  /**
+   * How many times each module occurs below `raw`, counting `raw` itself once, keyed by its raw
+   * name as `stat -json` spells it: two parameterisations of one module count separately.
+   */
   readonly occurrences: (raw: string) => Map<string, number>;
 }
 
@@ -320,7 +323,7 @@ function hierarchy(stat: StatJson, netlist: Netlist): Hierarchy {
     return Object.fromEntries([...types].sort(([a], [b]) => (a < b ? -1 : 1)));
   };
   const occurrences = (raw: string): Map<string, number> => {
-    const out = new Map<string, number>([[plainModuleName(raw), 1]]);
+    const out = new Map<string, number>([[findModule(statNames, raw) ?? raw, 1]]);
     for (const [, child] of instancesOf(netlist, raw)) {
       for (const [name, n] of occurrences(child)) out.set(name, (out.get(name) ?? 0) + n);
     }
@@ -499,14 +502,24 @@ export function fpgaResult(files: FpgaFlowFiles, repoRoot: string): FpgaResult {
   };
   if (files.noFit !== null) {
     const utilisation = parseUtilisation(files.nextpnrLog);
+    const overUtilised = Object.entries(utilisation)
+      .filter(([, u]) => u.used > u.available)
+      .map(([resource]) => resource);
+    // Only a placement failure on a resource the design over-uses is a "does not fit"; the same
+    // error on a resource within its count is a constraint or legalisation problem.
+    const cellType = /cell type '([^']+)'/.exec(files.noFit)?.[1];
+    if (cellType === undefined || !overUtilised.includes(cellType)) {
+      throw new Error(
+        `${files.target.family}: nextpnr failed to place a ${String(cellType)} cell, which the design ` +
+          `does not over-use (over: ${overUtilised.join(', ') || 'nothing'}): ${files.noFit.trim()}`,
+      );
+    }
     return {
       ...common,
       utilisation,
       fits: false,
       reason: files.noFit.trim(),
-      overUtilised: Object.entries(utilisation)
-        .filter(([, u]) => u.used > u.available)
-        .map(([resource]) => resource),
+      overUtilised,
     };
   }
   const pnr = placeAndRoute(NextpnrReportSchema.parse(files.report), repoRoot);
@@ -556,7 +569,7 @@ export function sizeSummary(files: SizeFiles, repoRoot: string): SizeSummary {
     const local = module.num_cells_by_type.$mul ?? 0;
     const name = plainModuleName(raw);
     if (local > 0) {
-      mulCellsByModule[name] = (mulCellsByModule[name] ?? 0) + local * (occurrences.get(name) ?? 0);
+      mulCellsByModule[name] = (mulCellsByModule[name] ?? 0) + local * (occurrences.get(raw) ?? 0);
     }
   }
 
@@ -760,7 +773,7 @@ export function renderMatmulSummaryMarkdown(summary: MatmulSynthSummary): string
     '',
     '`$mul` counts the multipliers as written, after constant folding and before synthesis maps them to gates. ' +
       'Each inferred memory bank counts as one cell, its storage only under memory bits. ' +
-      'Abstract gates: the flattened design remapped by `abc -g AND,NAND,OR,NOR,XOR,XNOR,MUX`, flip-flops not included. ' +
+      'Abstract gates: the flattened design remapped by `abc -g AND,NAND,OR,NOR,XOR,XNOR,MUX` (ABC adds `NOT`), flip-flops not included. ' +
       'Logic depth is a gate count on the longest path (`ltp -noff`, memories excluded), not a delay.',
     '',
   );

@@ -63,7 +63,7 @@ NEXTPNR_COMMON = --json $(1).json --freq $(SYNTH_FREQ_MHZ) --seed $(SYNTH_SEED) 
 synth_pnr = if $(2) $(call NEXTPNR_COMMON,$(1)); then :; else status=$$?; \
   if grep -E '$(SYNTH_NO_FIT)' nextpnr-$(1).log > nextpnr-$(1).nofit; then \
     echo "nextpnr-$(1): the design does not fit: $$(cat nextpnr-$(1).nofit)"; \
-  else echo "nextpnr-$(1) failed (exit $$status); see $$PWD/nextpnr-$(1).log" >&2; exit $$status; fi; fi
+  else rm -f nextpnr-$(1).nofit; echo "nextpnr-$(1) failed (exit $$status); see $$PWD/nextpnr-$(1).log" >&2; exit $$status; fi; fi
 
 SYNTH_SUMMARY_ARGS = --dir $(BUILD_DIR) --sizes $(subst $(space),$(comma),$(strip $(SYNTH_SIZES))) \
   --allow $(SYNTH_ALLOW) --toolchain '$(TOOLCHAIN)' --toolchain-version $(OSS_CAD_SUITE_VERSION) \
@@ -109,9 +109,18 @@ synth: ## Yosys + nextpnr reports for SYNTH_SIZES (4 8 16) in build/synth-*/ and
 	  $(NEXTPNR_ECP5) --version > $(SYNTH_DIR)/nextpnr-ecp5.version 2>&1; fi
 	cd $(REPO_ROOT) && pnpm --silent --filter @vcpu/accelerator-reference cli synth-summary $(SYNTH_SUMMARY_ARGS)
 
-synth-baseline: synth ## Rewrite research/accelerators/matmul/synth/baseline.{json,md} from a fresh make synth
-	@test '$(strip $(SYNTH_SIZES))' = '$(SYNTH_ALL_SIZES)' || { \
-	  echo "synth-baseline: only for SYNTH_SIZES='$(SYNTH_ALL_SIZES)'" >&2; exit 2; }
+# synth-baseline refuses to start (before the minutes of synthesis) unless it runs every size from
+# a clean tree, so the baseline's commit identifies exactly the design it measured.
+ifneq ($(filter synth-baseline,$(MAKECMDGOALS)),)
+  ifneq ($(sort $(SYNTH_SIZES)),$(sort $(SYNTH_ALL_SIZES)))
+    $(error synth-baseline: only for SYNTH_SIZES='$(SYNTH_ALL_SIZES)', not '$(SYNTH_SIZES)')
+  endif
+  ifneq ($(shell git -C $(REPO_ROOT) status --porcelain),)
+    $(error synth-baseline: commit or stash your changes first; the baseline must come from a clean tree)
+  endif
+endif
+
+synth-baseline: synth ## Rewrite research/accelerators/matmul/synth/baseline.{json,md} from a fresh make synth from a clean tree
 	@mkdir -p $(dir $(SYNTH_BASELINE))
 	cp $(SYNTH_DIR)/summary.json $(SYNTH_BASELINE).json
 	cp $(SYNTH_DIR)/summary.md $(SYNTH_BASELINE).md

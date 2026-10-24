@@ -10,7 +10,7 @@
 //   - data_in[7:0], cmd[2:0] and strobe: each rising edge of strobe runs cmd with data_in;
 //   - data_out[7:0]: one byte of host_c_rdata, the C element at the address register;
 //   - led_busy, led_done, led_error: busy, a done that stays lit until the next start, and error.
-// Only the cycle counters and the debug taps are left unconnected, so synthesis removes the logic
+// Only the cycle counters, error_code and the debug taps are left unconnected, so synthesis removes the logic
 // that only they use (the guide compares the counts with the generic matmul_top's).
 //
 // Commands (CMD_*): the 12-bit address register is written a byte at a time (ADDR_LO, ADDR_HI);

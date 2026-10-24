@@ -45,8 +45,8 @@ tee -q -o generic.stat.txt stat -width
 tee -q -o generic.stat.json stat -json
 write_json generic.json
 
-# Abstract gates: flatten, remap all combinational logic to seven simple two-input gates and the
-# 2:1 mux, count them, and measure the longest gate path between flip-flops, memory ports and
+# Abstract gates: flatten, remap all combinational logic to six two-input gates and the 2:1 mux
+# (ABC adds NOT), count them, and measure the longest gate path between flip-flops, memory ports and
 # top-level ports. The memories are left out of the path search: their reads are registered, so
 # a path ends at a memory's address or data input.
 flatten

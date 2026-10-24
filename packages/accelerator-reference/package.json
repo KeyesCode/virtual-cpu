@@ -10,6 +10,8 @@
     "cli": "tsx src/cli.ts",
     "gen-vectors": "tsx src/cli.ts gen-vectors",
     "gen-pe-vectors": "tsx src/cli.ts gen-pe-vectors",
+    "gen-tile-vectors": "tsx src/cli.ts gen-tile-vectors",
+    "gen-tile-suite": "tsx src/cli.ts gen-tile-suite",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

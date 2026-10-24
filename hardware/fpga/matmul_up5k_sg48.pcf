@@ -1,0 +1,39 @@
+# Pin constraints for matmul_fpga_wrapper on an iCE40UP5K in the SG48 package, used by
+# `make -C hardware/accelerators/matmul synth` so that place and route sees a legal, fixed IO
+# placement. The same file serves every array size: the wrapper's ports do not depend on it.
+#
+# The pins follow the iCEBreaker board's layout, as hardware/fpga/vcpu8_up5k_sg48.pcf does: its
+# 12 MHz oscillator on pin 35 (a global-buffer input) and its user button on pin 10, data_in on the
+# PMOD1A connector, data_out on PMOD1B, and strobe, cmd and the three status outputs on PMOD2. No
+# board has been brought up with this file; it only makes the utilisation and timing run concrete.
+# The iCEBreaker button is active-low while the wrapper's rst is active-high, so a real board build
+# would invert it in a board-level top.
+
+set_io clk          35
+set_io rst          10
+
+set_io data_in[0]    4
+set_io data_in[1]    2
+set_io data_in[2]   47
+set_io data_in[3]   45
+set_io data_in[4]    3
+set_io data_in[5]   48
+set_io data_in[6]   46
+set_io data_in[7]   44
+
+set_io data_out[0]  43
+set_io data_out[1]  38
+set_io data_out[2]  34
+set_io data_out[3]  31
+set_io data_out[4]  42
+set_io data_out[5]  36
+set_io data_out[6]  32
+set_io data_out[7]  28
+
+set_io strobe       27
+set_io cmd[0]       25
+set_io cmd[1]       21
+set_io cmd[2]       19
+set_io led_busy     26
+set_io led_done     23
+set_io led_error    20

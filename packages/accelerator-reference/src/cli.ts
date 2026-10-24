@@ -1,7 +1,9 @@
 import { resolve } from 'node:path';
+import { parseTarget } from '@vcpu/rtl-tools';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { writeTopSuite } from './harness/top-vectors.js';
+import { runMatmulSynthCompare, runMatmulSynthSummary } from './harness/synth-summary.js';
 import { writeCase } from './harness/vectors.js';
 import { writeVisualizations } from './viz/page.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
@@ -56,6 +58,16 @@ ${GENERATORS}
   gen-viz                                Regenerate docs/hardware/accelerators/images/: the 4 × 4
                                          dataflow SVG and the trace embedded in systolic-4x4.html,
                                          both from the timing rule in src/viz/schedule.ts.
+  synth-summary --dir <build> --sizes 4,8,16 --allow <warnings.allow> --toolchain T
+                --toolchain-version V --revision R --freq MHZ --seed S --ice40 DEV:PKG
+                --ecp5 DEV:PKG:SPEED
+                                         Read the outputs of make synth in <build>/synth-<R>x<C>/
+                                         for each size and write <build>/synth/summary.{json,md}
+                                         (src/harness/synth-summary.ts). Exits 1 when a warning
+                                         is not in the allowlist.
+  synth-compare --baseline <baseline.json> --summary <summary.json>
+                                         Print every difference between a fresh synthesis summary
+                                         and the committed baseline; exits 1 if there is any.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -347,6 +359,66 @@ function genViz(args: readonly string[]): number {
   return 0;
 }
 
+function synthSummary(args: readonly string[]): number {
+  const flags = [
+    '--dir',
+    '--sizes',
+    '--allow',
+    '--toolchain',
+    '--toolchain-version',
+    '--revision',
+    '--freq',
+    '--seed',
+    '--ice40',
+    '--ecp5',
+  ];
+  const values = parseFlags('synth-summary', args, flags, flags);
+  const numbers = values && parseCounts('synth-summary', values, ['freq', 'seed'] as const);
+  if (values === undefined || numbers === undefined) {
+    return 2;
+  }
+  const sizesRaw = values.get('--sizes') ?? '';
+  const sizes = sizesRaw.split(',').map(parseCount);
+  if (sizes.length === 0 || sizes.some((n) => n === undefined || n < 2)) {
+    process.stderr.write(`synth-summary: --sizes must be a list like 4,8,16, got '${sizesRaw}'\n`);
+    return 2;
+  }
+  const ice40 = parseTarget('ice40', values.get('--ice40') ?? '');
+  const ecp5 = parseTarget('ecp5', values.get('--ecp5') ?? '');
+  if (ice40 === undefined || ecp5 === undefined) {
+    process.stderr.write('synth-summary: --ice40 is DEVICE:PACKAGE, --ecp5 DEVICE:PACKAGE:SPEED\n');
+    return 2;
+  }
+  return runMatmulSynthSummary(
+    {
+      dir: resolve(cwd, values.get('--dir') ?? ''),
+      sizes: sizes.filter((n) => n !== undefined),
+      allow: resolve(cwd, values.get('--allow') ?? ''),
+      toolchain: values.get('--toolchain') ?? '',
+      toolchainVersion: values.get('--toolchain-version') ?? '',
+      revision: values.get('--revision') ?? '',
+      freqMHz: numbers.freq,
+      seed: numbers.seed,
+      ice40,
+      ecp5,
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
+function synthCompare(args: readonly string[]): number {
+  const flags = ['--baseline', '--summary'];
+  const values = parseFlags('synth-compare', args, flags, flags);
+  if (values === undefined) {
+    return 2;
+  }
+  return runMatmulSynthCompare(
+    resolve(cwd, values.get('--baseline') ?? ''),
+    resolve(cwd, values.get('--summary') ?? ''),
+    (text) => process.stdout.write(text),
+  );
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
@@ -354,6 +426,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-tile-suite': genTileSuite,
   'gen-top-suite': genTopSuite,
   'gen-viz': genViz,
+  'synth-summary': synthSummary,
+  'synth-compare': synthCompare,
 };
 
 const [name, ...rest] = process.argv.slice(2);

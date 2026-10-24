@@ -1,0 +1,22 @@
+# Reviewed warnings that `make synth` accepts. Every other warning fails it.
+#
+# `@vcpu/accelerator-reference synth-summary` collects each line of the Yosys and nextpnr logs of
+# every array size that starts with "Warning:" (or "ABC: Warning:", ABC's own output inside a Yosys
+# log) and matches it against the regular expressions below, one per line, in JavaScript syntax.
+# The comment block above each expression is its review. docs/hardware/accelerators/
+# synthesis-guide.md#warnings explains each one at more length. Add an entry only after reading the
+# warning and deciding the design is correct as it stands; never to silence a real problem.
+
+# ABC is handed only the combinational part of each module, because Yosys keeps the flip-flops
+# itself. ABC notes that this network has no latches and so needs no sequential optimisation. It
+# says nothing about the design. The generic flow's ABC prints the first form once per module and
+# ABC run; ABC9 (iCE40 and ECP5) prints the second.
+^ABC: Warning: The network is combinational( \(run "fraig" or "fraig_sweep"\))?\.$
+
+# ECP5 flow only: ABC9 notes that the output of a carry box (a CCU2C) feeds more than one node
+# inside the network it optimises, so it maps around that box rather than through it. It is a limit
+# on ABC's optimisation, not a fault in the design: the same run's `&verify` reports "Networks are
+# equivalent" for every size. The count is 2 carries at 4 × 4, 8 × 8 and 16 × 16 alike, so the boxes
+# are in logic that does not grow with the array (the controller and the wrapper), not in the PEs.
+# Only this message form, with no complex flops, is allowed.
+^ABC: Warning: AIG with boxes has internal fanout in 0 complex flops and [0-9]+ carries\.$

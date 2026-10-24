@@ -1,0 +1,56 @@
+# Generic, technology-independent synthesis of matmul_top (docs/hardware/accelerators/synthesis-guide.md).
+#
+# `make synth` runs this once per array size, from build/synth-<R>x<C>/, after reading the sources
+# and setting the size (mk/synth.mk):
+#   yosys -p 'read_verilog -sv -D SYNTHESIS <package> <modules>; chparam -set ROWS R -set COLS C matmul_top; script synth/generic.ys'
+# so every output below lands in that size's directory. Any failed check stops Yosys with a
+# non-zero exit, which fails `make synth`.
+
+# Structural gates, on the design exactly as written: every module and port resolves, and after
+# proc there is no latch, no combinational loop, no net with two drivers and no used net without
+# a driver. Nothing is optimised before these run, so a latch on an unused signal is caught too.
+hierarchy -check -top matmul_top
+proc
+check -assert
+select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$_DLATCH_* t:$_DLATCHSR_*
+
+# Multipliers as written: count the $mul cells per module before synth turns them into $macc
+# cells (alumacc) and then into gates. opt_expr first turns the multiplications by a constant
+# power of two (the controller's C-select index arithmetic) into shifts, so what is left are the
+# real multipliers: one per processing element.
+opt_expr
+opt_clean
+tee -q -o generic.mul.stat.json stat -json
+
+# Memory inference: which arrays became a Yosys memory ($mem_v2) rather than loose flip-flops.
+memory -nomap
+select t:$mem_v2
+write_json -selected generic.memories.json
+select -clear
+
+# Generic synthesis, without memory_map: the inferred memories stay $mem_v2 cells and are counted
+# in bits, because building 192 Kibit of buffers out of flip-flops would describe a register file
+# nobody would build (and dominate every count). These are the steps of `synth` with that one
+# removed (`help synth`).
+synth -top matmul_top -run begin:fine
+opt -fast -full
+opt -full
+techmap
+opt -fast
+abc
+opt -fast
+hierarchy -check
+check -assert
+tee -q -o generic.stat.txt stat -width
+tee -q -o generic.stat.json stat -json
+write_json generic.json
+
+# Abstract gates: flatten, remap all combinational logic to seven simple two-input gates and the
+# 2:1 mux, count them, and measure the longest gate path between flip-flops, memory ports and
+# top-level ports. The memories are left out of the path search: their reads are registered, so
+# a path ends at a memory's address or data input.
+flatten
+abc -g AND,NAND,OR,NOR,XOR,XNOR,MUX
+opt_clean
+tee -q -o generic.gates.stat.json stat -json
+tee -q -o generic.ltp.txt ltp -noff t:$mem_v2 %n

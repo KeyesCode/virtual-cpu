@@ -7,6 +7,7 @@ import {
   newestCommittedReport,
   runBenchmark,
 } from './harness/benchmark.js';
+import { COMPARE_DEFAULTS, defaultCompareOptions, runCompareCpu } from './harness/compare-cpu.js';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
 import { MUTANTS_DEFAULTS, runMutants } from './harness/mutants.js';
@@ -105,6 +106,16 @@ ${GENERATORS}
                                          modelled sections (all but provenance and host) are identical.
                                          --baseline-dir takes the newest (by createdAt) report git
                                          tracks in <dir>; uncommitted reports never count.
+  compare-cpu --vcpu8-sim <bin> --accel-sim <bin> [--seed S] [--work <dir>] [--out <dir>]
+              [--publish <dir> [--allow-dirty]]
+                                         Run the CPU comparison workloads as generated VCPU-8
+                                         programs on the emulator and the Project 2 RTL runner
+                                         (hardware/rtl/vcpu8/build/sim/vcpu8_sim) and on the 4x4
+                                         accelerator runner, gate each on the reference, and write
+                                         --out/cpu-comparison.{json,md} (default build/reports).
+                                         --publish also writes <dir>/<date>-<shortsha>.{json,md}
+                                         when every row passed, refused from a dirty working tree
+                                         unless --allow-dirty. Exit 1 on a failing row.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -659,6 +670,41 @@ function benchmarkCompare(args: readonly string[]): number {
   );
 }
 
+async function compareCpu(args: readonly string[]): Promise<number> {
+  const parsed = parseArgs(
+    'compare-cpu',
+    args,
+    ['--vcpu8-sim', '--accel-sim', '--seed', '--work', '--out', '--publish'],
+    ['--allow-dirty'],
+  );
+  if (parsed === undefined) return 2;
+  const { values, set } = parsed;
+  const path = (flag: string) => {
+    const value = values.get(flag)?.[0];
+    return value === undefined ? undefined : resolve(cwd, value);
+  };
+  const vcpu8Sim = path('--vcpu8-sim');
+  const accelSim = path('--accel-sim');
+  if (vcpu8Sim === undefined || accelSim === undefined) {
+    process.stderr.write(`compare-cpu: --vcpu8-sim and --accel-sim are required\n${USAGE}`);
+    return 2;
+  }
+  const seed = countFlag('compare-cpu', values, '--seed', COMPARE_DEFAULTS.seed);
+  if (seed === undefined) return 2;
+  const outcome = await runCompareCpu(
+    {
+      ...defaultCompareOptions(vcpu8Sim, accelSim),
+      seed,
+      work: path('--work') ?? COMPARE_DEFAULTS.work,
+      out: path('--out') ?? COMPARE_DEFAULTS.out,
+      publish: path('--publish'),
+      allowDirty: set.has('--allow-dirty'),
+    },
+    (text) => process.stdout.write(text),
+  );
+  return outcome.exitCode;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
@@ -672,6 +718,7 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   mutants,
   benchmark,
   'benchmark-compare': benchmarkCompare,
+  'compare-cpu': compareCpu,
 };
 
 const [name, ...rest] = process.argv.slice(2);

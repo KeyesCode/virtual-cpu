@@ -183,11 +183,7 @@ function codeLines(dims: MatmulDims): string[] {
   ];
 }
 
-function dataLines(
-  dims: MatmulDims,
-  a: ArrayLike<number>,
-  b: ArrayLike<number>,
-): string[] {
+function dataLines(dims: MatmulDims, a: ArrayLike<number>, b: ArrayLike<number>): string[] {
   const { m, n, k } = dims;
   const values = (array: ArrayLike<number>, length: number) =>
     Array.from({ length }, (_, i) => array[i] ?? 0);
@@ -254,7 +250,9 @@ export function generateCpuProgram(
     ['B', b, dims.k * dims.n],
   ] as const) {
     if (matrix.length !== length) {
-      throw new RangeError(`${name} has ${String(matrix.length)} values, expected ${String(length)}`);
+      throw new RangeError(
+        `${name} has ${String(matrix.length)} values, expected ${String(length)}`,
+      );
     }
     for (let i = 0; i < length; i += 1) {
       const value = matrix[i] ?? 0;

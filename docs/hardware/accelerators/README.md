@@ -8,11 +8,13 @@ Start with the [architecture contract](architecture.md): the numerics, the dataf
 
 ## Documents
 
-| Document                                       | Contents                                                                                                                                                       |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [architecture.md](architecture.md)             | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured |
-| [processing-element.md](processing-element.md) | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                         |
-| [systolic-array.md](systolic-array.md)         | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence   |
+| Document                                                             | Contents                                                                                                                                                       |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [architecture.md](architecture.md)                                   | The contract: numerics and overflow, parameters and names, block diagram, ports, dataflow and a 4 × 4 cycle table, tiling, memory, handshake, what is measured |
+| [processing-element.md](processing-element.md)                       | The MAC cell: ports, one-clock timing, the overflow rule, why there is no stall port, the synthesis preview and its unit-test evidence                         |
+| [systolic-array.md](systolic-array.md)                               | The PE grid: dataflow, internal skew registers, the `tile_start` / `busy` / `tile_done` protocol, a traced 4 × 4 K = 3 tile, utilisation, unit-test evidence   |
+| [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                             |
+| [images/systolic-4x4.html](images/systolic-4x4.html)                 | Animated page (open from disk): the 4 × 4 K = 3 tile clock by clock, operands, skew registers and accumulators                                                 |
 
 Research results live outside `docs/`, in [research/accelerators/matmul/](../../../research/accelerators/matmul/README.md).
 
@@ -36,7 +38,8 @@ packages/accelerator-reference/
 │                            prng.ts (the seeded PRNG and the named matrix generators), pe.ts (the clock-level PE)
 ├── src/harness/             vectors.ts: the .in/.expected/.out text format, the JSON sidecar, output comparison;
 │                            pe-vectors.ts: the PE unit-test vectors; tile-vectors.ts: the array tile suites
-└── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite
+├── src/viz/                 schedule.ts: the documented tile timing rule for the visualizations; svg.ts, page.ts: gen-viz
+└── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite, gen-viz
 research/accelerators/matmul/  committed small reports (see its README)
 ```
 

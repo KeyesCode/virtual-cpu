@@ -281,8 +281,8 @@ function legend(x: number, y: number): string {
   );
   row(
     2,
-    `<rect x="${String(x + 4)}" y="${String(y + 26 + 2 * 30 - 11)}" width="32" height="22" fill="#ffffff" stroke="${A_COLOUR}" stroke-width="1.2"/>`,
-    'skew register (row i has i, column j has j)',
+    `<rect x="${String(x + 2)}" y="${String(y + 26 + 2 * 30 - 11)}" width="18" height="22" fill="#ffffff" stroke="${A_COLOUR}" stroke-width="1.2"/><rect x="${String(x + 24)}" y="${String(y + 26 + 2 * 30 - 11)}" width="18" height="22" fill="#ffffff" stroke="${B_COLOUR}" stroke-width="1.2" stroke-dasharray="4 2"/>`,
+    'skew register, A | B (row i has i, column j has j)',
   );
   row(
     3,

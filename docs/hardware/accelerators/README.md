@@ -133,21 +133,21 @@ The **`accelerator`** workflow (`.github/workflows/accelerator.yml`) runs on eve
 
 Each gate is its own step and runs the make target, never a copy of its logic, so a red step names the gate that failed:
 
-| Step                | Runs                                                                                                                        |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `reference tests`   | `pnpm --filter @vcpu/accelerator-reference test`: the reference model's Vitest suite                                        |
-| `tools-check`       | `make tools-check`: Verilator, Yosys, nextpnr-ice40 and nextpnr-ecp5 versions, `build/tool-versions.json`                   |
-| `lint`              | `make lint ROWS=4`, `ROWS=8` and `ROWS=16`: Verilator `--lint-only -Wall` from `matmul_top` at each size                    |
-| `test`              | `make test`: `test-pe`, `test-array` and `test-top` (4 × 4, 8 × 8, 16 × 16 and 4 × 8), each with its corrupted-vector check |
-| `verify`            | `make verify`: the directed corpus and `COUNT` (40) random products from seed 1 on each of 4 × 4, 8 × 8 and 16 × 16         |
-| `synth`             | `make synth`: Yosys and nextpnr (iCE40, ECP5) for the three sizes, `build/synth/summary.{json,md}`                          |
-| `synth-compare`     | `make -o synth synth-compare`: that summary against `research/accelerators/matmul/synth/baseline.json`                      |
-| `benchmark`         | `make benchmark`: the nine workloads on every size, each gated on the reference                                             |
-| `benchmark-compare` | `make -o benchmark benchmark-compare`: that report against the newest committed `research/accelerators/matmul/reports/`     |
-| `wave`              | `make wave`: the demo case on 4 × 4, `build/waves/demo.fst`                                                                 |
-| `wave-check`        | `make wave-check`: every signal of `matmul.gtkw` in the demo dump, 4 `tile_done` pulses, 1 `done`, C equal to the expected  |
+| Step                | Runs                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reference tests`   | `pnpm --filter @vcpu/accelerator-reference test`: the reference model's Vitest suite                                                        |
+| `tools-check`       | `make tools-check`: Verilator, Yosys, nextpnr-ice40 and nextpnr-ecp5 versions, `build/tool-versions.json`                                   |
+| `lint`              | `make lint ROWS=4`, `ROWS=8` and `ROWS=16`: Verilator `--lint-only -Wall` from `matmul_top` at each size                                    |
+| `test`              | `make test`: `test-pe`, `test-array` and `test-top` (4 × 4, 8 × 8, 16 × 16 and 4 × 8), each with its corrupted-vector check                 |
+| `verify`            | `make verify`: the directed corpus and `COUNT` (40) random products from seed 1 on each of 4 × 4, 8 × 8 and 16 × 16                         |
+| `synth`             | `make synth`: Yosys and nextpnr (iCE40, ECP5) for the three sizes, `build/synth/summary.{json,md}`                                          |
+| `synth-compare`     | `make -o synth synth-compare`: that summary against the runner's own baseline, `research/accelerators/matmul/synth/baseline-linux-x64.json` |
+| `benchmark`         | `make benchmark`: the nine workloads on every size, each gated on the reference                                                             |
+| `benchmark-compare` | `make -o benchmark benchmark-compare`: that report against the newest committed `research/accelerators/matmul/reports/`                     |
+| `wave`              | `make wave`: the demo case on 4 × 4, `build/waves/demo.fst`                                                                                 |
+| `wave-check`        | `make wave-check`: every signal of `matmul.gtkw` in the demo dump, 4 `tile_done` pulses, 1 `done`, C equal to the expected                  |
 
-`-o synth` and `-o benchmark` tell make to treat the previous step's output as up to date, so the compare steps check what that step just produced instead of running it again. Every `run` step uses `bash --noprofile --norc -euo pipefail` and no step has `continue-on-error`, so any mismatched element, failed gate or missing file fails the job.
+The synthesis baseline is per platform because the Linux x86-64 build of Yosys and nextpnr maps some logic differently from the macOS arm64 one that made `baseline.json` ([synthesis-guide.md](synthesis-guide.md#baseline-and-comparison) says how to refresh both). `-o synth` and `-o benchmark` tell make to treat the previous step's output as up to date, so the compare steps check what that step just produced instead of running it again. Every `run` step uses `bash --noprofile --norc -euo pipefail` and no step has `continue-on-error`, so any mismatched element, failed gate or missing file fails the job.
 
 Started by hand (**Actions** → `accelerator` → **Run workflow**), the `count` input sets `verify`'s `COUNT` for a longer random run; it must be a positive integer, and left empty it keeps the Makefile default. The TypeScript package needs no extra job: the `ci` workflow's `pnpm typecheck` and `pnpm test` already cover `@vcpu/accelerator-reference` (Vitest's `projects` include `packages/*`).
 

@@ -602,6 +602,12 @@ export async function runVerify(
         out: join(dir, `${plan.name}.out`),
         cycles: join(dir, `${plan.name}.cycles.json`),
       };
+      // DELIBERATE CI FAILURE (scratch PR only, never merged): C[0][0] of the 4x4 `small` directed case
+      // is expected one too high, so the accelerator workflow's verify step must go red.
+      if (sizeName(size) === '4x4' && plan.name.startsWith('small-')) {
+        const text = readFileSync(files.expected, 'utf8');
+        writeFileSync(files.expected, text.replace(/-?\d+/, (v) => String(Number(v) + 1)));
+      }
       const args = [
         '--case',
         files.input,

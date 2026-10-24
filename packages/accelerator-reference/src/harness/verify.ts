@@ -343,7 +343,7 @@ export function formatFailureReport(
 }
 
 /** Reads what the runner wrote for a case and compares C; never throws. */
-function judge(
+export function judge(
   plan: Pick<VerifyCasePlan, 'dims' | 'flags'>,
   run: RunnerResult,
   files: { readonly expected: string; readonly out: string; readonly cycles: string },

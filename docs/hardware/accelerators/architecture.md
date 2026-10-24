@@ -41,14 +41,14 @@ The three required configurations, 4 × 4, 8 × 8 and 16 × 16, are one RTL with
 
 Module names equal file names, one module per file in `hardware/accelerators/matmul/rtl/`:
 
-| Module               | Role                                                                                                       |
-| -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `processing_element` | One MAC cell: registers and forwards its operands, accumulates into INT32                                  |
-| `systolic_array`     | `ROWS` × `COLS` processing elements, wired as the dataflow below, and `tile_done`                          |
-| `input_buffer`       | A and B storage, written by the host port, banked for one A element per row and one B per column per clock |
-| `output_buffer`      | C storage, written one element per clock during DRAIN/STORE, read by the host port                         |
-| `matmul_controller`  | The FSM: configuration, dimension checks, tile scheduling, skew, accumulator clears, stores, handshake     |
-| `matmul_top`         | The accelerator: the controller, the buffers and the array, with the host port                             |
+| Module               | Role                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `processing_element` | One MAC cell: registers and forwards its operands, accumulates into INT32                                   |
+| `systolic_array`     | `ROWS` × `COLS` processing elements, wired as the dataflow below, the input skew registers, and `tile_done` |
+| `input_buffer`       | A and B storage, written by the host port, banked for one A element per row and one B per column per clock  |
+| `output_buffer`      | C storage, written one element per clock during DRAIN/STORE, read by the host port                          |
+| `matmul_controller`  | The FSM: configuration, dimension checks, tile scheduling, tile starts, stores, handshake                   |
+| `matmul_top`         | The accelerator: the controller, the buffers and the array, with the host port                              |
 
 ## Clock and reset
 
@@ -63,15 +63,15 @@ flowchart LR
   host -- "cfg_m, cfg_n, cfg_k, start" --> ctrl
   ctrl -- "busy, done, error, error_code" --> host
   subgraph matmul_top
-    ctrl[matmul_controller<br/>FSM, tile counters, skew]
+    ctrl[matmul_controller<br/>FSM, tile counters]
     ib["input_buffer<br/>A: ROWS banks (by row)<br/>B: COLS banks (by column)"]
     sa["systolic_array<br/>ROWS × COLS processing_element"]
     ob[output_buffer<br/>C, row-major]
     ctrl -- "read addresses" --> ib
-    ib -- "a_in[ROWS], b_in[COLS] (skewed, valid)" --> sa
-    ctrl -- "clear" --> sa
-    sa -- "tile_done" --> ctrl
-    sa -- "acc[ROWS][COLS]" --> ob
+    ib -- "a_data[ROWS], b_data[COLS] (unskewed, valid)" --> sa
+    ctrl -- "tile_start, tile_k" --> sa
+    sa -- "tile_done, busy" --> ctrl
+    sa -- "c[ROWS · COLS]" --> ob
     ctrl -- "store select / write enable" --> ob
   end
   ob -- "host_c_rdata (registered)" --> host
@@ -107,16 +107,20 @@ flowchart LR
 
 ### `systolic_array`
 
-| Port         | Dir | Width                | Meaning                                                                                  |
-| ------------ | --- | -------------------- | ---------------------------------------------------------------------------------------- |
-| `clk`, `rst` | in  | 1                    |                                                                                          |
-| `clear`      | in  | 1                    | Zero every accumulator (tile start)                                                      |
-| `a_in`       | in  | `ROWS` × 8, signed   | Row i's operand, entering PE(i, 0)                                                       |
-| `a_valid`    | in  | `ROWS`               | Row i's operand is valid                                                                 |
-| `b_in`       | in  | `COLS` × 8, signed   | Column j's operand, entering PE(0, j)                                                    |
-| `b_valid`    | in  | `COLS`               | Column j's operand is valid                                                              |
-| `acc`        | out | `ROWS` × `COLS` × 32 | Every accumulator, PE(i, j) at index i · `COLS` + j                                      |
-| `tile_done`  | out | 1                    | One-clock pulse in the first clock in which every accumulator holds the tile's final sum |
+| Port         | Dir | Width                        | Meaning                                                                                    |
+| ------------ | --- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `clk`, `rst` | in  | 1                            |                                                                                            |
+| `tile_start` | in  | 1                            | Start a tile: zero every accumulator and load the completion counter. Ignored while `busy` |
+| `tile_k`     | in  | `CFG_W` (16)                 | The tile's K, sampled with `tile_start`                                                    |
+| `a_data`     | in  | `ROWS` × 8, packed, signed   | Element i: row i's operand A[i, k], unskewed (the array delays row i by i clocks itself)   |
+| `a_valid`    | in  | `ROWS`                       | Row i's operand is valid                                                                   |
+| `b_data`     | in  | `COLS` × 8, packed, signed   | Element j: column j's operand B[k, j], unskewed (delayed by j clocks inside the array)     |
+| `b_valid`    | in  | `COLS`                       | Column j's operand is valid                                                                |
+| `c`          | out | `ROWS` · `COLS` × 32, packed | Every accumulator, PE(i, j) at element i · `COLS` + j                                      |
+| `tile_done`  | out | 1                            | One-clock pulse in the first clock in which every accumulator holds the tile's final sum   |
+| `busy`       | out | 1                            | High from the clock after an accepted `tile_start` until the clock before `tile_done`      |
+
+The ports are packed vectors because Yosys' `read_verilog -sv` rejects unpacked array ports. [systolic-array.md](systolic-array.md) documents the module, its completion protocol and its verification.
 
 ### `processing_element`
 
@@ -138,29 +142,29 @@ Each processing element PE(i, j) holds C[i, j] of the current output tile in its
 
 - **A moves right.** Row i of the tile's A enters PE(i, 0) and moves one PE to the right per clock.
 - **B moves down.** Column j of B enters PE(0, j) and moves one PE down per clock.
-- **Skew.** The controller delays row i by i clocks and column j by j clocks: in tile clock t it presents A[i, t − i] on row i and B[t − j, j] on column j (valid only for 0 ≤ t − i < K and 0 ≤ t − j < K). A value presented at the edge in clock t reaches PE(i, j) in clock t + j (A) or t + i (B), so PE(i, j) multiplies **A[i, k] by B[k, j] in clock k + i + j** of the tile: the matching pair always arrives together.
-- **Completion.** PE(i, j) performs its last MAC (k = K − 1) in clock K − 1 + i + j, and its accumulator holds C[i, j] from the next clock. The far corner PE(`ROWS`−1, `COLS`−1) is last: its final MAC is in clock K + `ROWS` + `COLS` − 3, and **`tile_done` pulses in clock K + `ROWS` + `COLS` − 2**, the first clock in which every accumulator is final. A tile's MACs therefore span K + `ROWS` + `COLS` − 2 clocks (0 … K + `ROWS` + `COLS` − 3): K clocks of streaming plus `ROWS` + `COLS` − 2 clocks of pipeline fill and drain, and `tile_done` follows in the next clock.
+- **Skew.** Row i is delayed by i clocks and column j by j clocks, by triangular skew registers inside `systolic_array` (a change from the orchestrator decisions, which put the skew in the controller: one RTL then owns the whole timing, and the controller presents plain unskewed vectors). The caller presents A[i, k] on every row and B[k, j] on every column in tile clock k (the k-th clock after `tile_start`, counting from 0), valid for 0 ≤ k < K. Row i's operand reaches PE(i, 0) in clock k + i and PE(i, j) in clock k + i + j; column j's reaches PE(i, j) in clock k + j + i. So PE(i, j) multiplies **A[i, k] by B[k, j] in clock k + i + j** of the tile: the matching pair always arrives together.
+- **Completion.** PE(i, j) performs its last MAC (k = K − 1) in clock K − 1 + i + j, and its accumulator holds C[i, j] from the next clock. The far corner PE(`ROWS`−1, `COLS`−1) is last: its final MAC is in clock K + `ROWS` + `COLS` − 3, and **`tile_done` pulses in clock K + `ROWS` + `COLS` − 2**, the first clock in which every accumulator is final. Tile clock 0 is the clock right after `tile_start` (which clears the accumulators), so `tile_done` comes K + `ROWS` + `COLS` − 1 clocks after `tile_start`. A tile's MACs therefore span K + `ROWS` + `COLS` − 2 clocks (0 … K + `ROWS` + `COLS` − 3): K clocks of streaming plus `ROWS` + `COLS` − 2 clocks of pipeline fill and drain, and `tile_done` follows in the next clock.
 - **Reading the decisions file.** The orchestrator decisions say the last product at PE(`ROWS`−1, `COLS`−1) is "at clock K + ROWS + COLS − 2 (+1 for the accumulator register)" and that the array raises `tile_done` then. With clocks numbered from 0 as above, that is the timing here: the last MAC is the (K + `ROWS` + `COLS` − 2)-th clock, clock K + `ROWS` + `COLS` − 3, and `tile_done` pulses one clock later, in clock K + `ROWS` + `COLS` − 2, when the accumulator register holds it. `tile_done` is never in clock K + `ROWS` + `COLS` − 1.
 - **Not all at once.** PEs on the same anti-diagonal (equal i + j) start, compute and finish together; a PE `d` anti-diagonals from the corner starts `d` clocks later. Nothing assumes every PE has valid operands in the same clock.
 
 ### A 4 × 4 tile with K = 3, clock by clock
 
-Clock 0 is the first tile clock, in which A[0, 0] and B[0, 0] are at PE(0, 0). "–" is an invalid (bubble) input; the controller holds `a_valid` / `b_valid` low there. The number in brackets is how many PEs of that anti-diagonal do a MAC.
+Clock 0 is the first tile clock (the clock after `tile_start`), in which A[0, 0] and B[0, 0] are at PE(0, 0). The A and B columns show what arrives at the left edge, PE(i, 0), and the top edge, PE(0, j), after the internal skew registers. "–" is an invalid (bubble) input. The number in brackets is how many PEs of that anti-diagonal do a MAC. [systolic-array.md](systolic-array.md#a-4--4-tile-with-k--3-clock-by-clock) has the same tile as traced from the RTL simulation.
 
-| Clock | Row inputs A (row 0…3) | Column inputs B (col 0…3) | MACs this clock: PE(i, j) uses k = t − i − j   | Active PEs | Accumulators final at end of clock |
-| ----: | ---------------------- | ------------------------- | ---------------------------------------------- | ---------: | ---------------------------------- |
-|     0 | A[0,0] – – –           | B[0,0] – – –              | i+j=0: k=0 (1)                                 |          1 | –                                  |
-|     1 | A[0,1] A[1,0] – –      | B[1,0] B[0,1] – –         | i+j=0: k=1 (1); i+j=1: k=0 (2)                 |          3 | –                                  |
-|     2 | A[0,2] A[1,1] A[2,0] – | B[2,0] B[1,1] B[0,2] –    | i+j=0: k=2 (1); i+j=1: k=1 (2); i+j=2: k=0 (3) |          6 | i+j=0                              |
-|     3 | – A[1,2] A[2,1] A[3,0] | – B[2,1] B[1,2] B[0,3]    | i+j=1: k=2 (2); i+j=2: k=1 (3); i+j=3: k=0 (4) |          9 | i+j=1                              |
-|     4 | – – A[2,2] A[3,1]      | – – B[2,2] B[1,3]         | i+j=2: k=2 (3); i+j=3: k=1 (4); i+j=4: k=0 (3) |         10 | i+j=2                              |
-|     5 | – – – A[3,2]           | – – – B[2,3]              | i+j=3: k=2 (4); i+j=4: k=1 (3); i+j=5: k=0 (2) |          9 | i+j=3                              |
-|     6 | – – – –                | – – – –                   | i+j=4: k=2 (3); i+j=5: k=1 (2); i+j=6: k=0 (1) |          6 | i+j=4                              |
-|     7 | – – – –                | – – – –                   | i+j=5: k=2 (2); i+j=6: k=1 (1)                 |          3 | i+j=5                              |
-|     8 | – – – –                | – – – –                   | i+j=6: k=2 (1)                                 |          1 | i+j=6 (PE(3, 3), the corner)       |
-|     9 | – – – –                | – – – –                   | none                                           |          0 | all: `tile_done` pulses            |
+| Clock | A at PE(i, 0) (row 0…3) | B at PE(0, j) (col 0…3) | MACs this clock: PE(i, j) uses k = t − i − j   | Active PEs | Accumulators final at end of clock |
+| ----: | ----------------------- | ----------------------- | ---------------------------------------------- | ---------: | ---------------------------------- |
+|     0 | A[0,0] – – –            | B[0,0] – – –            | i+j=0: k=0 (1)                                 |          1 | –                                  |
+|     1 | A[0,1] A[1,0] – –       | B[1,0] B[0,1] – –       | i+j=0: k=1 (1); i+j=1: k=0 (2)                 |          3 | –                                  |
+|     2 | A[0,2] A[1,1] A[2,0] –  | B[2,0] B[1,1] B[0,2] –  | i+j=0: k=2 (1); i+j=1: k=1 (2); i+j=2: k=0 (3) |          6 | i+j=0                              |
+|     3 | – A[1,2] A[2,1] A[3,0]  | – B[2,1] B[1,2] B[0,3]  | i+j=1: k=2 (2); i+j=2: k=1 (3); i+j=3: k=0 (4) |          9 | i+j=1                              |
+|     4 | – – A[2,2] A[3,1]       | – – B[2,2] B[1,3]       | i+j=2: k=2 (3); i+j=3: k=1 (4); i+j=4: k=0 (3) |         10 | i+j=2                              |
+|     5 | – – – A[3,2]            | – – – B[2,3]            | i+j=3: k=2 (4); i+j=4: k=1 (3); i+j=5: k=0 (2) |          9 | i+j=3                              |
+|     6 | – – – –                 | – – – –                 | i+j=4: k=2 (3); i+j=5: k=1 (2); i+j=6: k=0 (1) |          6 | i+j=4                              |
+|     7 | – – – –                 | – – – –                 | i+j=5: k=2 (2); i+j=6: k=1 (1)                 |          3 | i+j=5                              |
+|     8 | – – – –                 | – – – –                 | i+j=6: k=2 (1)                                 |          1 | i+j=6 (PE(3, 3), the corner)       |
+|     9 | – – – –                 | – – – –                 | none                                           |          0 | all: `tile_done` pulses            |
 
-The edge inputs stop after clock K + `ROWS` − 2 = 5 (A) and K + `COLS` − 2 = 5 (B); clocks 6 to 8 only drain operands already inside the array. The 48 MACs (4 · 4 · 3) span 9 clocks (0 to 8) of 16 PEs, an array utilisation of 48 / 144 = 33 % over the MAC clocks: with K this small, fill and drain dominate. For one tile the array utilisation is K / (K + `ROWS` + `COLS` − 2), rising with K. (Reported PE utilisation divides by all the compute clocks the RTL actually spends, including clears and stores, so it is lower.)
+The caller's inputs stop after clock K − 1 = 2; the skewed edge inputs stop after clock K + `ROWS` − 2 = 5 (A) and K + `COLS` − 2 = 5 (B); clocks 6 to 8 only drain operands already inside the array. The 48 MACs (4 · 4 · 3) span 9 clocks (0 to 8) of 16 PEs, an array utilisation of 48 / 144 = 33 % over the MAC clocks: with K this small, fill and drain dominate. For one tile the array utilisation is K / (K + `ROWS` + `COLS` − 2), rising with K. (Reported PE utilisation divides by all the compute clocks the RTL actually spends, including clears and stores, so it is lower.)
 
 ## Tiling
 
@@ -198,8 +202,8 @@ An 8 × 8 array on A = 13 × 19, B = 19 × 11 has ⌈13/8⌉ · ⌈11/8⌉ = 2 �
 | -------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `IDLE`         | Waiting for `start`                                                                                                       |
 | `LOAD`         | The configuration (checked when `start` was accepted) is held; tile counters reset                                        |
-| `PREPARE_TILE` | `clear` the accumulators; compute the tile's row and column offsets and its R′ × C′ mask                                  |
-| `COMPUTE`      | Issue buffer reads and present the skewed operands (valid zeros past M or N), clocks 0 … K + max(`ROWS`, `COLS`) − 2      |
+| `PREPARE_TILE` | Pulse `tile_start` (clears the accumulators); compute the tile's row and column offsets and its R′ × C′ mask              |
+| `COMPUTE`      | Issue buffer reads and present the unskewed operands (valid zeros past M or N), tile clocks 0 … K − 1, with no gaps       |
 | `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                                 |
 | `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                                 |
 | `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                                |

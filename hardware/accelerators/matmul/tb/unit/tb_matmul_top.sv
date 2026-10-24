@@ -13,7 +13,7 @@
 //      (in = max(M·K, K·N) clocks), or, for a reuse case, checks that its A and B are the leading
 //      submatrices of what it last wrote and writes nothing (in = 0);
 //   2. pulses start with cfg_m/n/k and checks every clock until done: error and error_code clear
-//      from the next clock, busy high until done, the tiles in row-major order (dbg_tile_i/j in
+//      from the next clock on, busy high until done, the tiles in row-major order (dbg_tile_i/j in
 //      each PREPARE_TILE clock) and dbg_k = 0 … K−1 in COMPUTE; at done, busy low, and the
 //      cycle counters and the number of busy clocks equal the formulas of
 //      docs/hardware/accelerators/controller.md:
@@ -32,7 +32,7 @@
 //     done clock and the third in the clock after the second's done, then C is read;
 //   - errors: starts with K = 0, M = 65, M = 65 with N = 0 (ERR_DIM_ZERO wins), K = 0xFFFF and
 //     M = N = K = 0 must each raise error with the right error_code from the next clock, pass
-//     through ERROR to IDLE, and never raise busy or done; the last error's ERROR clock starts a
+//     through ERROR to IDLE, clear both cycle counters, and never raise busy or done; the last error's ERROR clock starts a
 //     valid run, which must clear error and produce the last case's C again.
 //
 // Plusargs: +suite=<dir> (required). The first MAX_REPORTED problems are printed as `MISMATCH …`
@@ -258,9 +258,11 @@ module tb_matmul_top #(
         host_b_wdata = ~DATA_W'(b_m[(rel - 2) / n][(rel - 2) % n]);
       end
       #1;
-      if (rel == 1 && (error !== 1'b0 || error_code !== matmul_pkg::ERR_NONE)) begin
-        report($sformatf("%s: error %0d error_code %0d in the clock after start, expected 0 0",
-                         name, error, error_code));
+      // error clears from the clock after start and stays clear: the start ignored while busy
+      // (cfg_m = 0 when poked) must not touch it.
+      if (error !== 1'b0 || error_code !== matmul_pkg::ERR_NONE) begin
+        report($sformatf("%s rel %0d: error %0d error_code %0d, expected 0 0", name, rel, error,
+                         error_code));
       end
       // The tile order: row-major, the tile column fastest.
       if (dbg_state == matmul_pkg::PREPARE_TILE) begin
@@ -357,6 +359,10 @@ module tb_matmul_top #(
       end
       if (busy !== 1'b0 || done !== 1'b0) begin
         report($sformatf("%s, clock %0d: busy %0d done %0d, expected 0 0", what, rel, busy, done));
+      end
+      if (cycles_compute !== '0 || cycles_store !== '0) begin
+        report($sformatf("%s, clock %0d: cycles_compute %0d cycles_store %0d, expected 0 0", what, rel,
+                         cycles_compute, cycles_store));
       end
       if (dbg_state != ((rel == 1) ? matmul_pkg::ERROR : matmul_pkg::IDLE)) begin
         report($sformatf("%s, clock %0d: state %0d", what, rel, dbg_state));

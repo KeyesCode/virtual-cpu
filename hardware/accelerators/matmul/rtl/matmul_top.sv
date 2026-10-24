@@ -55,6 +55,18 @@ module matmul_top #(
   localparam int LOG_DIM = $clog2(MAX_DIM);
   localparam int DEPTH   = MAX_DIM * MAX_DIM;
 
+  // r1 selects buffer banks and tile offsets by address bits: ROWS, COLS and MAX_DIM are powers of
+  // two, and each side is 2 … MAX_DIM. Checked at elaboration (no logic is generated).
+  if ((MAX_DIM & (MAX_DIM - 1)) != 0 || MAX_DIM < 2) begin : g_bad_max_dim
+    $error("matmul_top: MAX_DIM must be a power of two of at least 2");
+  end
+  if ((ROWS & (ROWS - 1)) != 0 || ROWS < 2 || ROWS > MAX_DIM) begin : g_bad_rows
+    $error("matmul_top: ROWS must be a power of two from 2 to MAX_DIM");
+  end
+  if ((COLS & (COLS - 1)) != 0 || COLS < 2 || COLS > MAX_DIM) begin : g_bad_cols
+    $error("matmul_top: COLS must be a power of two from 2 to MAX_DIM");
+  end
+
   logic [ADDR_W-1:0]               a_rd_addr;
   logic [ROWS-1:0][DATA_W-1:0]     a_rd_data;
   logic [ADDR_W-1:0]               b_rd_addr;

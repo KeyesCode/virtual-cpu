@@ -198,17 +198,17 @@ An 8 × 8 array on A = 13 × 19, B = 19 × 11 has ⌈13/8⌉ · ⌈11/8⌉ = 2 �
 
 `ctrl_state_t` names the controller's states:
 
-| State          | What happens                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `IDLE`         | Waiting for `start`                                                                                                 |
-| `LOAD`         | The configuration (checked when `start` was accepted) is held; tile counters reset                                  |
-| `PREPARE_TILE` | Pulse `tile_start` (clears the accumulators); compute the tile's row and column offsets and its R′ × C′ mask        |
-| `COMPUTE`      | Issue buffer reads and present the unskewed operands (valid zeros past M or N), tile clocks 0 … K − 1, with no gaps |
-| `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                           |
-| `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                           |
-| `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                          |
-| `DONE`         | `done` pulses; back to `IDLE`                                                                                       |
-| `ERROR`        | Entered on an invalid `start`: `error` and `error_code` set; back to `IDLE`, both held until the next `start`       |
+| State          | What happens                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `IDLE`         | Waiting for `start`                                                                                                       |
+| `LOAD`         | The configuration (checked when `start` was accepted) is held; tile counters reset                                        |
+| `PREPARE_TILE` | Pulse `tile_start` (clears the accumulators) and issue the buffer reads of k = 0 for the tile set up by LOAD or NEXT_TILE |
+| `COMPUTE`      | Issue buffer reads and present the unskewed operands (valid zeros past M or N), tile clocks 0 … K − 1, with no gaps       |
+| `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                                 |
+| `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                                 |
+| `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                                |
+| `DONE`         | `done` pulses; back to `IDLE`                                                                                             |
+| `ERROR`        | Entered on an invalid `start`: `error` and `error_code` set; back to `IDLE`, both held until the next `start`             |
 
 The exact number of clocks each state takes is the controller's own design ([controller.md](controller.md) records it); the array-level timing above is the contract. Clock counts in reports are always measured on the RTL, never computed from this table.
 

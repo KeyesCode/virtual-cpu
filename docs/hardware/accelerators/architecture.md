@@ -192,25 +192,25 @@ An 8 × 8 array on A = 13 × 19, B = 19 × 11 has ⌈13/8⌉ · ⌈11/8⌉ = 2 �
 
 1. The host writes A and B through the host port while `busy` is low (or leaves them from a previous run).
 2. It drives `cfg_m`, `cfg_n`, `cfg_k` and pulses `start` for one clock. The controller samples and checks the configuration in that clock; `start` while `busy` is ignored.
-3. If any dimension is 0 (`ERR_DIM_ZERO`) or above `MAX_DIM` (`ERR_DIM_TOO_LARGE`), the controller goes from IDLE straight to ERROR: from the next clock `error` is high with `error_code`, `busy` is never high, no tile runs, and `done` does not pulse. `ERR_DIM_ZERO` wins if both apply.
-4. Otherwise the controller goes to LOAD and `busy` is high from the next clock while it runs every tile. When the last tile is stored, `done` pulses for one clock, and `busy` is already low in that clock: the host may pulse `start` again in the clock after `done`.
+3. If any dimension is 0 (`ERR_DIM_ZERO`) or above `MAX_DIM` (`ERR_DIM_TOO_LARGE`), the controller goes straight to ERROR: from the next clock `error` is high with `error_code`, `busy` is never high, no tile runs, and `done` does not pulse. `ERR_DIM_ZERO` wins if both apply.
+4. Otherwise the controller goes to LOAD and `busy` is high from the next clock while it runs every tile. When the last tile is stored, `done` pulses for one clock, and `busy` is already low in that clock: the host may pulse `start` again in the `done` clock itself or any later one (a `start` is accepted whenever `busy` is low: in IDLE, DONE or ERROR).
 5. The host reads C. `error` and `error_code` stay until the next `start`, which clears them; a second `start` after `done` runs again without a reset, with new or unchanged buffers.
 
 `ctrl_state_t` names the controller's states:
 
-| State          | What happens                                                                                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `IDLE`         | Waiting for `start`                                                                                                       |
-| `LOAD`         | The configuration (checked when `start` was accepted) is held; tile counters reset                                        |
-| `PREPARE_TILE` | Pulse `tile_start` (clears the accumulators); compute the tile's row and column offsets and its R′ × C′ mask              |
-| `COMPUTE`      | Issue buffer reads and present the unskewed operands (valid zeros past M or N), tile clocks 0 … K − 1, with no gaps       |
-| `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                                 |
-| `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                                 |
-| `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                                |
-| `DONE`         | `done` pulses; back to `IDLE`                                                                                             |
-| `ERROR`        | Entered from `IDLE` on an invalid `start`: `error` and `error_code` set; back to `IDLE`, both held until the next `start` |
+| State          | What happens                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `IDLE`         | Waiting for `start`                                                                                                 |
+| `LOAD`         | The configuration (checked when `start` was accepted) is held; tile counters reset                                  |
+| `PREPARE_TILE` | Pulse `tile_start` (clears the accumulators); compute the tile's row and column offsets and its R′ × C′ mask        |
+| `COMPUTE`      | Issue buffer reads and present the unskewed operands (valid zeros past M or N), tile clocks 0 … K − 1, with no gaps |
+| `DRAIN`        | Edge inputs invalid; wait for `tile_done`                                                                           |
+| `STORE`        | Write the R′ · C′ unmasked accumulators to `output_buffer`, one per clock                                           |
+| `NEXT_TILE`    | Advance in row-major tile order, or finish                                                                          |
+| `DONE`         | `done` pulses; back to `IDLE`                                                                                       |
+| `ERROR`        | Entered on an invalid `start`: `error` and `error_code` set; back to `IDLE`, both held until the next `start`       |
 
-The exact number of clocks each state takes is the controller's own design (its documentation records it); the array-level timing above is the contract. Clock counts in reports are always measured on the RTL, never computed from this table.
+The exact number of clocks each state takes is the controller's own design ([controller.md](controller.md) records it); the array-level timing above is the contract. Clock counts in reports are always measured on the RTL, never computed from this table.
 
 ## Verification and vectors
 

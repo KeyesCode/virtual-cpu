@@ -1,0 +1,16 @@
+# ECP5 synthesis of matmul_fpga_wrapper (hardware/fpga/), for nextpnr-ecp5.
+#
+# `make synth` runs this once per array size, from build/synth-<R>x<C>/, after reading the sources
+# and the wrapper and setting the wrapper's ROWS and COLS (mk/synth.mk). The same structural gates
+# as generic.ys run first.
+
+hierarchy -check -top matmul_fpga_wrapper
+proc
+check -assert
+select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$_DLATCH_* t:$_DLATCHSR_*
+
+synth_ecp5 -top matmul_fpga_wrapper
+check -assert
+tee -q -o ecp5.stat.txt stat -width
+tee -q -o ecp5.stat.json stat -json
+write_json ecp5.json

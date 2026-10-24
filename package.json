@@ -32,6 +32,7 @@
     "accel:synth": "make -C hardware/accelerators/matmul synth",
     "accel:benchmark": "make -C hardware/accelerators/matmul benchmark",
     "accel:wave": "make -C hardware/accelerators/matmul wave",
+    "accel:check": "pnpm --filter @vcpu/accelerator-reference test && make -C hardware/accelerators/matmul tools-check && make -C hardware/accelerators/matmul lint ROWS=4 && make -C hardware/accelerators/matmul lint ROWS=8 && make -C hardware/accelerators/matmul lint ROWS=16 && make -C hardware/accelerators/matmul test verify synth-compare benchmark-compare wave-check",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

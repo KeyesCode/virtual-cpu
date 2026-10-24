@@ -7,7 +7,8 @@
 #                           writes build/synth/summary.{json,md} over every size
 #   make synth-size-<R>     one size's flows only (no summary)
 #   make synth-baseline     make synth, then copy the summary to
-#                           research/accelerators/matmul/synth/baseline.*
+#                           research/accelerators/matmul/synth/baseline.* (baseline-linux-x64.*
+#                           on Linux x86-64, see mk/platform.mk)
 #   make synth-compare      make synth, then fail on any difference from the committed baseline
 #   make synth-latch-check  prove the latch gate fails on copies of rtl/ with a latch added
 #
@@ -120,7 +121,7 @@ ifneq ($(filter synth-baseline,$(MAKECMDGOALS)),)
   endif
 endif
 
-synth-baseline: synth ## Rewrite research/accelerators/matmul/synth/baseline.{json,md} from a fresh make synth from a clean tree
+synth-baseline: synth ## Rewrite this platform's research/accelerators/matmul/synth/baseline*.{json,md} from a fresh make synth from a clean tree
 	@mkdir -p $(dir $(SYNTH_BASELINE))
 	cp $(SYNTH_DIR)/summary.json $(SYNTH_BASELINE).json
 	cp $(SYNTH_DIR)/summary.md $(SYNTH_BASELINE).md

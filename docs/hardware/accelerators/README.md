@@ -128,3 +128,38 @@ pnpm accel:gen-vectors --seed 1 --m 13 --n 11 --k 19 --out hardware/accelerators
 ```
 
 The root `package.json` has `accel:lint`, `accel:test`, `accel:simulate`, `accel:verify`, `accel:synth`, `accel:benchmark` and `accel:wave`, each `make -C hardware/accelerators/matmul <target>`, and `accel:gen-vectors`. A target a later ticket has not added yet fails with make's "No rule to make target".
+
+`pnpm accel:check` runs the gates of the [CI job](#ci) in the same order on your machine: the reference tests, `tools-check`, `lint` at 4 × 4, 8 × 8 and 16 × 16, then `test`, `verify`, `synth-compare` (which runs `synth`), `benchmark-compare` (which runs `benchmark`) and `wave-check` (which runs `wave`). It stops at the first failing gate.
+
+## CI
+
+The **`accelerator`** workflow (`.github/workflows/accelerator.yml`) runs on every push to `master`, on every pull request and on demand (`workflow_dispatch`); a newer push to a pull request cancels its older runs. It has one job, `Accelerator gates`, on `ubuntu-24.04` with a 90-minute timeout, set up exactly like the [`hardware` workflow](../README.md#ci): pnpm from `packageManager`, Node from `.nvmrc`, `pnpm install --frozen-lockfile`, then `pnpm hardware:setup` installs the OSS CAD Suite pinned in `hardware/toolchain.env`. The extracted suite in `~/.cache/vcpu8` is cached under the same key expression as `hardware.yml` (toolchain version, runner OS and architecture, hash of `toolchain.env`), so the two workflows share one cache entry; it is saved right after the install, so a later failing gate still keeps it.
+
+Each gate is its own step and runs the make target, never a copy of its logic, so a red step names the gate that failed:
+
+| Step                | Runs                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reference tests`   | `pnpm --filter @vcpu/accelerator-reference test`: the reference model's Vitest suite                                                        |
+| `tools-check`       | `make tools-check`: Verilator, Yosys, nextpnr-ice40 and nextpnr-ecp5 versions, `build/tool-versions.json`                                   |
+| `lint`              | `make lint ROWS=4`, `ROWS=8` and `ROWS=16`: Verilator `--lint-only -Wall` from `matmul_top` at each size                                    |
+| `test`              | `make test`: `test-pe`, `test-array` and `test-top` (4 × 4, 8 × 8, 16 × 16 and 4 × 8), each with its corrupted-vector check                 |
+| `verify`            | `make verify`: the directed corpus and `COUNT` (40) random products from seed 1 on each of 4 × 4, 8 × 8 and 16 × 16                         |
+| `synth`             | `make synth`: Yosys and nextpnr (iCE40, ECP5) for the three sizes, `build/synth/summary.{json,md}`                                          |
+| `synth-compare`     | `make -o synth synth-compare`: that summary against the runner's own baseline, `research/accelerators/matmul/synth/baseline-linux-x64.json` |
+| `benchmark`         | `make benchmark`: the nine workloads on every size, each gated on the reference                                                             |
+| `benchmark-compare` | `make -o benchmark benchmark-compare`: that report against the newest committed `research/accelerators/matmul/reports/`                     |
+| `wave`              | `make wave`: the demo case on 4 × 4, `build/waves/demo.fst`                                                                                 |
+| `wave-check`        | `make wave-check`: every signal of `matmul.gtkw` in the demo dump, 4 `tile_done` pulses, 1 `done`, C equal to the expected                  |
+
+The synthesis baseline is per platform because the Linux x86-64 build of Yosys and nextpnr maps some logic differently from the macOS arm64 one that made `baseline.json` ([synthesis-guide.md](synthesis-guide.md#baseline-and-comparison) says how to refresh both). `-o synth` and `-o benchmark` tell make to treat the previous step's output as up to date, so the compare steps check what that step just produced instead of running it again. Every `run` step uses `bash --noprofile --norc -euo pipefail` and no step has `continue-on-error`, so any mismatched element, failed gate or missing file fails the job.
+
+Started by hand (**Actions** → `accelerator` → **Run workflow**), the `count` input sets `verify`'s `COUNT` for a longer random run; it must be a positive integer, and left empty it keeps the Makefile default. The TypeScript package needs no extra job: the `ci` workflow's `pnpm typecheck` and `pnpm test` already cover `@vcpu/accelerator-reference` (Vitest's `projects` include `packages/*`).
+
+### Artifacts
+
+The job uploads its outputs on every run, whether it passes or fails. Download them from the run's summary page on GitHub (**Actions** → the run → **Artifacts**):
+
+- **`accelerator-reports`**: `build/reports/`, with `verify.json`, `verify.md` and `benchmark.{json,csv,md}`. The upload fails if this directory is missing.
+- **`accelerator-build`**: `build/synth/` (with `summary.json` and `summary.md`), the Yosys and nextpnr logs and nextpnr reports of each `build/synth-<R>x<C>/`, the failing cases in `build/failures/`, `build/tool-versions.json` and the demo waveform `build/waves/demo.fst`. Paths a run did not reach are skipped with a warning.
+
+A failing verify case can be replayed locally: download `accelerator-build`, copy its `failures/<RxC>-<name>/` into `hardware/accelerators/matmul/build/failures/`, and run `make -C hardware/accelerators/matmul replay CASE=build/failures/<RxC>-<name> SIM=build/sim-<RxC>/matmul_sim` ([verification-strategy.md](verification-strategy.md)). `SIM` is needed because the saved `case.json` names the runner by its path on the CI machine. To rerun a failed job, use **Re-run jobs** on the run's page, or push a new commit to the pull request.

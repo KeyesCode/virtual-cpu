@@ -18,7 +18,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@vcpu/assembler": "workspace:*",
+    "@vcpu/cpu-core": "workspace:*",
     "@vcpu/rtl-tools": "workspace:*",
+    "@vcpu/shared": "workspace:*",
     "zod": "^4.6.7"
   },
   "devDependencies": {

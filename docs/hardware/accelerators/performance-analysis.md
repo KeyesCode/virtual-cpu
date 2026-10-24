@@ -1,6 +1,6 @@
 # Performance analysis
 
-This document reports how many clock cycles the INT8 matmul accelerator (revision `matmul-os-r1`) spends on the benchmark workloads of the Project 3 brief, on the 4 × 4, 8 × 8 and 16 × 16 arrays, and explains what each number shows. Every number below comes from the committed baseline report in [research/accelerators/matmul/reports/](../../../research/accelerators/matmul/reports/) (JSON, CSV and Markdown), which `make benchmark-baseline` wrote from a clean working tree. [research/accelerators/matmul/README.md](../../../research/accelerators/matmul/README.md) documents the report schema.
+This document reports how many clock cycles the INT8 matmul accelerator (revision `matmul-os-r1`) spends on the benchmark workloads of the Project 3 brief, on the 4 × 4, 8 × 8 and 16 × 16 arrays, and explains what each number shows. Every number below comes from the committed baseline report [research/accelerators/matmul/reports/2026-10-24-851c6f6.md](../../../research/accelerators/matmul/reports/2026-10-24-851c6f6.md) (JSON and CSV beside it), which `make benchmark-baseline` wrote at commit `851c6f6` from a clean working tree. [research/accelerators/matmul/README.md](../../../research/accelerators/matmul/README.md) documents the report schema.
 
 ```sh
 make -C hardware/accelerators/matmul benchmark            # build/reports/benchmark.{json,csv,md}

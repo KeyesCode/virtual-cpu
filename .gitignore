@@ -8,3 +8,4 @@ coverage/
 benchmarks/results/
 
 hardware/rtl/vcpu8/build/
+hardware/accelerators/matmul/build/

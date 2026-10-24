@@ -25,6 +25,7 @@ import {
   RunnerCyclesSchema,
   type RunnerFlags,
   RunnerFlagsSchema,
+  sortCases,
   type VerifyCaseResult,
   type VerifyReport,
 } from './report.js';
@@ -394,6 +395,13 @@ function judge(
       cycles,
     };
   }
+  if (plan.flags.abortFirst && !cycles.aborted) {
+    return {
+      reason: 'the --abort-first run finished without reaching STORE, so no reset interrupted it',
+      mismatches: [],
+      cycles,
+    };
+  }
   if (cycles.runsDiffering > 0) {
     return {
       reason: `${String(cycles.runsDiffering)} of ${String(plan.flags.repeat - 1)} repeated runs differ from the first`,
@@ -469,20 +477,25 @@ interface Task {
   readonly plan: VerifyCasePlan;
 }
 
-/** Writes everything needed to understand and rerun a failing case into `dir`. */
-function saveFailure(
-  dir: string,
-  task: Task,
-  files: {
+interface Failure {
+  readonly dir: string;
+  readonly task: Task;
+  readonly files: {
     readonly input: string;
     readonly expected: string;
     readonly out: string;
     readonly cycles: string;
-  },
-  outcome: CaseOutcome,
-  report: string,
-  command: string,
-): void {
+  };
+  readonly outcome: CaseOutcome;
+  /** The runner command line. */
+  readonly command: string;
+}
+
+/** Writes everything needed to understand and rerun a failing case into `dir`; returns its report. */
+function saveFailure(failure: Failure): string {
+  const { dir, task, files, outcome, command } = failure;
+  const report =
+    formatFailureReport(sizeName(task.size), task.plan, outcome, replayCommand(dir)) ?? '';
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   const { plan, size, sim } = task;
@@ -504,7 +517,8 @@ function saveFailure(
   };
   writeFileSync(join(dir, 'case.json'), `${JSON.stringify(file, null, 2)}\n`);
   copyFileSync(files.input, join(dir, 'case.in'));
-  copyFileSync(files.expected, join(dir, 'expected'));
+  // case.expected beside case.in, so `make simulate CASE=<dir>/case.in` checks C as well.
+  copyFileSync(files.expected, join(dir, 'case.expected'));
   if (existsSync(files.out)) copyFileSync(files.out, join(dir, 'actual.out'));
   if (existsSync(files.cycles)) copyFileSync(files.cycles, join(dir, 'cycles.json'));
   writeFileSync(join(dir, 'report.txt'), report);
@@ -512,6 +526,7 @@ function saveFailure(
     join(dir, 'found.txt'),
     `Found by verify on ${sizeName(size)}: ${outcome.reason ?? ''}\nRunner command:\n  ${command}\nReplay:\n  ${replayCommand(dir)}\n`,
   );
+  return report;
 }
 
 /**
@@ -566,7 +581,9 @@ export async function runVerify(
   );
 
   const results: VerifyCaseResult[] = [];
-  let saved = 0;
+  // Failures are saved after the pool, in report order, so which ones are kept never depends on
+  // which runner finished first.
+  const failed = new Map<VerifyCaseResult, Omit<Failure, 'dir'>>();
   let next = 0;
   const worker = async () => {
     for (let task = tasks[next++]; task !== undefined; task = tasks[next++]) {
@@ -599,21 +616,7 @@ export async function runVerify(
       ];
       const run = await runRunner(sim, args);
       const outcome = judge(plan, run, files);
-      const failureDir = join(options.failures, `${sizeName(size)}-${plan.name}`);
-      let savedDir: string | null = null;
-      if (outcome.reason !== null) {
-        const report =
-          formatFailureReport(sizeName(size), plan, outcome, replayCommand(failureDir)) ?? '';
-        if (saved < options.keepFailures) {
-          saved += 1;
-          saveFailure(failureDir, task, files, outcome, report, run.command);
-          savedDir = failureDir;
-          write(report);
-        } else {
-          write(`FAIL ${sizeName(size)} ${plan.name}: ${outcome.reason} (not saved)\n`);
-        }
-      }
-      results.push({
+      const result: VerifyCaseResult = {
         size: sizeName(size),
         name: plan.name,
         kind: plan.kind,
@@ -627,11 +630,27 @@ export async function runVerify(
         mismatches: outcome.mismatches.length,
         firstMismatches: outcome.mismatches.slice(0, MAX_LISTED_MISMATCHES),
         cycles: outcome.cycles,
-        saved: savedDir,
-      });
+        saved: null,
+      };
+      results.push(result);
+      if (outcome.reason !== null)
+        failed.set(result, { task, files, outcome, command: run.command });
     }
   };
   await Promise.all(Array.from({ length: Math.max(1, options.jobs) }, () => worker()));
+  let saved = 0;
+  for (const result of sortCases(results)) {
+    const failure = failed.get(result);
+    if (failure === undefined) continue;
+    if (saved < options.keepFailures) {
+      saved += 1;
+      const dir = join(options.failures, `${result.size}-${result.name}`);
+      write(saveFailure({ ...failure, dir }));
+      results[results.indexOf(result)] = { ...result, saved: dir };
+    } else {
+      write(`FAIL ${result.size} ${result.name}: ${result.reason ?? '-'} (not saved)\n`);
+    }
+  }
 
   const report = buildVerifyReport({
     seed: options.seed,
@@ -661,7 +680,7 @@ export async function runVerify(
     );
     if (saved > 0) {
       write(
-        `failing cases saved under ${options.failures}/; replay one with 'make replay CASE=<dir>'\n`,
+        `failing cases saved under ${options.failures}/; replay one with 'make -C hardware/accelerators/matmul replay CASE=<dir>'\n`,
       );
     }
   }
@@ -711,7 +730,7 @@ export async function replayCase(
   }
   mkdirSync(work, { recursive: true });
   const files = {
-    expected: join(dir, 'expected'),
+    expected: join(dir, 'case.expected'),
     out: join(work, 'replay.out'),
     cycles: join(work, 'replay.cycles.json'),
   };

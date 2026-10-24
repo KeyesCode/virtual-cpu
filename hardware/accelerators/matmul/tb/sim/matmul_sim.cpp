@@ -28,8 +28,9 @@
 //             = one multiply plus one accumulate), tiles, transferIn, compute, store, busy,
 //             transferOut, total (of the last run), stop ("done", "error" or "timeout", of the
 //             first run that did not reach done), error (null or the error_code name), repeat,
-//             resetBetween, abortFirst and runsDiffering (how many runs after the first produced a
-//             different C or different clock counts than the first).
+//             resetBetween, abortFirst, aborted (whether the --abort-first run really was reset
+//             in STORE) and runsDiffering (how many runs after the first produced a different C
+//             or different clock counts than the first).
 //
 // --repeat N (default 1) runs the case N times in this one process, rewriting A and B each time;
 // without --reset-between there is no reset between runs (the second start comes after the first
@@ -234,8 +235,9 @@ Case read_case(const std::string& path) {
 
 class Sim {
  public:
-  explicit Sim(const Options& options) : options_(options) {
-    context_->commandArgs(0, static_cast<const char**>(nullptr));
+  Sim(const Options& options, int argc, char** argv) : options_(options) {
+    // Verilator reads only the +verilator… runtime options from these.
+    context_->commandArgs(argc, argv);
 #if VM_TRACE
     context_->traceEverOn(true);
 #endif
@@ -397,7 +399,7 @@ void write_file(const std::string& path, const std::string& text) {
 
 int main(int argc, char** argv) {
   const Options options = parse_args(argc, argv);
-  Sim sim(options);
+  Sim sim(options, argc, argv);
   if (options.info) {
     sim.reset();
     std::cout << "{\"rows\": " << sim.rows() << ", \"cols\": " << sim.cols()
@@ -407,7 +409,8 @@ int main(int argc, char** argv) {
   const Case c = read_case(options.case_file);
 
   sim.reset();
-  if (options.abort_first) sim.run(c, true);
+  // Whether the --abort-first run really was reset in STORE (it could only miss it by finishing).
+  const bool aborted = options.abort_first && sim.run(c, true).stop == "aborted";
   Run first;
   Run last;
   uint64_t runs_differing = 0;
@@ -464,6 +467,7 @@ int main(int argc, char** argv) {
          << "  \"repeat\": " << options.repeat << ",\n"
          << "  \"resetBetween\": " << json_bool(options.reset_between) << ",\n"
          << "  \"abortFirst\": " << json_bool(options.abort_first) << ",\n"
+         << "  \"aborted\": " << json_bool(aborted) << ",\n"
          << "  \"runsDiffering\": " << runs_differing << "\n"
          << "}\n";
     write_file(options.cycles, json.str());

@@ -35,7 +35,9 @@ verify-size: $(SIM_BIN) ## verify on the ROWS x COLS runner only (reports in bui
 	$(ACCEL_CLI) verify --sim $(SIM_BIN) --seed $(SEED) --count $(COUNT) \
 	  --reports $(BUILD_DIR)/reports/verify-$(SIZE)
 
-replay: ## Rerun a saved failing case on its own runner: CASE=build/failures/<name> [SIM=<runner>]
+# The runners are rebuilt first, so a replay after an RTL fix runs the fixed RTL (a mutant's
+# failure keeps its own runner under build/mutants/).
+replay: $(VERIFY_SIMS) ## Rerun a saved failing case on its own runner: CASE=build/failures/<name> [SIM=<runner>]
 	@test -n "$(CASE)" || { echo "replay: set CASE=build/failures/<name>" >&2; exit 2; }
 	$(ACCEL_CLI) verify --replay $(abspath $(CASE)) $(if $(SIM),--sim $(abspath $(SIM)))
 

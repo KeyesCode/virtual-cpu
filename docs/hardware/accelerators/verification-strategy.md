@@ -41,7 +41,8 @@ flowchart TD
 - the runner exits non-zero or is killed (a malformed case file is exit 2; the wall-clock limit is 120 s);
 - the runner's `stop` is `error` (the controller raised `error` on a valid case) or `timeout` (`done` never pulsed within four times the documented clocks from start to done, plus 1,000);
 - C has the wrong length, or any element differs from the reference;
-- in a repeated-execution case, any run after the first produced a different C or different clock counts.
+- in a repeated-execution case, any run after the first produced a different C or different clock counts;
+- in the `reset-restart` case, the first run finished without reaching STORE, so the reset never interrupted it.
 
 The run keeps going after a failure. It prints a report for each failing case (up to 25 are saved; the rest get one line), a summary per size, and `verify: PASS, <n>/<n> cases …` or `verify: FAIL, …`; the exit code is 0 only when every case passed, 1 when any failed, 2 when a runner is missing or unusable.
 
@@ -54,12 +55,14 @@ The run keeps going after a failure. It prints a report for each failing case (u
 3. **busy**: until the `done` pulse (or `error`, or the cycle limit); the controller's `cycles_compute` and `cycles_store` counters are read at `done`;
 4. **transfer out**: C through the registered host read port, M · N + 1 clocks, the first being the `done` clock.
 
-It writes `<case>.out` (C, in the `.expected` format) and `<case>.cycles.json` (schema `RunnerCyclesSchema` in [report.ts](../../../packages/accelerator-reference/src/harness/report.ts)): the array, M, N, K, MACs, tiles, `transferIn`, `compute`, `store`, `busy`, `transferOut`, `total` = transferIn + 1 + busy + transferOut, the stop reason and error code, and the repeat flags. The counts are RTL clock edges, identical to the formulas in [controller.md](controller.md#cycle-formulas); they are never wall-clock time. `--repeat N` runs the case N times in one process without a reset, `--reset-between` holds reset for two clocks between the runs, and `--abort-first` first starts the case and asserts reset in its first STORE clock, with part of C stored, before the runs. `make simulate CASE=<file.in> ROWS=…` runs one case, prints this breakdown and checks C against the `<name>.expected` next to the case:
+It writes `<case>.out` (C, in the `.expected` format) and `<case>.cycles.json` (schema `RunnerCyclesSchema` in [report.ts](../../../packages/accelerator-reference/src/harness/report.ts)): the array, M, N, K, MACs, tiles, `transferIn`, `compute`, `store`, `busy`, `transferOut`, `total` = transferIn + 1 + busy + transferOut, the stop reason and error code, the repeat flags, whether the `--abort-first` run really was reset in STORE (a `reset-restart` case fails if not). The counts are RTL clock edges, identical to the formulas in [controller.md](controller.md#cycle-formulas); they are never wall-clock time. `--repeat N` runs the case N times in one process without a reset, `--reset-between` holds reset for two clocks between the runs, and `--abort-first` first starts the case and asserts reset in its first STORE clock, with part of C stored, before the runs. `make simulate CASE=<file.in> ROWS=…` runs one case, prints this breakdown and checks C against the `<name>.expected` next to the case:
 
 ```text
 $ make -C hardware/accelerators/matmul simulate ROWS=16 CASE=…/random-m13-n11-k19-s1.in
+case          …/random-m13-n11-k19-s1.in
 array         16x16 (MAX_DIM 64)
 dims          M 13, N 11, K 19 (2717 MACs, 1 tiles)
+runs          1; 0 differ from the first
 stop          done
 transferIn    247
 compute       51
@@ -112,7 +115,7 @@ The default run is 186 cases (66 directed, 120 random) and takes about a second 
 
 A failing case is saved under `build/failures/<R>x<C>-<case>/`:
 
-- `case.in` and `expected`: the inputs and the reference C;
+- `case.in` and `case.expected`: the inputs and the reference C;
 - `actual.out` and `cycles.json`: what the runner wrote;
 - `case.json`: the size, the case, its runner flags and the runner it failed on;
 - `report.txt`: the failure report; `found.txt`: the reason, the exact runner command line and the replay command.
@@ -126,7 +129,7 @@ FAIL 4x4 edge-far-m63-n61-k62-s1: 122 of 3843 elements differ, first C[61][0]: e
   replay: make -C hardware/accelerators/matmul replay CASE=build/mutants/edge-row-mask-uses-n/failures/4x4-edge-far-m63-n61-k62-s1
 ```
 
-`make replay CASE=<dir>` reruns the saved case on the runner it failed on (`SIM=<runner>` picks another, for example a fixed build), prints the report and says whether it equals `report.txt`; it exits non-zero while the case still fails. `make simulate CASE=<dir>/case.in` shows the clock breakdown of the same case. To keep a failure in the corpus for good, add its dimensions, generator and seed as a directed case in `directedPlan` (a case is a function of those alone), with a line in the table above.
+`make replay CASE=<dir>` first rebuilds the three runners from `rtl/` (so after a fix it runs the fixed RTL), then reruns the saved case on the runner it failed on (`SIM=<runner>` picks another), prints the report and says whether it equals `report.txt`; it exits non-zero while the case still fails. `make simulate ROWS=<R> CASE=<dir>/case.in` shows the clock breakdown of a single run of the same case and checks it against `case.expected`; `found.txt` has the exact runner command, with the case's repeat and reset flags. To keep a failure in the corpus for good, add its dimensions, generator and seed as a directed case in `directedPlan` (a case is a function of those alone), with a line in the table above.
 
 ## Mutation testing
 
@@ -150,6 +153,7 @@ To add a mutant, append a block to `scripts/mutants.txt` and run `make verify-mu
 ## What is not covered
 
 - Timing inside a run is checked by `test-top` (the cycle formulas, the one-clock `done`), not by `verify`, which records the counts but accepts any timing that produces the right C. The benchmark ticket reports them.
+- The `repeat` case reruns the same A and B, so a later run that skipped some stores would still read the earlier run's correct C back; `test-top`'s reuse cases run different products on the same buffers.
 - Products above 64 in any dimension and K-chunking with partial-sum write-back are not in r1; invalid dimensions (0 or above 64) are covered by `test-top`'s error checks, not by `verify`.
 - The host port is a testbench convenience; a production DMA or AXI interface, back-pressure and stalls are not modelled.
 - Verification is simulation with two-state Verilator semantics; X propagation, gate-level netlists and formal proofs of the accelerator are not done.

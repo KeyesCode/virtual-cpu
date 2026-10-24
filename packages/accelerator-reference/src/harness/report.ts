@@ -104,6 +104,8 @@ export const RunnerCyclesSchema = z.object({
   repeat: z.number().int().positive(),
   resetBetween: z.boolean(),
   abortFirst: z.boolean(),
+  /** Whether the --abort-first run really was reset in STORE. */
+  aborted: z.boolean(),
   runsDiffering: z.number().int().nonnegative(),
 });
 export type RunnerCycles = z.infer<typeof RunnerCyclesSchema>;

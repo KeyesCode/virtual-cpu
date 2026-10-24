@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
+import { writeTopSuite } from './harness/top-vectors.js';
 import { writeCase } from './harness/vectors.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
 import {
@@ -45,6 +46,12 @@ ${GENERATORS}
                                          Write the array unit-test suite into <dir>: the directed
                                          tiles, then N random tiles (K and seed drawn from S), and
                                          <dir>/cases.txt, the case names in run order.
+  gen-top-suite --rows R --cols C --seed S --count N --out <dir>
+                                         Write the matmul_top unit-test suite into <dir>: the
+                                         directed products (two of them reuse the buffers of the
+                                         first), then N random products (M, N, K and seed drawn
+                                         from S), and <dir>/cases.txt, the case names in run order
+                                         (' reuse' after a case that reuses the buffers).
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -299,11 +306,38 @@ function genTileSuite(args: readonly string[]): number {
   return 0;
 }
 
+function genTopSuite(args: readonly string[]): number {
+  const flags = ['--rows', '--cols', '--seed', '--count', '--out'];
+  const values = parseFlags('gen-top-suite', args, flags, flags);
+  const numbers =
+    values && parseCounts('gen-top-suite', values, ['rows', 'cols', 'seed', 'count'] as const);
+  if (values === undefined || numbers === undefined) {
+    return 2;
+  }
+  const { rows, cols, seed, count } = numbers;
+  try {
+    validateDims({ m: rows, n: cols, k: 1 });
+  } catch (error) {
+    process.stderr.write(
+      `gen-top-suite: ${error instanceof Error ? error.message : String(error)} (M is --rows, N is --cols)\n`,
+    );
+    return 2;
+  }
+  const dir = resolve(cwd, values.get('--out') ?? '');
+  const suite = writeTopSuite(dir, { rows, cols, seed, count });
+  const random = suite.cases.filter((testCase) => testCase.random).length;
+  process.stdout.write(
+    `wrote ${String(suite.cases.length)} matmul cases for a ${String(rows)}x${String(cols)} array to ${dir} (${String(suite.cases.length - random)} directed, ${String(random)} random from seed ${String(seed)}) and ${suite.list}\n`,
+  );
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
   'gen-tile-vectors': genTileVectors,
   'gen-tile-suite': genTileSuite,
+  'gen-top-suite': genTopSuite,
 };
 
 const [name, ...rest] = process.argv.slice(2);

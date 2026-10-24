@@ -100,7 +100,7 @@ export const COMPARE_LABELS = {
   cpuMemory:
     'CPU memory accesses: data-memory reads (LOAD, POP, RET) and writes (STORE, PUSH, CALL) of retired instructions, from the opcode table over the RTL trace and from the emulator’s counters. Instruction fetches are counted separately as fetched bytes.',
   acceleratorCycles:
-    'Accelerator cycles: rising clock edges of the Verilated matmul_top at 4 × 4, counted by tb/sim/matmul_sim.cpp: transfer in (A and B through the testbench host port), compute (PREPARE_TILE, COMPUTE, DRAIN), store, transfer out (C through the host port) and their total.',
+    'Accelerator cycles: rising clock edges of the Verilated matmul_top at 4 × 4, counted by tb/sim/matmul_sim.cpp: transfer in (A and B through the testbench host port, one element of each per clock), compute (PREPARE_TILE, COMPUTE, DRAIN), store (the controller writing C into its output buffer), handshake (the start clock, LOAD and one NEXT_TILE per tile), transfer out (C through the host port) and their total, which the five parts add up to. Busy is the clocks `busy` was high: compute + store + LOAD + NEXT_TILE.',
   acceleratorMemory:
     'Accelerator memory accesses: host-port element transfers, M · K + K · N INT8 writes into the input buffers and M · N INT32 reads of C. The controller’s reads of its own banked buffers are not counted by the runner and not included.',
   ratio:
@@ -204,6 +204,9 @@ const AcceleratorSideSchema = z.discriminatedUnion('status', [
     transferIn: Count,
     compute: Count,
     store: Count,
+    /** total − transferIn − compute − store − transferOut: start, LOAD and NEXT_TILE. */
+    handshake: Count,
+    busy: Count,
     transferOut: Count,
     total: Count,
     utilization: Ratio,
@@ -351,6 +354,21 @@ const FpgaSynthSchema = z.object({
   blockRam: Count,
   dsp: Count,
 });
+/** A flow that ran (an absent one fails to parse): nextpnr placed and routed it. */
+const CpuFpgaFlowSchema = z.object({
+  status: z.literal('ran'),
+  device: z.string(),
+  synth: FpgaSynthSchema,
+  pnr: z.object({
+    utilisation: z.record(z.string(), z.object({ used: Count, available: Count })),
+  }),
+});
+
+/** Whether every resource nextpnr placed is within the device's count. */
+function withinDevice(flow: z.output<typeof CpuFpgaFlowSchema>): boolean {
+  return Object.values(flow.pnr.utilisation).every((u) => u.used <= u.available);
+}
+
 const CpuBaselineSchema = z.object({
   provenance: z.object({ gitSha: z.string() }),
   generic: z.object({
@@ -359,8 +377,8 @@ const CpuBaselineSchema = z.object({
     subtrees: z.object({ vcpu8_core: CellsSchema }),
   }),
   fpga: z.object({
-    ice40: z.object({ device: z.string(), synth: FpgaSynthSchema, pnr: z.object({}).nullable() }),
-    ecp5: z.object({ device: z.string(), synth: FpgaSynthSchema, pnr: z.object({}).nullable() }),
+    ice40: CpuFpgaFlowSchema,
+    ecp5: CpuFpgaFlowSchema,
   }),
 });
 const AccelFpgaSchema = z.object({ device: z.string(), synth: FpgaSynthSchema, fits: z.boolean() });
@@ -423,8 +441,8 @@ export function readCompareResources(
       top: cpu.generic.top,
       generic: cells(cpu.generic.total),
       core: cells(cpu.generic.subtrees.vcpu8_core),
-      ice40: fpga(cpu.fpga.ice40.device, cpu.fpga.ice40.synth, cpu.fpga.ice40.pnr !== null),
-      ecp5: fpga(cpu.fpga.ecp5.device, cpu.fpga.ecp5.synth, cpu.fpga.ecp5.pnr !== null),
+      ice40: fpga(cpu.fpga.ice40.device, cpu.fpga.ice40.synth, withinDevice(cpu.fpga.ice40)),
+      ecp5: fpga(cpu.fpga.ecp5.device, cpu.fpga.ecp5.synth, withinDevice(cpu.fpga.ecp5)),
     },
     accelerator: {
       source: COMPARE_BASELINES.accelerator,
@@ -630,6 +648,8 @@ async function runAccelerator(
     transferIn: m.transferIn,
     compute: m.compute,
     store: m.store,
+    handshake: m.total - m.transferIn - m.compute - m.store - m.transferOut,
+    busy: m.busy,
     transferOut: m.transferOut,
     total: m.total,
     utilization: m.utilization,
@@ -982,8 +1002,10 @@ export function renderCompareMarkdown(report: CompareReport): string {
         'Transfer in',
         'Compute',
         'Store',
+        'Start, LOAD, NEXT_TILE',
         'Transfer out',
         'Total',
+        'Busy',
         'PE utilization',
         'MACs/cycle (compute)',
         'MACs/cycle (total)',
@@ -998,15 +1020,17 @@ export function renderCompareMarkdown(report: CompareReport): string {
               String(row.accelerator.transferIn),
               String(row.accelerator.compute),
               String(row.accelerator.store),
+              String(row.accelerator.handshake),
               String(row.accelerator.transferOut),
               String(row.accelerator.total),
+              String(row.accelerator.busy),
               fmt(row.accelerator.utilization),
               fmt(row.accelerator.macsPerCycleCompute),
               fmt(row.accelerator.macsPerCycleTotal),
               String(row.accelerator.hostWrites),
               String(row.accelerator.hostReads),
             ]
-          : [row.workload, `FAILED: ${row.accelerator.reason}`, ...new Array<string>(10).fill('')],
+          : [row.workload, `FAILED: ${row.accelerator.reason}`, ...new Array<string>(12).fill('')],
       ),
     ),
     '',

@@ -20,7 +20,7 @@ make -C hardware/accelerators/matmul compare-cpu-publish  # also research/accele
 
 ## The VCPU-8 program
 
-VCPU-8 has eight 8-bit registers, 256 bytes of memory for code, data and stack, an 8-bit `ADD` that sets the carry flag but no add-with-carry, and a `MUL` that keeps only the low byte of the unsigned product ([instruction-set.md](../../instruction-set.md)). The program therefore builds each signed INT8 MAC out of 8-bit steps. The code is the same 147 bytes for every workload; only the immediates (K, N, K · N − 1) and the data change.
+VCPU-8 has eight 8-bit registers, 256 bytes of memory for code, data and stack, an 8-bit `ADD` that sets the carry flag but no add-with-carry, and a `MUL` that keeps only the low byte of the unsigned product ([instruction-set.md](../../instruction-set.md)). The program therefore builds each signed INT8 MAC out of 8-bit steps. The code is the same 147 bytes for every workload; only the immediates (K, N, K · N − 1 and the addresses of A, B and C, which move with the dimensions) and the data change.
 
 ### Signed 8 × 8 → 16-bit multiply
 
@@ -94,7 +94,7 @@ The k, j and i loops step registers and compare addresses with labels (`R1` = &A
 
 ### Cost of one MAC
 
-Over all 65 536 (a, b) pairs, each a 1 × 1 × 1 program on the emulator with its product checked against a · b, one MAC into a zero accumulator retires **67 to 158 instructions (mean 127.8)**: 60 that always run, 7 per multiplier pass, 3 more per set multiplier bit, and one or two for each sign fix-up and carry. The minimum is a · 0, the maximum (−1) · (−1). The loops around the MACs add 5 instructions per MAC (the k step) and about 10 per C element.
+Over all 65 536 (a, b) pairs, each a 1 × 1 × 1 program on the emulator with its product checked against a · b, one MAC into a zero accumulator retires **67 to 158 instructions (mean 127.8)**: 60 that always run (the 5 of the k step included), 7 per multiplier pass, 3 more per set multiplier bit, and one or two for each sign fix-up and carry. The minimum is a · 0 for a ≥ 0 (68 for a < 0), the maximum (−1) · (−1). The j and i loops add about 10 more per C element.
 
 ### Memory map and the largest workload
 
@@ -104,21 +104,21 @@ Over all 65 536 (a, b) pairs, each a 1 × 1 × 1 program on the emulator with it
 | 3 × 3 × 3 | 0x00–0x92 | 0x93   | 0x94–0x9C | 0x9D–0xA5 | 0xA6–0xC9 | 0xCA–0xFE | 0xFF  | 203         |
 | 4 × 4 × 4 | 0x00–0x92 | 0x93   | 0x94–0xA3 | 0xA4–0xB3 | 0xB4–0xF3 | 0xF4–0xFE | 0xFF  | 245         |
 
-A workload needs 147 bytes of code, 1 + M · K + K · N + 4 · M · N bytes of data and 1 byte of stack. 4 × 4 × 4 needs 245 of the 256 bytes, so it is the largest cube that fits; 5 × 5 × 5 needs 299 (code 147 + data 151 + stack 1). The program does not follow the memory map's program/data/stack convention ([memory-model.md](../../memory-model.md)), which the CPU does not enforce: the code runs past 0x7F (it ends at 0x92), and the data use what would be the stack region, all but 0xFF, the one byte the program pushes.
+A workload needs 147 bytes of code, 1 + M · K + K · N + 4 · M · N bytes of data and 1 byte of stack. 4 × 4 × 4 needs 245 of the 256 bytes, so it is the largest cube that fits; 5 × 5 × 5 needs 299 (code 147 + data 151 + stack 1). The program does not follow the memory map's program/data/stack convention ([memory-model.md](../../memory-model.md)), which the CPU does not enforce: the code runs past 0x7F (it ends at 0x92), and from 3 × 3 × 3 up the data run into what would be the stack region (0xC0–0xFF); only 0xFF, the one byte the program pushes, must stay free.
 
 ## Results
 
 From [research/accelerators/matmul/comparisons/](../../../research/accelerators/matmul/comparisons/) (seed 1; the report records its commit, toolchain and runners). Every CPU row passed the gate on the emulator and the RTL, and every accelerator row on the 4 × 4 runner.
 
-| Workload        | MACs | CPU cycles (RTL) | CPU instructions | CPU data reads / writes | CPU MACs/cycle | Accelerator total cycles (in + compute + store + out) | Accelerator MACs/cycle (total) | Cycle ratio |
-| --------------- | ---: | ---------------: | ---------------: | ----------------------: | -------------: | ----------------------------------------------------: | -----------------------------: | ----------: |
-| 2x2x2-random    |    8 |            5 617 |            1 114 |                 76 / 44 |         0.0014 |                                   26 (4 + 10 + 4 + 5) |                          0.308 |       216.0 |
-| 3x3x3-random    |   27 |           18 555 |            3 685 |               258 / 144 |         0.0015 |                                  42 (9 + 11 + 9 + 10) |                          0.643 |       441.8 |
-| 4x4x4-random    |   64 |           43 112 |            8 567 |               612 / 336 |         0.0015 |                                64 (16 + 12 + 16 + 17) |                          1.000 |       673.6 |
-| 4x4x4-min       |   64 |           40 632 |            8 071 |               640 / 336 |         0.0016 |                                64 (16 + 12 + 16 + 17) |                          1.000 |       634.9 |
-| 5x5x5-random    |  125 |      unsupported |                — |                       — |              — |                                                   134 |                          0.933 |           — |
-| 8x8x8-random    |  512 |      unsupported |                — |                       — |              — |                                                   263 |                          1.947 |           — |
-| 16x16x16-random | 4096 |      unsupported |                — |                       — |              — |                                                 1 171 |                          3.498 |           — |
+| Workload        | MACs | CPU cycles (RTL) | CPU instructions | CPU data reads / writes | CPU MACs/cycle | Accelerator total cycles (in + compute + store + handshake + out) | Accelerator MACs/cycle (total) | Cycle ratio |
+| --------------- | ---: | ---------------: | ---------------: | ----------------------: | -------------: | ----------------------------------------------------------------: | -----------------------------: | ----------: |
+| 2x2x2-random    |    8 |            5 617 |            1 114 |                 76 / 44 |         0.0014 |                                           26 (4 + 10 + 4 + 3 + 5) |                          0.308 |       216.0 |
+| 3x3x3-random    |   27 |           18 555 |            3 685 |               258 / 144 |         0.0015 |                                          42 (9 + 11 + 9 + 3 + 10) |                          0.643 |       441.8 |
+| 4x4x4-random    |   64 |           43 112 |            8 567 |               612 / 336 |         0.0015 |                                        64 (16 + 12 + 16 + 3 + 17) |                          1.000 |       673.6 |
+| 4x4x4-min       |   64 |           40 632 |            8 071 |               640 / 336 |         0.0016 |                                        64 (16 + 12 + 16 + 3 + 17) |                          1.000 |       634.9 |
+| 5x5x5-random    |  125 |      unsupported |                — |                       — |              — |                                                               134 |                          0.933 |           — |
+| 8x8x8-random    |  512 |      unsupported |                — |                       — |              — |                                                               263 |                          1.947 |           — |
+| 16x16x16-random | 4096 |      unsupported |                — |                       — |              — |                                                             1 171 |                          3.498 |           — |
 
 The cycle ratio is CPU RTL cycles ÷ accelerator total cycles: two clock counts of different designs at an unspecified clock, not a speed-up.
 
@@ -131,9 +131,9 @@ VCPU-8's generic count includes its 256-byte memory mapped to 2 048 flip-flops; 
 
 ## Interpretation
 
-- **Where the CPU's clocks go.** About 135 instructions and 670 clocks per MAC on 4 × 4 × 4, at a CPI of 5.03: the RTL is multicycle (4 to 6 clocks per instruction, [vcpu8-microarchitecture.md](../vcpu8-microarchitecture.md)), which is why its cycles are about 1.5 times the ISA timing model's estimate (28 477 for 4 × 4 × 4). Most of a MAC is the shift-and-add loop and the four-byte read-modify-write of the accumulator, not the loads of A and B.
-- **The data change the CPU's cost.** All −128 is _faster_ than random data (40 632 against 43 112 clocks) although its products are the largest: 0x80 has one set bit, so each multiply adds once in its eight passes, while a random multiplier byte has four set bits on average, each an addition. The accelerator's 64 clocks are the same for both.
-- **The accelerator's clocks for these tiny products are mostly transfer.** At 4 × 4 × 4, 12 of the 64 clocks are compute; the other 52 move A, B and C through the one-element-per-clock testbench host port. Even so, it needs 674 times fewer clocks than the CPU on this product, with 16 multipliers and 32-bit adders working in parallel, against one 8-bit ALU step at a time.
+- **Where the CPU's clocks go.** About 134 instructions and 674 clocks per MAC on 4 × 4 × 4, at a CPI of 5.03: the RTL is multicycle (4 to 6 clocks per instruction, [vcpu8-microarchitecture.md](../vcpu8-microarchitecture.md)), which is why its cycles are about 1.5 times the ISA timing model's estimate (28 477 for 4 × 4 × 4). Most of a MAC is the shift-and-add loop and the four-byte read-modify-write of the accumulator, not the loads of A and B.
+- **The data change the CPU's cost.** All −128 takes fewer clocks than random data (40 632 against 43 112) although its products are the largest: 0x80 has one set bit, so each multiply adds once in its eight passes, while a random multiplier byte has four set bits on average, each an addition. The accelerator's 64 clocks are the same for both.
+- **The accelerator's clocks for these tiny products are mostly not compute.** At 4 × 4 × 4, 12 of the 64 clocks are compute; 33 move A, B and C through the testbench host port (16 to write A and B, one element of each per clock, and 17 to read C), 16 are STORE (the controller writing C into its output buffer) and 3 are the start, LOAD and NEXT_TILE handshake. Even so, it needs 674 times fewer clocks than the CPU on this product, with 16 multipliers and 32-bit adders working in parallel, against one 8-bit ALU step at a time.
 - **The cost beside the clocks.** On ECP5 the accelerator uses about 1.5 times the CPU's LUTs, 8.5 times its flip-flops, 16 times its block RAM and 16 DSP blocks against 1, and it does not fit the iCE40UP5K that the CPU fits. Most of the block RAM is buffer capacity for 64 × 64 matrices, which these products do not use.
 - **What does not fit.** Anything larger than 4 × 4 × 4 is unsupported on VCPU-8: its 256 bytes hold code, operands and four-byte results together. The accelerator runs those products (8 × 8 × 8 at 1.95 MACs per total clock, 16 × 16 × 16 at 3.50).
 
@@ -152,6 +152,6 @@ The rules are those of [from-rtl-to-silicon.md § 13](from-rtl-to-silicon.md#13-
 9. **No single score:** the cycle ratio is labelled as a clock-count ratio, and the resource table stays beside it.
 10. **The differences not in the numbers** are the report's "What differs" section: ISA versus fixed function, unsigned low-byte `MUL` versus a signed INT8 MAC, software multi-byte INT32 versus a hardware 32-bit adder, 256 bytes of unified memory versus on-chip buffers and a host port, no clock frequency, no power.
 
-## What would make VCPU-8 faster here
+## What would cut VCPU-8's clocks here
 
 These are recommendations for a future ISA revision, not changes made here (the ISA is not modified): an add-with-carry would remove the carry branches from the accumulate loop, a signed multiply that returns the high byte (or a 16-bit product) would replace the eight-pass shift-and-add with one instruction, and a larger address space would let products beyond 4 × 4 × 4 run at all.

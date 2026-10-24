@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "matmul-experiment",
-  "experimentId": "buffer-capacity/2026-10-24-c91ada5",
+  "experimentId": "buffer-capacity/2026-10-24-b592629",
   "experiment": "buffer-capacity",
-  "runId": "2026-10-24-c91ada5",
+  "runId": "2026-10-24-b592629",
   "description": "MAX_DIM 32 versus 64 versus 128 on the 8 × 8 array: the cells and memory bits each buffer capacity costs against the largest workload it can run.",
   "revision": "matmul-os-r1",
   "labels": {
@@ -1237,7 +1237,7 @@
   ],
   "pareto": {
     "axes": ["total cycles summed over the common workloads", "generic cells"],
-    "rule": "A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed variants are left out.",
+    "rule": "A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed and incomplete variants are left out.",
     "commonWorkloads": ["4x4x4", "8x8x8", "16x16x16", "32x32x32", "13x19x11"],
     "points": [
       {
@@ -1261,9 +1261,9 @@
     ]
   },
   "provenance": {
-    "createdAt": "2026-10-24T09:48:48.563Z",
-    "gitCommit": "c91ada58cb903b0508960b1bb9da8cf37ab3859f",
-    "gitShortCommit": "c91ada5",
+    "createdAt": "2026-10-24T10:18:01.687Z",
+    "gitCommit": "b592629eef2e457da0e03059b6b211a2d34157ab",
+    "gitShortCommit": "b592629",
     "gitDirty": false,
     "toolchain": "OSS CAD Suite 2026-10-16",
     "tools": {
@@ -1282,22 +1282,22 @@
       "jobs": 12,
       "stageSeconds": {
         "max-dim-32": {
-          "build": 2.5,
-          "verify": 0.3,
+          "build": 2.3,
+          "verify": 0.4,
           "benchmark": 0,
-          "synth": 50.4
+          "synth": 49.5
         },
         "max-dim-64": {
           "build": 0,
           "verify": 0.1,
           "benchmark": 0,
-          "synth": 50.6
+          "synth": 49.6
         },
         "max-dim-128": {
-          "build": 2.8,
-          "verify": 0.8,
-          "benchmark": 0.1,
-          "synth": 54.8
+          "build": 2.3,
+          "verify": 0.6,
+          "benchmark": 0,
+          "synth": 50.4
         }
       }
     }

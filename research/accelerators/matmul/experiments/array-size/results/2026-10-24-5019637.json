@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "kind": "matmul-experiment",
-  "experimentId": "array-size/2026-10-24-5cbaaca",
+  "experimentId": "array-size/2026-10-24-5019637",
   "experiment": "array-size",
-  "runId": "2026-10-24-5cbaaca",
+  "runId": "2026-10-24-5019637",
   "description": "4 × 4 versus 8 × 8 versus 16 × 16 processing elements, every other parameter at its default (MAX_DIM 64): the cycles each larger array saves on the benchmark workloads against the cells, flip-flops, multipliers and FPGA resources it costs.",
   "revision": "matmul-os-r1",
   "labels": {
@@ -1140,7 +1140,7 @@
   ],
   "pareto": {
     "axes": ["total cycles summed over the common workloads", "generic cells"],
-    "rule": "A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed variants are left out.",
+    "rule": "A variant is Pareto-optimal when no other variant has at most its total cycles and at most its generic cells, and fewer of one. Total cycles are summed over the workloads every passed variant ran; failed and incomplete variants are left out.",
     "commonWorkloads": [
       "4x4x4",
       "8x8x8",
@@ -1174,9 +1174,9 @@
     ]
   },
   "provenance": {
-    "createdAt": "2026-10-24T09:43:58.352Z",
-    "gitCommit": "5cbaaca96f3c9794b701a7e7c695c6785d00685e",
-    "gitShortCommit": "5cbaaca",
+    "createdAt": "2026-10-24T10:13:34.780Z",
+    "gitCommit": "501963781b7825b7999e7b9b8f94542386d62568",
+    "gitShortCommit": "5019637",
     "gitDirty": false,
     "toolchain": "OSS CAD Suite 2026-10-16",
     "tools": {
@@ -1195,22 +1195,22 @@
       "jobs": 12,
       "stageSeconds": {
         "4x4": {
-          "build": 2.3,
-          "verify": 0.4,
+          "build": 0,
+          "verify": 0.2,
           "benchmark": 0,
-          "synth": 25.9
+          "synth": 21.4
         },
         "8x8": {
-          "build": 3.4,
-          "verify": 0.4,
+          "build": 0,
+          "verify": 0.1,
           "benchmark": 0,
-          "synth": 54.3
+          "synth": 49.5
         },
         "16x16": {
-          "build": 2.6,
-          "verify": 0.3,
+          "build": 0,
+          "verify": 0.1,
           "benchmark": 0,
-          "synth": 198.4
+          "synth": 193.2
         }
       }
     }

@@ -1,0 +1,159 @@
+[*]
+[*] INT8 matmul accelerator waveform view for `make -C hardware/accelerators/matmul wave`; see
+[*] docs/hardware/accelerators/simulation-guide.md.
+[*] Open it from hardware/accelerators/matmul:  gtkwave build/waves/demo.fst tb/wave/matmul.gtkw
+[*] The ^N lines name GTKWave translate filters (tb/wave/*.txt, generated from rtl/matmul_pkg.sv by
+[*] `pnpm --filter @vcpu/accelerator-reference cli gen-wave-filters`); `make wave-check` checks
+[*] every signal below. Signed values (operands, accumulators, C) are shown as signed decimal.
+[*] Every signal below exists at 4 x 4, 8 x 8 and 16 x 16 (PE(3,3) is the far corner only at 4 x 4).
+[*]
+[savefile] "tb/wave/matmul.gtkw"
+[timestart] 180
+[size] 1600 1000
+[pos] -1 -1
+[sst_width] 260
+[signals_width] 360
+[sst_expanded] 1
+[sst_vpaned_height] 300
+*-6.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+@800200
+-Clock and reset
+@28
+TOP.matmul_sim_top.clk
+TOP.matmul_sim_top.rst
+@1000200
+-Clock and reset
+@800200
+-Handshake
+@28
+TOP.matmul_sim_top.start
+TOP.matmul_sim_top.busy
+TOP.matmul_sim_top.done
+TOP.matmul_sim_top.error
+@2022
+^2 tb/wave/error_code.txt
+TOP.matmul_sim_top.error_code[1:0]
+@1000200
+-Handshake
+@800200
+-Controller
+@2022
+^1 tb/wave/ctrl_state.txt
+TOP.matmul_sim_top.dbg_state[3:0]
+@24
+TOP.matmul_sim_top.dbg_tile_i[5:0]
+TOP.matmul_sim_top.dbg_tile_j[5:0]
+TOP.matmul_sim_top.dbg_k[5:0]
+TOP.matmul_sim_top.u_top.u_controller.rows_here[6:0]
+TOP.matmul_sim_top.u_top.u_controller.cols_here[6:0]
+@1000200
+-Controller
+@800200
+-Array
+@28
+TOP.matmul_sim_top.u_top.u_array.tile_start
+TOP.matmul_sim_top.u_top.u_array.tile_done
+@24
+TOP.matmul_sim_top.u_top.u_array.remaining[16:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.a_valid[3:0]
+TOP.matmul_sim_top.u_top.u_array.b_valid[3:0]
+@1000200
+-Array
+@800200
+-Operands presented (before the skew)
+@424
+TOP.matmul_sim_top.u_top.u_controller.a_data[0][7:0]
+TOP.matmul_sim_top.u_top.u_controller.a_data[1][7:0]
+TOP.matmul_sim_top.u_top.u_controller.a_data[2][7:0]
+TOP.matmul_sim_top.u_top.u_controller.a_data[3][7:0]
+TOP.matmul_sim_top.u_top.u_controller.b_data[0][7:0]
+TOP.matmul_sim_top.u_top.u_controller.b_data[1][7:0]
+TOP.matmul_sim_top.u_top.u_controller.b_data[2][7:0]
+TOP.matmul_sim_top.u_top.u_controller.b_data[3][7:0]
+@1000200
+-Operands presented (before the skew)
+@800200
+-Skew registers of row 1 and column 1
+@424
++{row 1 skew data_q} TOP.matmul_sim_top.u_top.u_array.g_a_skew[1].g_delay.data_q[7:0]
+@28
++{row 1 skew valid_q} TOP.matmul_sim_top.u_top.u_array.g_a_skew[1].g_delay.valid_q
+@424
++{column 1 skew data_q} TOP.matmul_sim_top.u_top.u_array.g_b_skew[1].g_delay.data_q[7:0]
+@28
++{column 1 skew valid_q} TOP.matmul_sim_top.u_top.u_array.g_b_skew[1].g_delay.valid_q
+@1000200
+-Skew registers of row 1 and column 1
+@800200
+-PE(0,0)
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[0].g_col[0].u_pe.a_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[0].g_col[0].u_pe.a_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[0].g_col[0].u_pe.b_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[0].g_col[0].u_pe.b_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[0].g_col[0].u_pe.acc[31:0]
+@1000200
+-PE(0,0)
+@800200
+-PE(1,0)
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[0].u_pe.a_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[0].u_pe.a_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[0].u_pe.b_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[0].u_pe.b_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[0].u_pe.acc[31:0]
+@1000200
+-PE(1,0)
+@800200
+-PE(1,1)
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[1].u_pe.a_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[1].u_pe.a_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[1].u_pe.b_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[1].u_pe.b_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[1].g_col[1].u_pe.acc[31:0]
+@1000200
+-PE(1,1)
+@800200
+-PE(3,3)
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[3].g_col[3].u_pe.a_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[3].g_col[3].u_pe.a_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[3].g_col[3].u_pe.b_in[7:0]
+@28
+TOP.matmul_sim_top.u_top.u_array.g_row[3].g_col[3].u_pe.b_valid_in
+@424
+TOP.matmul_sim_top.u_top.u_array.g_row[3].g_col[3].u_pe.acc[31:0]
+@1000200
+-PE(3,3)
+@800200
+-Store and host read
+@28
+TOP.matmul_sim_top.u_top.u_controller.c_we
+@24
+TOP.matmul_sim_top.u_top.u_controller.c_addr[11:0]
+@424
+TOP.matmul_sim_top.u_top.u_controller.c_wdata[31:0]
+@24
+TOP.matmul_sim_top.host_c_addr[11:0]
+@424
+TOP.matmul_sim_top.host_c_rdata[31:0]
+@1000200
+-Store and host read
+[pattern_trace] 1
+[pattern_trace] 0

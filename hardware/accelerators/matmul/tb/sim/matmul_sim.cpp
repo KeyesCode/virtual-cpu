@@ -360,14 +360,16 @@ class Sim {
     return clocks;
   }
 
-  // Inputs change while the clock is low; a rising edge at every multiple of 10 ns.
+  // Inputs change while the clock is low; a rising edge at every multiple of 10 ns. The caller
+  // sets the inputs before tick(), so a waveform shows them changing 5 ns before the edge that
+  // samples them (the falling edge), not at it.
   void tick() {
     time_ += kHalfPeriodNs;
-    top_->clk = 1;
+    top_->clk = 0;
     top_->eval();
     dump();
     time_ += kHalfPeriodNs;
-    top_->clk = 0;
+    top_->clk = 1;
     top_->eval();
     dump();
   }

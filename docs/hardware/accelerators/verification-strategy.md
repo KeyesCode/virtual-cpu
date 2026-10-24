@@ -73,7 +73,7 @@ total         588
 C matches …/random-m13-n11-k19-s1.expected (143 elements)
 ```
 
-`--wave <file.vcd>` exists only in a tracing build (Verilator `--trace`); the default runner rejects it, so verification never pays for tracing. The waveform targets are the waveform ticket's.
+`--wave <file.vcd>` exists only in a tracing build (Verilator `--trace`); the default runner rejects it, so verification never pays for tracing. `make wave` builds the tracing runner separately; [simulation-guide.md](simulation-guide.md) covers it.
 
 ## Corpora
 

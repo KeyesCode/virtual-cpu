@@ -40,6 +40,7 @@ New to hardware? Read [concepts.md](concepts.md) first, then [from-rtl-to-silico
 | [controller.md](controller.md)                                       | The FSM and `matmul_top`: states, tile order, how K is handled, edge masks, read latency, handshake timing, cycle formulas and their measured values, `test-top` evidence                  |
 | [memory.md](memory.md)                                               | The buffers and the host port: sizes, layout, banking, bandwidth, read/write timing, maximum dimensions, transfer overhead, the RAM inference check                                        |
 | [verification-strategy.md](verification-strategy.md)                 | The layers of checks, the Verilator runner and its clock breakdown, the directed and random corpora, reports, failure replay, the mutants and what is not covered                          |
+| [simulation-guide.md](simulation-guide.md)                           | Running a case, `make wave` / `wave-check`, the GTKWave view, and the demo product clock by clock: skew, accumulators, drain, store, the 4 tile boundaries and the done pulse              |
 | [images/systolic-4x4-dataflow.svg](images/systolic-4x4-dataflow.svg) | Diagram: operand flow through the 4 × 4 array, its skew registers, and four clocks of a K = 2 tile                                                                                         |
 | [images/systolic-4x4.html](images/systolic-4x4.html)                 | Animated page (open from disk): the 4 × 4 K = 3 tile clock by clock, operands, skew registers and accumulators                                                                             |
 
@@ -54,7 +55,8 @@ hardware/accelerators/matmul/
 ├── mk/                      one make fragment per topic (unit-pe.mk: gen-pe-vectors, test-pe, test-pe-corrupt;
 │                            unit-array.mk: test-array, test-array-4|8|16|4x8, test-array-corrupt, trace-array;
 │                            unit-top.mk: test-top, test-top-4|8|16|4x8, test-top-corrupt;
-│                            sim.mk: sim, sim-all, simulate; verify.mk: verify, verify-size, replay, verify-mutant)
+│                            sim.mk: sim, sim-all, simulate; verify.mk: verify, verify-size, replay, verify-mutant;
+│                            wave.mk: sim-trace, wave, wave-check)
 ├── scripts/tool-versions.sh `make tools-check`: tool versions to build/tool-versions.json
 ├── scripts/mutants.txt      the RTL mutants `make verify-mutant` requires verify to catch
 ├── rtl/                     synthesizable RTL only; *_pkg.sv packages first
@@ -67,6 +69,8 @@ hardware/accelerators/matmul/
 │   └── matmul_top.sv        the accelerator: controller, buffers and array, with the host port
 ├── tb/unit/                 unit testbenches (tb_processing_element.sv, tb_systolic_array.sv, tb_matmul_top.sv)
 ├── tb/sim/                  the Verilator runner: matmul_sim_top.sv (matmul_top + its size) and matmul_sim.cpp
+├── tb/wave/                 the GTKWave view: matmul.gtkw, the generated filters ctrl_state.txt and error_code.txt,
+│                            and the waveform demo case demo.in / demo.expected
 └── build/                   all outputs, per size (build/sim-8x8/, …), git-ignored
 packages/accelerator-reference/
 ├── src/model/               the pure reference: matmul.ts (wrapping INT32 matmul, exact matmul, fitsInt32, validation),
@@ -75,13 +79,16 @@ packages/accelerator-reference/
 │                            pe-vectors.ts: the PE unit-test vectors; tile-vectors.ts: the array tile suites;
 │                            top-vectors.ts: the matmul_top suites;
 │                            verify.ts: the verify corpora, runner pool, comparison, failures and replay;
-│                            report.ts: report schemas and provenance; mutants.ts: verify-mutant
+│                            report.ts: report schemas and provenance; mutants.ts: verify-mutant;
+│                            wave.ts: the demo case, the VCD reader, wave-check and wave-table;
+│                            wave-filters.ts: the GTKWave filters from matmul_pkg
 ├── src/viz/                 schedule.ts: the documented tile timing rule for the visualizations; svg.ts, page.ts: gen-viz
-└── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite, gen-top-suite, gen-viz, verify, mutants
+└── src/cli.ts               gen-vectors, gen-pe-vectors, gen-tile-vectors, gen-tile-suite, gen-top-suite, gen-viz, verify, mutants,
+                             gen-wave-filters, gen-wave-demo, wave-check, wave-table
 research/accelerators/matmul/  committed small reports (see its README)
 ```
 
-Later tickets add `tb/wave/` (the GTKWave view) and `synth/` (Yosys scripts and the reviewed warning allowlist).
+A later ticket adds `synth/` (Yosys scripts and the reviewed warning allowlist).
 
 ## Building
 
@@ -101,6 +108,8 @@ make -C hardware/accelerators/matmul simulate ROWS=8 CASE=<file.in>  # one case:
 make -C hardware/accelerators/matmul verify           # differential verification (SEED=1 COUNT=40 per size)
 make -C hardware/accelerators/matmul verify-mutant    # every RTL mutant in scripts/mutants.txt must be caught
 make -C hardware/accelerators/matmul test             # every registered unit test
+make -C hardware/accelerators/matmul wave             # the demo's waveform -> build/waves/demo.fst (see simulation-guide.md)
+make -C hardware/accelerators/matmul wave-check       # the demo's waveform has every signal, 4 tile_done pulses and 1 done
 pnpm --filter @vcpu/accelerator-reference test        # the reference model's tests
 pnpm accel:gen-vectors --seed 1 --m 13 --n 11 --k 19 --out hardware/accelerators/matmul/build/vectors
 ```

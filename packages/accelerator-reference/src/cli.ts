@@ -1,3 +1,4 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { writePeVectors } from './harness/pe-vectors.js';
 import { tileCaseName, writeTileCase, writeTileSuite } from './harness/tile-vectors.js';
@@ -5,6 +6,8 @@ import { MUTANTS_DEFAULTS, runMutants } from './harness/mutants.js';
 import { writeTopSuite } from './harness/top-vectors.js';
 import { writeCase } from './harness/vectors.js';
 import { defaultVerifyOptions, replayCase, runVerify, VERIFY_DEFAULTS } from './harness/verify.js';
+import { parseVcd, renderWaveDemo, waveCheck, waveTable } from './harness/wave.js';
+import { renderWaveFilters, WAVE_DIR } from './harness/wave-filters.js';
 import { writeVisualizations } from './viz/page.js';
 import { MAX_DIM, validateDims } from './model/matmul.js';
 import {
@@ -73,6 +76,20 @@ ${GENERATORS}
                                          Build a runner from each mutant of rtl/ in
                                          scripts/mutants.txt at 4x4, 8x8 and 16x16 and require
                                          verify (directed + N random per size, default ${String(MUTANTS_DEFAULTS.count)}) to fail.
+  gen-wave-filters [--out-dir <dir>]     Write the GTKWave translate filters (ctrl_state.txt,
+                                         error_code.txt) from the enums of rtl/matmul_pkg.sv into
+                                         <dir> (default ${WAVE_DIR}).
+  gen-wave-demo [--out-dir <dir>]        Write the waveform demo case, demo.in and demo.expected
+                                         (C = A (6 × 3) · B (3 × 5), tagged operands), into <dir>
+                                         (default ${WAVE_DIR}).
+  wave-check --vcd <file> --gtkw <file> --filters <dir> --expect-tiles N --expect-done N
+                                         Check a demo waveform: every required signal and every
+                                         signal of the save file present, the filters current,
+                                         N tile_done and N done pulses; print the tile boundaries.
+                                         Exit 1 on any miss.
+  wave-table --vcd <file> --from C --to C
+                                         Print clocks C … C of a 4 × 4 waveform (clock 0: the first
+                                         busy clock) as the simulation guide's Markdown table.
 `;
 
 type Command = (args: readonly string[]) => number | Promise<number>;
@@ -505,6 +522,82 @@ async function mutants(args: readonly string[]): Promise<number> {
   );
 }
 
+/** `--out-dir <dir>` or nothing; the directory, or undefined after reporting a bad argument. */
+function outDirFlag(command: string, args: readonly string[]): string | undefined {
+  const parsed = parseArgs(command, args, ['--out-dir'], []);
+  if (parsed === undefined) return undefined;
+  const dir = parsed.values.get('--out-dir')?.[0];
+  return dir === undefined ? WAVE_DIR : resolve(cwd, dir);
+}
+
+function genWaveFilters(args: readonly string[]): number {
+  const dir = outDirFlag('gen-wave-filters', args);
+  if (dir === undefined) return 2;
+  mkdirSync(dir, { recursive: true });
+  for (const { file, text } of renderWaveFilters()) {
+    writeFileSync(resolve(dir, file), text);
+    process.stdout.write(`wrote ${resolve(dir, file)}\n`);
+  }
+  return 0;
+}
+
+function genWaveDemo(args: readonly string[]): number {
+  const dir = outDirFlag('gen-wave-demo', args);
+  if (dir === undefined) return 2;
+  mkdirSync(dir, { recursive: true });
+  const { input, expected } = renderWaveDemo();
+  for (const [file, text] of [
+    ['demo.in', input],
+    ['demo.expected', expected],
+  ] as const) {
+    writeFileSync(resolve(dir, file), text);
+    process.stdout.write(`wrote ${resolve(dir, file)}\n`);
+  }
+  return 0;
+}
+
+function waveCheckCommand(args: readonly string[]): number {
+  const flags = ['--vcd', '--gtkw', '--filters', '--expect-tiles', '--expect-done'];
+  const parsed = parseArgs('wave-check', args, flags, []);
+  if (parsed === undefined) return 2;
+  const { values } = parsed;
+  const missing = flags.filter((flag) => !values.has(flag));
+  if (missing.length > 0) {
+    process.stderr.write(`wave-check: missing ${missing.join(', ')}\n${USAGE}`);
+    return 2;
+  }
+  const expectTiles = countFlag('wave-check', values, '--expect-tiles', 0);
+  const expectDone = countFlag('wave-check', values, '--expect-done', 0);
+  if (expectTiles === undefined || expectDone === undefined) return 2;
+  const path = (flag: string) => resolve(cwd, values.get(flag)?.[0] ?? '');
+  return waveCheck(
+    {
+      vcd: path('--vcd'),
+      gtkw: path('--gtkw'),
+      filters: path('--filters'),
+      expectTiles,
+      expectDone,
+    },
+    (text) => process.stdout.write(text),
+  );
+}
+
+function waveTableCommand(args: readonly string[]): number {
+  const parsed = parseArgs('wave-table', args, ['--vcd', '--from', '--to'], []);
+  if (parsed === undefined) return 2;
+  const { values } = parsed;
+  const vcd = values.get('--vcd')?.[0];
+  if (vcd === undefined) {
+    process.stderr.write(`wave-table: missing --vcd\n${USAGE}`);
+    return 2;
+  }
+  const from = countFlag('wave-table', values, '--from', 0);
+  const to = countFlag('wave-table', values, '--to', 20);
+  if (from === undefined || to === undefined) return 2;
+  process.stdout.write(waveTable(parseVcd(readFileSync(resolve(cwd, vcd), 'utf8')), from, to));
+  return 0;
+}
+
 const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-vectors': genVectors,
   'gen-pe-vectors': genPeVectors,
@@ -514,6 +607,10 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   'gen-viz': genViz,
   verify,
   mutants,
+  'gen-wave-filters': genWaveFilters,
+  'gen-wave-demo': genWaveDemo,
+  'wave-check': waveCheckCommand,
+  'wave-table': waveTableCommand,
 };
 
 const [name, ...rest] = process.argv.slice(2);

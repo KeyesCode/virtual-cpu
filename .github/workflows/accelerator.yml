@@ -1,0 +1,152 @@
+# Project 3: the INT8 matmul accelerator gates on the same pinned OSS CAD Suite as hardware.yml
+# (hardware/toolchain.env), under the same cache key, so both workflows share one cache. Each make
+# target is its own step, so a red step names its gate. docs/hardware/accelerators/README.md#ci
+# describes the job and the artifacts.
+name: accelerator
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: Random cases per array size for the verify step (COUNT; empty keeps the Makefile default)
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Every step fails on any error, unset variable or failing pipeline stage.
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+env:
+  HW: hardware/accelerators/matmul
+
+jobs:
+  accelerator:
+    name: Accelerator gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # The reference model and the verification tooling (@vcpu/accelerator-reference) are TypeScript.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read the toolchain version
+        id: toolchain
+        run: |
+          version="$(sed -n 's/^OSS_CAD_SUITE_VERSION=//p' hardware/toolchain.env)"
+          test -n "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      # The extracted suite only: the setup script skips an install it finds, so the tarball in
+      # downloads/ would double the cache for nothing.
+      - name: Restore the toolchain cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/vcpu8
+            !~/.cache/vcpu8/downloads
+          key: oss-cad-suite-${{ steps.toolchain.outputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('hardware/toolchain.env') }}
+
+      - name: Install the pinned toolchain
+        run: pnpm hardware:setup
+
+      # Saved straight after the install, so a failing gate later in the job still keeps the cache.
+      - name: Save the toolchain cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/vcpu8
+            !~/.cache/vcpu8/downloads
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: reference tests (@vcpu/accelerator-reference)
+        run: pnpm --filter @vcpu/accelerator-reference test
+
+      - name: tools-check
+        run: make -C "${HW}" tools-check
+
+      - name: lint (4x4, 8x8 and 16x16)
+        run: |
+          for rows in 4 8 16; do
+            make -C "${HW}" lint ROWS="${rows}"
+          done
+
+      - name: test (PE, array and top unit tests)
+        run: make -C "${HW}" test
+
+      - name: verify (directed and seeded random cases on 4x4, 8x8 and 16x16)
+        env:
+          COUNT: ${{ inputs.count }}
+        run: |
+          if [[ -n "${COUNT}" ]]; then
+            [[ "${COUNT}" =~ ^[1-9][0-9]*$ ]] || { echo "count must be a positive integer, not '${COUNT}'" >&2; exit 2; }
+            make -C "${HW}" verify COUNT="${COUNT}"
+          else
+            make -C "${HW}" verify
+          fi
+
+      - name: synth
+        run: make -C "${HW}" synth
+
+      # -o synth: compare the reports the synth step just wrote instead of synthesizing again.
+      - name: synth-compare
+        run: make -C "${HW}" -o synth synth-compare
+
+      - name: benchmark
+        run: make -C "${HW}" benchmark
+
+      # -o benchmark: compare the report the benchmark step just wrote instead of running it again.
+      - name: benchmark-compare
+        run: make -C "${HW}" -o benchmark benchmark-compare
+
+      - name: wave
+        run: make -C "${HW}" wave
+
+      - name: wave-check
+        run: make -C "${HW}" wave-check
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accelerator-reports
+          path: ${{ env.HW }}/build/reports/
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Upload synthesis, failures, tool versions and the waveform
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accelerator-build
+          path: |
+            ${{ env.HW }}/build/synth/
+            ${{ env.HW }}/build/synth-*/*.log
+            ${{ env.HW }}/build/synth-*/*.report.json
+            ${{ env.HW }}/build/synth-*/*.nofit
+            ${{ env.HW }}/build/failures/
+            ${{ env.HW }}/build/tool-versions.json
+            ${{ env.HW }}/build/waves/demo.fst
+          if-no-files-found: warn
+          overwrite: true

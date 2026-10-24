@@ -5,7 +5,8 @@
 [*] The ^N lines name GTKWave translate filters (tb/wave/*.txt, generated from rtl/matmul_pkg.sv by
 [*] `pnpm --filter @vcpu/accelerator-reference cli gen-wave-filters`); `make wave-check` checks
 [*] every signal below. Signed values (operands, accumulators, C) are shown as signed decimal.
-[*] Every signal below exists at 4 x 4, 8 x 8 and 16 x 16 (PE(3,3) is the far corner only at 4 x 4).
+[*] Laid out for the 4 x 4 demo; at 8 x 8 and 16 x 16 every signal but a_valid and b_valid (ROWS and
+[*] COLS bits wide) exists, and PE(3,3) is an inner PE rather than the far corner.
 [*]
 [savefile] "tb/wave/matmul.gtkw"
 [timestart] 180

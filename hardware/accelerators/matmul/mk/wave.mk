@@ -12,10 +12,11 @@
 # It writes VCD (Verilator --trace); for FST, GTKWave's vcd2fst converts it. The pinned
 # Verilator's own FST writer (--trace-fst) links liblz4, which OSS CAD Suite does not ship.
 #
-# --trace-max-array 256 dumps every array of the datapath (skew registers, the PE grid's operand
-# and accumulator buses) but not the buffer memories (each bank holds MAX_DIM² / banks ≥ 1,024
-# elements), which would make the dump of every clock several times larger; the host port and
-# the controller's buffer addresses, read data and C writes show what goes in and out of them.
+# The buffer memories are not dumped: they are the only unpacked arrays in rtl/ (packed buses such
+# as the skew registers and the PE grid's operands and accumulators are always dumped), and each
+# holds at least MAX_DIM² / 64 = 64 elements at any legal size, above --trace-max-array 32. They
+# would make the dump several times larger; the host port and the controller's buffer addresses,
+# read data and C writes show what goes in and out of them.
 
 WAVE_FORMAT ?= fst
 ifeq ($(filter fst vcd,$(WAVE_FORMAT)),)
@@ -42,7 +43,7 @@ $(SIM_TRACE_BIN): $(RTL_SRCS) $(SIM_TOP) $(SIM_CPP) $(HW_DIR)/mk/wave.mk
 	$(call need,$(VERILATOR))
 	@mkdir -p $(dir $@)
 	$(VERILATOR) --cc --exe --build -O3 -Wall --quiet -j 0 --top-module matmul_sim_top \
-	  $(SIZE_GFLAGS) --trace --trace-structs --trace-max-array 256 --timescale 1ns/1ns \
+	  $(SIZE_GFLAGS) --trace --trace-structs --trace-max-array 32 --timescale 1ns/1ns \
 	  -CFLAGS -Wno-unknown-warning-option -Mdir $(dir $@)obj -o $@ \
 	  $(RTL_SRCS) $(SIM_TOP) $(SIM_CPP) > $(dir $@)build.log
 	@echo "built $@"

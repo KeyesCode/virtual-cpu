@@ -44,7 +44,7 @@ make -C hardware/accelerators/matmul wave-check                    # the demo's 
 pnpm accel:wave                                                    # the same as the first line
 ```
 
-`wave` builds a second, tracing runner in `build/sim-trace-<R>x<C>/` (Verilator `--trace --trace-structs --trace-max-array 256`), runs the case on it with `--wave` and prints the case's dimensions, its clock counts, the file's size and the command to view it:
+`wave` builds a second, tracing runner in `build/sim-trace-<R>x<C>/` (Verilator `--trace --trace-structs --trace-max-array 32`), runs the case on it with `--wave` and prints the case's dimensions, its clock counts, the file's size and the command to view it:
 
 ```text
   m 6
@@ -63,7 +63,7 @@ view it (from …/hardware/accelerators/matmul):
 
 - **Separate builds.** The tracing runner never replaces `build/sim-<R>x<C>/matmul_sim`, so `make test`, `simulate` and `verify` stay untraced and fast; the untraced runner rejects `--wave`.
 - **FST or VCD.** Verilator writes VCD; for FST (the default, about a tenth of the size) GTKWave's `vcd2fst` converts it. The pinned Verilator's own FST writer (`--trace-fst`) needs liblz4, which OSS CAD Suite does not ship. Waveforms are never committed: everything goes to `build/waves/`, next to `<name>.out` and `<name>.cycles.json`.
-- **What is not dumped.** `--trace-max-array 256` records every array of the datapath (the skew registers and the PE grid's operand and accumulator buses) but not the buffer memories: each bank holds MAX_DIM² / banks ≥ 1,024 elements, and dumping them would make the file several times larger. What enters and leaves the buffers is still visible on the host port, the controller's read data (`a_data`, `b_data`) and its C writes (`c_we`, `c_addr`, `c_wdata`).
+- **What is not dumped.** Every signal of the datapath is recorded (the skew registers and the PE grid's operand and accumulator buses are packed vectors), but not the buffer memories: they are the only unpacked arrays in `rtl/`, each holds at least MAX_DIM² / 64 = 64 elements, and `--trace-max-array 32` leaves out any array longer than 32, at every array size. Dumping them would make the file several times larger. What enters and leaves the buffers is still visible on the host port, the controller's read data (`a_data`, `b_data`) and its C writes (`c_we`, `c_addr`, `c_wdata`).
 - **Size.** The demo's dump is 73 KB as VCD and 9 KB as FST; a 13 × 19 · 19 × 11 product on 8 × 8 is 0.7 MB of VCD. The dump grows with the number of PEs times the clocks: the largest product, 64 × 64 · 64 × 64 on 16 × 16 (5,649 busy clocks), is 36 MB of VCD. Use the smallest case that shows what you are looking for.
 
 ## Opening it in GTKWave
@@ -86,13 +86,13 @@ gtkwave build/waves/demo.fst tb/wave/matmul.gtkw
 | PE(0,0), PE(1,0), PE(1,1), PE(3,3)   | `a_in`, `a_valid_in`, `b_in`, `b_valid_in`, `acc`                                                |
 | Store and host read                  | `c_we`, `c_addr`, `c_wdata`, `host_c_addr`, `host_c_rdata`                                       |
 
-Operands, accumulators and C are shown as signed decimal. `dbg_state` and `error_code` show names (`IDLE`, `COMPUTE`, `ERR_NONE`, …) through the translate filters `tb/wave/ctrl_state.txt` and `tb/wave/error_code.txt`, which GTKWave finds next to the save file. They are generated from the enums of `rtl/matmul_pkg.sv`:
+Operands, accumulators and C are shown as signed decimal. `dbg_state` and `error_code` show names (`IDLE`, `COMPUTE`, `ERR_NONE`, …) through the translate filters `tb/wave/ctrl_state.txt` and `tb/wave/error_code.txt`, which the save file names relative to `hardware/accelerators/matmul/`, so start GTKWave from that directory as above. They are generated from the enums of `rtl/matmul_pkg.sv`:
 
 ```sh
 pnpm --filter @vcpu/accelerator-reference cli gen-wave-filters
 ```
 
-A Vitest test fails when a committed filter no longer matches the package, so a renamed or renumbered state cannot silently show the wrong name. The same signals exist at every size, so the save file also opens an 8 × 8 or 16 × 16 dump (PE(3,3) is then an inner PE, not the far corner). To find another signal, expand `TOP` in the hierarchy on the left: the PEs are `u_top.u_array.g_row[i].g_col[j].u_pe`, the controller `u_top.u_controller`.
+A Vitest test fails when a committed filter no longer matches the package, so a renamed or renumbered state cannot silently show the wrong name. The save file is laid out for the 4 × 4 demo. It also opens an 8 × 8 or 16 × 16 dump, where PE(3,3) is an inner PE rather than the far corner, but GTKWave then leaves out `a_valid[3:0]` and `b_valid[3:0]`, which are ROWS and COLS bits wide (`[7:0]`, `[15:0]`); add them from the hierarchy. To find another signal, expand `TOP` in the hierarchy on the left: the PEs are `u_top.u_array.g_row[i].g_col[j].u_pe`, the controller `u_top.u_controller`.
 
 ![GTKWave with the demo waveform and matmul.gtkw: the start pulse, LOAD, PREPARE_TILE, COMPUTE (k 0–2), DRAIN and STORE of the first tile, the operands presented and the row 1 / column 1 skew registers](images/gtkwave-demo.png)
 

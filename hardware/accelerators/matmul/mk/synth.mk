@@ -59,8 +59,10 @@ NEXTPNR_ECP5  ?= $(TOOL_BIN)nextpnr-ecp5
 # has. nextpnr reports its utilisation before placement, so the summary still has the numbers.
 SYNTH_NO_FIT := ^ERROR: Unable to place cell .*, no BELs remaining to implement cell type
 
-# `$(call synth_read,<sources>)`: the Yosys command that reads the sources, packages first.
-synth_read = read_verilog -sv -D SYNTHESIS $(SYNTH_DEFINES) $(1)
+# `$(call synth_read,<sources>)`: the Yosys command that reads the sources, packages first. With no
+# SYNTH_DEFINES it must stay byte-identical, even in its spacing: one extra space here changed the
+# Linux x64 results from baseline-linux-x64 (24 deltas in the 16x16 generic flow).
+synth_read = read_verilog -sv -D SYNTHESIS$(if $(strip $(SYNTH_DEFINES)), $(strip $(SYNTH_DEFINES))) $(1)
 # `$(call synth_size,<top>,<n>)`: set an n × n array, and SYNTH_PARAMS, on <top>.
 synth_size = chparam -set ROWS $(2) -set COLS $(2)$(foreach p,$(SYNTH_PARAMS), -set $(subst =, ,$(p))) $(1)
 

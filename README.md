@@ -85,6 +85,15 @@ make -C hardware/rtl/vcpu8 benchmark                      # RTL cycles and CPI o
 
 CI runs these gates, except `benchmark`, on every pull request (`.github/workflows/hardware.yml`). `pnpm check` needs none of the hardware tools.
 
+## Project 4: the research engine
+
+Project 4 is building a platform that proposes hardware design changes, verifies them with real tools and keeps the evidence. Its first campaign targets the Project 3 processing element, aiming to reduce area-delay product under a frozen sky130hd evaluation. Only the docs, the empty workspaces and the local PostgreSQL and Redis services exist so far, so no experiments run yet.
+
+- [Research engine index](docs/research-engine/README.md): status, setup, scripts and the build order
+- [Repository audit](docs/research-engine/audit.md): the readiness evidence and the target choice
+- [Architecture](docs/research-engine/architecture.md): components, state machine, metric tiers, sandbox and agent boundaries
+- [Research workflow](docs/research-engine/research-workflow.md): the experiment loop, gates, budgets and stop conditions
+
 ## Scripts
 
 | Script                          | What it does                                                |
@@ -103,6 +112,7 @@ CI runs these gates, except `benchmark`, on every pull request (`.github/workflo
 | `pnpm --filter @vcpu/web build` | Static dashboard build to `apps/web/dist`                   |
 | `pnpm hardware:setup`           | Installs the pinned hardware toolchain (Project 2)          |
 | `pnpm hardware:<gate>`          | `lint`, `test`, `verify`, `formal`, `synth`, `benchmark`, … |
+| `pnpm research:<task>`          | Project 4 tasks, mostly stubs (docs/research-engine)        |
 
 ## Layout
 
@@ -110,6 +120,7 @@ CI runs these gates, except `benchmark`, on every pull request (`.github/workflo
 apps/
   web/          @vcpu/web        Vite + React + Tailwind dashboard (static, deployed to Vercel)
   cli/          @vcpu/cli        `pnpm cpu` command-line interface
+  research-*/   Project 4        API, worker and dashboard placeholders
 packages/
   shared/       @vcpu/shared     the single authoritative ISA definition and fixture schema
   cpu-core/     @vcpu/cpu-core   CPU emulator; no React, Node or browser APIs
@@ -117,13 +128,15 @@ packages/
   debugger/     @vcpu/debugger   breakpoints, watchpoints, step-back history
   benchmarks/   @vcpu/benchmarks benchmark suite
   rtl-tools/    @vcpu/rtl-tools  Project 2 tooling: ISA package generator, differential verification, benchmarks
+  research-core/, eda-adapters/, artifact-storage/, research-agents/, experiment-runner/   Project 4 placeholders
 hardware/       Project 2 RTL (rtl/vcpu8/), the FPGA wrapper (fpga/) and the pinned OSS CAD Suite toolchain
 research/cpu/   Project 2 research results: synthesis baseline, RTL benchmark reports, experiments
 examples/       20 example programs, each with a .expect.json checked by the tests
 fixtures/v1/    hardware test fixtures (vcpu8-fixture/1)
 benchmarks/     committed baseline.json; results/ holds local runs (git-ignored)
 scripts/        fixture exporter
-docs/           architecture, ISA, hardware porting, concepts, the Project 1 report; hardware/ for Project 2
+infrastructure/ Project 4 Docker Compose services and helper scripts
+docs/           architecture, ISA, hardware porting, concepts, the Project 1 report; hardware/ for Project 2; research-engine/ for Project 4
 ```
 
 Workspace packages are consumed straight from their TypeScript source through `exports`. Tests and the dev tools need no build step.
@@ -147,6 +160,7 @@ New to hardware? Start with the concepts guide. Porting to RTL? Start with hardw
 | [docs/hardware/isa-compatibility.md](docs/hardware/isa-compatibility.md) | ISA compatibility audit: the ISA the RTL implements, cross-checks, brief discrepancies      |
 | [docs/hardware/project-2-report.md](docs/hardware/project-2-report.md)   | Project 2 completion report: audit results, DoD evidence, limitations, next revision        |
 | [docs/hardware/fpga-readiness.md](docs/hardware/fpga-readiness.md)       | FPGA fit, timing, clocking and reset, block RAM, and the Project 5 debug-bridge plan        |
+| [docs/research-engine/README.md](docs/research-engine/README.md)         | Project 4 research engine: audit, architecture, research workflow                           |
 | [docs/project-1-report.md](docs/project-1-report.md)                     | Project 1 completion report: evidence, results, limitations, Project 2 readiness            |
 | [examples/README.md](examples/README.md)                                 | The 20 example programs, their expected results and overflow notes                          |
 | [fixtures/README.md](fixtures/README.md)                                 | The `vcpu8-fixture/1` format and what `fixtures/v1/` contains                               |

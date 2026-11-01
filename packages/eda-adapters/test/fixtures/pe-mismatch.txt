@@ -1,0 +1,7 @@
+segment 'reset': 12 clocks, 0 mismatches, acc after the last clock 0
+MISMATCH line 42 (segment 'clear'): rst=0 clear=1 a=3 a_valid=1 b=4 b_valid=1: expected acc=0 a_out=3/1 b_out=4/1, got acc=12 a_out=3/1 b_out=4/1
+MISMATCH line 43 (segment 'clear'): before the rising edge the outputs changed with the inputs: expected acc=0 a_out=3/1 b_out=4/1 from the previous clock, got acc=12 a_out=3/1 b_out=4/1
+... 282538 more mismatches
+[2843556000] %Fatal: tb_processing_element.sv:189: Assertion failed in tb_processing_element.unnamedblk1: tb_processing_element: 282558 of 284355 checks failed
+%Error: /ws/hardware/accelerators/matmul/tb/unit/tb_processing_element.sv:189: Verilog $stop
+Aborting...

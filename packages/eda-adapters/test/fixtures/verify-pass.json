@@ -1,0 +1,665 @@
+{
+  "schemaVersion": 1,
+  "kind": "matmul-verify",
+  "passed": true,
+  "seed": 7,
+  "countPerSize": 2,
+  "corpora": ["directed", "random"],
+  "provenance": {
+    "revision": "matmul-os-r1",
+    "git": {
+      "commit": "d84ea65",
+      "dirty": false
+    },
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "verilator": "Verilator 5.053"
+    }
+  },
+  "sizes": [
+    {
+      "cases": 24,
+      "passed": 24,
+      "failed": 0,
+      "directed": 22,
+      "random": 2,
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "sim": "/out/build/sim-4x4/matmul_sim"
+    }
+  ],
+  "totals": {
+    "cases": 24,
+    "passed": 24,
+    "failed": 0,
+    "directed": 22,
+    "random": 2
+  },
+  "cases": [
+    {
+      "size": "4x4",
+      "name": "dir-0",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-1",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-2",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-3",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-4",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-5",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-6",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-7",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-8",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-9",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-10",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-11",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-12",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-13",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-14",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-15",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-16",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-17",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-18",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-19",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-20",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "dir-21",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "rand-0",
+      "kind": "random",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    },
+    {
+      "size": "4x4",
+      "name": "rand-1",
+      "kind": "random",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": true,
+      "reason": null,
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": {
+        "stop": "done"
+      },
+      "saved": null
+    }
+  ]
+}

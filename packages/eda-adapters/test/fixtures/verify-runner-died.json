@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "kind": "matmul-verify",
+  "passed": false,
+  "seed": 7,
+  "countPerSize": 0,
+  "corpora": ["directed", "random"],
+  "provenance": {
+    "revision": "matmul-os-r1",
+    "git": {
+      "commit": "d84ea65",
+      "dirty": false
+    },
+    "toolchain": "OSS CAD Suite 2026-10-16",
+    "tools": {
+      "verilator": "Verilator 5.053"
+    }
+  },
+  "sizes": [
+    {
+      "cases": 1,
+      "passed": 0,
+      "failed": 1,
+      "directed": 1,
+      "random": 0,
+      "size": "4x4",
+      "rows": 4,
+      "cols": 4,
+      "sim": "/out/build/sim-4x4/matmul_sim"
+    }
+  ],
+  "totals": {
+    "cases": 1,
+    "passed": 0,
+    "failed": 1,
+    "directed": 1,
+    "random": 0
+  },
+  "cases": [
+    {
+      "size": "4x4",
+      "name": "dir-0",
+      "kind": "directed",
+      "generator": "uniform",
+      "seed": 7,
+      "dims": {
+        "m": 2,
+        "n": 2,
+        "k": 2
+      },
+      "macs": 8,
+      "flags": {
+        "repeat": 1,
+        "resetBetween": false,
+        "abortFirst": false
+      },
+      "passed": false,
+      "reason": "the runner failed (Command failed: matmul_sim)",
+      "mismatches": 0,
+      "firstMismatches": [],
+      "cycles": null,
+      "saved": null
+    }
+  ]
+}

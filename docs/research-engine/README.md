@@ -2,13 +2,14 @@
 
 Project 4 builds a platform that proposes hardware design changes, verifies them, measures them and keeps the evidence. Its first campaign tries to improve the area-delay product of the Project 3 processing element.
 
-**Status: documented and scaffolded.** The workspaces hold placeholders and Compose runs PostgreSQL and Redis. No experiment logic exists yet.
+**Status: documented and scaffolded.** Compose runs PostgreSQL and Redis, and the database schema exists. No experiment logic exists yet.
 
 | Document                                     | What it covers                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------- |
 | [audit.md](audit.md)                         | Readiness of Projects 1 to 3, tools present and missing, target choice, evidence  |
 | [architecture.md](architecture.md)           | Components, data model, state machine, metric tiers, sandbox and agent boundaries |
 | [research-workflow.md](research-workflow.md) | The 15-step loop, correctness gates, failure classes, rollout, budgets            |
+| [data-model.md](data-model.md)               | Tables, columns and units, constraints, what the migrations guarantee             |
 
 ## Getting started
 
@@ -25,17 +26,18 @@ If a port is taken, change `POSTGRES_PORT` or `REDIS_PORT` in `.env`, and update
 
 ## Root scripts
 
-| Script                        | State                                                  |
-| ----------------------------- | ------------------------------------------------------ |
-| `pnpm research:test`          | Works: runs the tests of the eight research workspaces |
-| `pnpm research:dashboard`     | Works: serves the placeholder page                     |
-| `pnpm research:migrate`       | Stub until VIRT-W2OETF                                 |
-| `pnpm research:sandbox:build` | Stub until VIRT-Q6RNBH                                 |
-| `pnpm research:worker`        | Stub until VIRT-JAA90W                                 |
-| `pnpm research:api`           | Stub until VIRT-1CIURP                                 |
-| `pnpm research:verify`        | Stub until VIRT-ZIH4RS                                 |
-| `pnpm research:campaign`      | Stub until VIRT-W3M5PV                                 |
-| `pnpm research:dev`           | Stub until VIRT-5LP8M4                                 |
+| Script                         | State                                                  |
+| ------------------------------ | ------------------------------------------------------ |
+| `pnpm research:test`           | Works: runs the tests of the eight research workspaces |
+| `pnpm research:dashboard`      | Works: serves the placeholder page                     |
+| `pnpm research:migrate`        | Works: applies pending migrations to `DATABASE_URL`    |
+| `pnpm research:migrate:revert` | Works: reverts the last migration                      |
+| `pnpm research:sandbox:build`  | Stub until VIRT-Q6RNBH                                 |
+| `pnpm research:worker`         | Stub until VIRT-JAA90W                                 |
+| `pnpm research:api`            | Stub until VIRT-1CIURP                                 |
+| `pnpm research:verify`         | Stub until VIRT-ZIH4RS                                 |
+| `pnpm research:campaign`       | Stub until VIRT-W3M5PV                                 |
+| `pnpm research:dev`            | Stub until VIRT-5LP8M4                                 |
 
 A stub prints `not implemented yet` and exits 1.
 

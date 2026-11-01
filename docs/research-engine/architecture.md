@@ -69,7 +69,7 @@ Workspace dependencies point one way: core, then adapters, storage and agents, t
 
 ## Data model
 
-TypeORM entities with hand-written migrations under `apps/research-api/src/migrations/`; `synchronize` is always off. IDs are UUIDv7 strings generated in the app.
+TypeORM entities with hand-written migrations under `apps/research-api/src/migrations/`; `synchronize` is always off. IDs are UUIDv7 strings generated in the app. [data-model.md](data-model.md) has the columns, units and constraints.
 
 | Entity                                                                 | Holds                                                                         |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |

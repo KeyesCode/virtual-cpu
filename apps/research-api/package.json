@@ -8,19 +8,27 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "tsx src/migrate.ts run",
+    "migrate:revert": "tsx src/migrate.ts revert"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@vcpu/artifact-storage": "workspace:*",
     "@vcpu/research-core": "workspace:*",
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "typeorm": "^1.1.2",
+    "uuid": "^14.0.3"
   },
   "devDependencies": {
     "@nestjs/testing": "^11.0.0",
     "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

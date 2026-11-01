@@ -1,0 +1,25 @@
+{
+  "name": "@vcpu/research-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vcpu/artifact-storage": "workspace:*",
+    "@vcpu/experiment-runner": "workspace:*",
+    "@vcpu/research-agents": "workspace:*",
+    "@vcpu/research-core": "workspace:*",
+    "bullmq": "^6.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

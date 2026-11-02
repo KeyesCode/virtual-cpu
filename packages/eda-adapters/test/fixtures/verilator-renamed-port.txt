@@ -1,0 +1,9 @@
+%Warning-PINMISSING: /ws/rtl/systolic_array.sv:130:9: Instance has missing pin: 'acc_q'
+  130 |       ) u_pe (
+      |         ^~~~
+                     ... For warning description see https://verilator.org/warn/PINMISSING?v=5.053
+%Error-PINNOTFOUND: /ws/rtl/systolic_array.sv:142:10: Pin not found: 'acc'
+  142 |         .acc        (c[i*COLS+j])
+      |          ^~~
+%Error: Exiting due to 1 error(s)
+make: *** [lint] Error 1

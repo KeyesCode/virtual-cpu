@@ -1,0 +1,5 @@
+segment 'reset': 12 clocks, 0 mismatches, acc after the last clock 0
+segment 'random: seed 7, 20000 clocks': 20000 clocks, 0 mismatches, acc after the last clock -155407
+tb_processing_element: PASS (284355 checks, 20000 random clocks, seed 7)
+MISMATCH line 2118 (segment 'overflow-up'): rst=0 clear=0 a=127 a_valid=1 b=127 b_valid=1: expected acc=-2147483647 a_out=127/1 b_out=127/1, got acc=-2147483648 a_out=127/1 b_out=127/1
+test-pe-corrupt: corrupting the expected wrapped accumulator on line 2118 fails the test as it should

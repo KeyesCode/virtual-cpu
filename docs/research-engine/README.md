@@ -10,6 +10,7 @@ Project 4 builds a platform that proposes hardware design changes, verifies them
 | [architecture.md](architecture.md)           | Components, data model, state machine, metric tiers, sandbox and agent boundaries |
 | [research-workflow.md](research-workflow.md) | The 15-step loop, correctness gates, failure classes, rollout, budgets            |
 | [data-model.md](data-model.md)               | Tables, columns and units, constraints, what the migrations guarantee             |
+| [eda-adapters.md](eda-adapters.md)           | The command runner and Verilator adapter: commands, outputs, failure classes      |
 
 ## Getting started
 

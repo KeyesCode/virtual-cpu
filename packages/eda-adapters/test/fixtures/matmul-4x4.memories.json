@@ -1,0 +1,80 @@
+{
+  "creator": "Yosys 0.70+145 (git sha1 a31d95ea0, Release, Clang /usr/local/osxcross/target/bin/aarch64-apple-darwin25.5-clang++ 21.1.8)",
+  "modules": {
+    "$paramod$3891aa6fb09f414cdb65d57f483e0411340e0b6f\\input_buffer": {
+      "cells": {
+        "g_bank[0].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        },
+        "g_bank[1].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        },
+        "g_bank[2].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        },
+        "g_bank[3].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        }
+      }
+    },
+    "$paramod$768a08dd8792ddcf334687983413acdc5d4fe592\\output_buffer": {
+      "cells": {
+        "mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000001000000000000",
+            "WIDTH": "00000000000000000000000000100000"
+          }
+        }
+      }
+    },
+    "$paramod$d15be874c253ab7fdfd5efaa8b032666f5981210\\input_buffer": {
+      "cells": {
+        "g_bank[0].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        },
+        "g_bank[1].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        },
+        "g_bank[2].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        },
+        "g_bank[3].mem": {
+          "type": "$mem_v2",
+          "parameters": {
+            "SIZE": "00000000000000000000010000000000",
+            "WIDTH": "00000000000000000000000000001000"
+          }
+        }
+      }
+    }
+  }
+}

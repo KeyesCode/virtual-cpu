@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@vcpu/research-core": "workspace:*",
+    "@vcpu/rtl-tools": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

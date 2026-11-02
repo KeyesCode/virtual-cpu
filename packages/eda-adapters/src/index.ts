@@ -3,3 +3,4 @@ export const packageName = '@vcpu/eda-adapters';
 
 export * from './runner/index.js';
 export * from './verilator/index.js';
+export * from './yosys/index.js';

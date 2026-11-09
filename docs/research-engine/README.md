@@ -2,7 +2,7 @@
 
 Project 4 builds a platform that proposes hardware design changes, verifies them, measures them and keeps the evidence. Its first campaign tries to improve the area-delay product of the Project 3 processing element.
 
-**Status: documented and scaffolded.** Compose runs PostgreSQL and Redis, and the database schema exists. No experiment logic exists yet.
+**Status: documented and scaffolded.** Compose runs PostgreSQL and Redis, and the database schema exists. The experiment state machine and its BullMQ worker run stages durably, but no stage does real EDA work yet.
 
 | Document                                     | What it covers                                                                    |
 | -------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -11,6 +11,7 @@ Project 4 builds a platform that proposes hardware design changes, verifies them
 | [research-workflow.md](research-workflow.md) | The 15-step loop, correctness gates, failure classes, rollout, budgets            |
 | [data-model.md](data-model.md)               | Tables, columns and units, constraints, what the migrations guarantee             |
 | [eda-adapters.md](eda-adapters.md)           | The command runner and Verilator adapter: commands, outputs, failure classes      |
+| [state-machine.md](state-machine.md)         | Experiment states, transition table, failure classes, retries, the BullMQ worker  |
 
 ## Getting started
 
@@ -34,7 +35,7 @@ If a port is taken, change `POSTGRES_PORT` or `REDIS_PORT` in `.env`, and update
 | `pnpm research:migrate`        | Works: applies pending migrations to `DATABASE_URL`    |
 | `pnpm research:migrate:revert` | Works: reverts the last migration                      |
 | `pnpm research:sandbox:build`  | Stub until VIRT-Q6RNBH                                 |
-| `pnpm research:worker`         | Stub until VIRT-JAA90W                                 |
+| `pnpm research:worker`         | Works: runs the orchestration worker (no-op stages)    |
 | `pnpm research:api`            | Stub until VIRT-1CIURP                                 |
 | `pnpm research:verify`         | Stub until VIRT-ZIH4RS                                 |
 | `pnpm research:campaign`       | Stub until VIRT-W3M5PV                                 |

@@ -12,3 +12,7 @@ hardware/accelerators/matmul/build/
 
 .env
 .research/
+
+# Written by `pnpm research:sandbox:build` for the image this machine built.
+infrastructure/docker/eda-sandbox/image-digest.json
+infrastructure/docker/eda-sandbox/tool-versions.json

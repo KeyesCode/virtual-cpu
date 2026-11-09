@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } fr
 import { basename, dirname, extname, join, relative, resolve } from 'node:path';
 import {
   classifyCommand,
+  stopsStage,
   type CommandRecord,
   type FailureClass,
   type StageResult,
@@ -185,6 +186,9 @@ function firstLine(text: string): string {
 
 function ended(record: CommandRecord, what: string): string {
   if (record.spawnError !== null) return `${what} could not start: ${record.spawnError}`;
+  if ((record.policyViolation ?? null) !== null) {
+    return `${what} broke the sandbox policy: ${record.policyViolation ?? ''}`;
+  }
   if (record.timedOut) return `${what} overran the stage timeout and was killed`;
   return `${what} exited ${String(record.exitCode ?? record.signal)}`;
 }
@@ -196,7 +200,7 @@ function classifyVerilator(
   what: string,
 ): { failureClass: FailureClass; message: string } | null {
   const base = classifyCommand(record);
-  if (base === 'timeout' || base === 'infrastructure-failure') {
+  if (stopsStage(base)) {
     return { failureClass: base, message: ended(record, what) };
   }
   const blocking = diagnostics.find((d) => isDesignError(d) || isInterfaceWarning(d));
@@ -368,7 +372,7 @@ export class VerilatorAdapter {
         this.repoRoot,
       );
       const base = classifyCommand(verify);
-      if (base === 'timeout' || base === 'infrastructure-failure') {
+      if (stopsStage(base)) {
         return run.result(base, ended(verify, 'verify'), empty);
       }
       if (!existsSync(reportFile)) {
@@ -479,7 +483,7 @@ export class VerilatorAdapter {
       // tools-check also exits non-zero for a tool this stage does not use, so its file decides.
       const record = await this.make(run, context, 'tools-check');
       const base = classifyCommand(record);
-      if (base === 'timeout' || base === 'infrastructure-failure') {
+      if (stopsStage(base)) {
         return { failureClass: base, message: ended(record, 'make tools-check') };
       }
     }

@@ -95,15 +95,15 @@ export interface ExperimentRepository {
   ): Promise<ExperimentRecord[]>;
 
   /**
-   * Take a stale experiment over for recovery: refresh its heartbeat, clear its lease and, when
-   * `bumpAttempt`, count one more stage attempt. Only one of several racing recoverers wins (the
-   * update is conditional on the heartbeat still being stale); the others get null.
+   * Take a stale experiment over for recovery: refresh its heartbeat and clear its lease, but only
+   * while it is still in `expected.status` at `expected.stageAttempt` with a heartbeat older than
+   * `staleBefore`. Of several racing recoverers exactly one wins (a conditional
+   * `UPDATE … RETURNING`); the others get null.
    */
   reclaimStale(
     id: string,
-    status: ExperimentState,
+    expected: { readonly status: ExperimentState; readonly stageAttempt: number },
     staleBefore: Date,
-    bumpAttempt: boolean,
   ): Promise<ExperimentRecord | null>;
 
   transitions(id: string): Promise<TransitionRecord[]>;

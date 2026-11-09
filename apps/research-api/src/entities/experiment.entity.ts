@@ -71,6 +71,18 @@ export class Experiment {
   @Column({ name: 'failure_reason', type: 'text', nullable: true })
   failureReason!: string | null;
 
+  /** Attempts started of the current stage; 0 between stages. */
+  @Column({ name: 'stage_attempt', type: 'integer', default: 0 })
+  stageAttempt!: number;
+
+  /** The worker holding the current stage, or null. */
+  @Column({ name: 'lease_owner', type: 'text', nullable: true })
+  leaseOwner!: string | null;
+
+  /** Refreshed by the worker while a stage runs; stale recovery looks for old ones. */
+  @Column({ name: 'heartbeat_at', type: 'timestamptz', nullable: true })
+  heartbeatAt!: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { researchEntities } from './entities/index.js';
 import { InitialResearchSchema1793491200000 } from './migrations/1793491200000-initial-research-schema.js';
+import { ExperimentOrchestration1793577600000 } from './migrations/1793577600000-experiment-orchestration.js';
 
 const repositoryEnvFile = resolve(import.meta.dirname, '../../../.env');
 
@@ -23,7 +24,7 @@ export function dataSourceOptions(url: string): DataSourceOptions {
     type: 'postgres',
     url,
     entities: researchEntities,
-    migrations: [InitialResearchSchema1793491200000],
+    migrations: [InitialResearchSchema1793491200000, ExperimentOrchestration1793577600000],
     migrationsTransactionMode: 'each',
     synchronize: false,
   };

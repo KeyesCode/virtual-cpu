@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import {
   classifyCommand,
+  stopsStage,
   type CommandRecord,
   type FailureClass,
   type Metric,
@@ -167,6 +168,9 @@ function artifactsIn(dir: string): SynthesisArtifact[] {
 
 function ended(record: CommandRecord, what: string): string {
   if (record.spawnError !== null) return `${what} could not start: ${record.spawnError}`;
+  if ((record.policyViolation ?? null) !== null) {
+    return `${what} broke the sandbox policy: ${record.policyViolation ?? ''}`;
+  }
   if (record.timedOut) return `${what} overran the stage timeout and was killed`;
   return `${what} exited ${String(record.exitCode ?? record.signal)}`;
 }
@@ -456,7 +460,7 @@ export class YosysAdapter {
 
       const record = await run.exec(spec.flow, yosys, ['-q', '-l', 'yosys.log', '-s', 'script.ys']);
       const base = classifyCommand(record);
-      if (base === 'timeout' || base === 'infrastructure-failure') {
+      if (stopsStage(base)) {
         return stopped(base, ended(record, 'yosys'));
       }
 

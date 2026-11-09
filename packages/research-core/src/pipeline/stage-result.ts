@@ -29,6 +29,20 @@ export const CommandRecordSchema = z.object({
   spawnError: z.string().nullable(),
   stdout: LogCaptureSchema,
   stderr: LogCaptureSchema,
+  /** Where it ran when a sandbox runner ran it: absent for a command run on the host. */
+  sandbox: z
+    .object({
+      /** The image reference the runner was given. */
+      image: z.string().min(1),
+      /** The local image id (`sha256:…`), the content digest of exactly what ran. */
+      imageId: z.string().min(1),
+      container: z.string().min(1),
+      /** The `uid:gid` the command ran as, never 0. */
+      user: z.string().min(1),
+    })
+    .optional(),
+  /** Why the run broke a sandbox policy (an output over its size cap), or null/absent. */
+  policyViolation: z.string().nullable().optional(),
 });
 export type CommandRecord = z.infer<typeof CommandRecordSchema>;
 
@@ -66,9 +80,25 @@ export interface StageResult<TOutcome = unknown> extends Omit<
  * the tool failed; an adapter that can read the tool's output refines it to a design failure.
  */
 export function classifyCommand(
-  record: Pick<CommandRecord, 'exitCode' | 'spawnError' | 'timedOut'>,
+  record: Pick<CommandRecord, 'exitCode' | 'spawnError' | 'timedOut' | 'policyViolation'>,
 ): FailureClass | null {
   if (record.spawnError !== null) return 'infrastructure-failure';
+  if ((record.policyViolation ?? null) !== null) return 'policy-violation';
   if (record.timedOut) return 'timeout';
   return record.exitCode === 0 ? null : 'tool-failure';
+}
+
+/**
+ * Whether a command's own failure class leaves nothing to judge the design on: it never started,
+ * overran, or broke a sandbox policy. An adapter stops the stage on these instead of reading the
+ * tool's output for a design verdict.
+ */
+export function stopsStage(
+  failureClass: FailureClass | null,
+): failureClass is 'infrastructure-failure' | 'timeout' | 'policy-violation' {
+  return (
+    failureClass === 'infrastructure-failure' ||
+    failureClass === 'timeout' ||
+    failureClass === 'policy-violation'
+  );
 }

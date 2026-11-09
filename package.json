@@ -42,7 +42,7 @@
     "research:campaign": "bash infrastructure/scripts/not-implemented.sh research:campaign VIRT-W3M5PV",
     "research:migrate": "pnpm --silent --filter @vcpu/research-api migrate",
     "research:migrate:revert": "pnpm --silent --filter @vcpu/research-api migrate:revert",
-    "research:sandbox:build": "bash infrastructure/scripts/not-implemented.sh research:sandbox:build VIRT-Q6RNBH",
+    "research:sandbox:build": "bash infrastructure/scripts/sandbox-build.sh",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

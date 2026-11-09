@@ -1,0 +1,7 @@
+# The build context is the repository root; the image needs only these files. BuildKit reads a
+# <Dockerfile>.dockerignore beside the Dockerfile in place of the root .dockerignore.
+*
+!hardware/toolchain.env
+!hardware/asic/toolchain.env
+!hardware/asic/sky130hd/
+!infrastructure/docker/eda-sandbox/tool-versions.sh

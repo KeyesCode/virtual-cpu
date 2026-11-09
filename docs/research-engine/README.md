@@ -14,6 +14,7 @@ Project 4 builds a platform that proposes hardware design changes, verifies them
 | [metrics.md](metrics.md)                     | Metric provenance and units, the PPA snapshot, tiers, ADP, comparability, Pareto  |
 | [artifacts.md](artifacts.md)                 | The content-addressed artifact store: layout, kinds, limits, secrets, retention   |
 | [state-machine.md](state-machine.md)         | Experiment states, transition table, failure classes, retries, the BullMQ worker  |
+| [sandbox.md](sandbox.md)                     | The EDA sandbox image and runner: threat model, flags, mounts, macOS and Ubuntu   |
 
 ## Getting started
 
@@ -36,7 +37,7 @@ If a port is taken, change `POSTGRES_PORT` or `REDIS_PORT` in `.env`, and update
 | `pnpm research:dashboard`      | Works: serves the placeholder page                     |
 | `pnpm research:migrate`        | Works: applies pending migrations to `DATABASE_URL`    |
 | `pnpm research:migrate:revert` | Works: reverts the last migration                      |
-| `pnpm research:sandbox:build`  | Stub until VIRT-Q6RNBH                                 |
+| `pnpm research:sandbox:build`  | Works: builds the EDA sandbox image                    |
 | `pnpm research:worker`         | Works: runs the orchestration worker (no-op stages)    |
 | `pnpm research:api`            | Stub until VIRT-1CIURP                                 |
 | `pnpm research:verify`         | Stub until VIRT-ZIH4RS                                 |

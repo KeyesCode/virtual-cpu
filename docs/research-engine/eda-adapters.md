@@ -4,13 +4,17 @@
 
 ## Command runner
 
-Adapters run commands through the `CommandRunner` interface in `packages/eda-adapters/src/runner/`, so the same adapter can later run inside the sandbox image.
+Adapters run commands through the `CommandRunner` interface in `packages/eda-adapters/src/runner/`, so the same adapter runs on the host or inside the sandbox image.
 
 `HostCommandRunner` runs each command as the leader of its own process group:
 
 - **Timeout:** SIGTERM to the group, then SIGKILL after `killGraceMs` (default 2 s). The SIGKILL is sent even if the leader has already exited, so it reaches `make`, `pnpm`, `node` and the simulators. The record's `pid` is also the group id, and `processGroupAlive(pid)` checks that nothing is left.
 - **Logs:** each stream is written to its own file and capped at `maxLogBytes`. The start of the stream is kept, a marker is appended, and the record holds the full size.
 - **Failures:** a command that fails, overruns or cannot start returns a record. A rejection means the runner itself broke.
+
+`SandboxCommandRunner` runs the same commands in the pinned `silicon-lab/eda-sandbox` image instead, with no network, a read-only root, no capabilities, a non-root user and resource limits. The baseline tree is bound read-only, and the candidate workspace and output directory read-write, each at its host path, so the adapters' arguments and the paths they read back are unchanged. Its timeout is `docker kill`, it caps what the read-write binds hold (`policy-violation`), and each record carries the image id. `selectRunner` chooses host or sandbox from `EDA_SANDBOX_IMAGE` and `EDA_ALLOW_HOST_RUNNER`. [sandbox.md](sandbox.md) covers the image, the flags, the mounts and the platform notes.
+
+`classifyCommand` maps a record's `policyViolation` to `policy-violation`, ahead of a timeout. Both adapters stop a stage on `infrastructure-failure`, `timeout` or `policy-violation` (`stopsStage`) without reading the tool's output for a design verdict.
 
 ## Verilator adapter
 
@@ -36,7 +40,7 @@ A workspace holds a full copy of `hardware/accelerators/matmul/`. Every `make` r
 | `VERILATOR=$(TOOL_BIN)verilator -Wno-fatal` | Every recipe builds with `-Wall`, which makes a warning fatal. Make expands this after resolving `TOOL_BIN`. |
 | `PE_VECTORS=<outDir>/unit/seed-<n>/pe.vec`  | Keeps one vector file per seed (`test-pe` only).                                                             |
 
-`HW_DIR` needs no override: the Makefile derives it from its own path, so it builds the copy's RTL. Workspaces can therefore live anywhere. A sandbox runner needs the same layout: the workspace, the repository with its `node_modules`, and the output directory.
+`HW_DIR` needs no override: the Makefile derives it from its own path, so it builds the copy's RTL. Workspaces can therefore live anywhere. The sandbox runner binds exactly that layout: the repository with its `node_modules` read-only, and the workspace and output directory read-write.
 
 `make verify-size` is deliberately not used. It passes only `--reports` to `verify`, which then uses the repository's own `build/verify` and `build/failures`, and deletes them first, so parallel experiments would destroy each other's cases. The adapter calls the same `verify` command with `--work`, `--failures` and `--reports` under `<outDir>/build/`.
 
@@ -182,4 +186,4 @@ An adapter given a bad module name, parameter or path, or an `outDir` inside `ha
 
 ### Tests
 
-`src/yosys/yosys.test.ts` runs with no toolchain, on real outputs in `test/fixtures/`. `src/yosys/yosys.integration.test.ts` runs the real flows and skips without the pinned toolchain: it asserts the PE and 4 × 4 numbers against the baseline, a design failing each structural gate, and a mapped PE. The mapped test downloads the sky130hd typical-corner liberty from ORFS `v3.0` into the temporary directory, checks its SHA-256, and skips when offline. That file is not committed; vendoring it belongs to the sandbox image.
+`src/yosys/yosys.test.ts` runs with no toolchain, on real outputs in `test/fixtures/`. `src/yosys/yosys.integration.test.ts` runs the real flows and skips without the pinned toolchain: it asserts the PE and 4 × 4 numbers against the baseline, a design failing each structural gate, and a mapped PE. The mapped test reads the sky130hd typical-corner liberty vendored under `hardware/asic/sky130hd/` (the same SHA-256 as ORFS `v3.0`), and falls back to downloading it when that copy is absent. A last suite runs the generic and mapped PE flows in the sandbox image and compares them with the host run.

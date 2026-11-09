@@ -14,6 +14,8 @@ import { fileURLToPath } from 'node:url';
 import { StageResultSchema } from '@vcpu/research-core';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { HostCommandRunner, processGroupAlive } from '../runner/host-runner.js';
+import { SandboxCommandRunner } from '../runner/sandbox.js';
+import { SANDBOX_IMAGE, sandboxMissing } from '../test-support/sandbox.js';
 import { VerilatorAdapter, type VerilatorRunContext } from './adapter.js';
 
 /**
@@ -46,6 +48,38 @@ function readMutants(): Mutant[] {
   return [...text.matchAll(/^\[(.+)\]\nfile: (.+)\nwhat: .+\nfrom: (.+)\nto: +(.+)$/gm)].map(
     ([, id = '', file = '', from = '', to = '']) => ({ id, file, from, to }),
   );
+}
+
+/** The unmodified RTL through lint, unit and differential: every stage passes. */
+async function greenPath(
+  adapter: VerilatorAdapter,
+  context: VerilatorRunContext,
+): Promise<{ unitChecks: number; totals: unknown; lintWarnings: readonly string[] }> {
+  const lint = await adapter.lint(context);
+  expect(lint.ok, lint.message ?? '').toBe(true);
+  expect(lint.outcome).toEqual({ errors: [], warnings: [] });
+  expect(lint.toolVersion).toMatch(/^Verilator 5\./);
+
+  const unit = await adapter.unitTestPe(context);
+  expect(unit.ok, unit.message ?? '').toBe(true);
+  expect(unit.outcome.checks).toBeGreaterThan(0);
+  expect(unit.outcome.runs.map((r) => r.seed)).toEqual([1, 7]);
+  for (const run of unit.outcome.runs) expect(existsSync(run.vectorFile)).toBe(true);
+
+  const verify = await adapter.differentialVerify(context);
+  expect(verify.ok, verify.message ?? '').toBe(true);
+  const report = JSON.parse(readFileSync(verify.outcome.reportFile ?? '', 'utf8')) as {
+    totals: { cases: number };
+  };
+  expect(verify.outcome.totals?.cases).toBe(report.totals.cases);
+  expect(verify.outcome.totals?.random).toBe(10);
+  expect(verify.outcome.firstFailure).toBeNull();
+  for (const stage of [lint, unit, verify]) StageResultSchema.parse(stage);
+  return {
+    unitChecks: unit.outcome.checks,
+    totals: verify.outcome.totals,
+    lintWarnings: lint.warnings,
+  };
 }
 
 const missing = toolchainMissing();
@@ -100,27 +134,7 @@ describe.skipIf(missing !== null)('VerilatorAdapter on the real toolchain', () =
   });
 
   it('passes the unmodified RTL, with counts from verify.json', { timeout: 300_000 }, async () => {
-    const context = candidate();
-    const lint = await adapter.lint(context);
-    expect(lint.ok, lint.message ?? '').toBe(true);
-    expect(lint.outcome).toEqual({ errors: [], warnings: [] });
-    expect(lint.toolVersion).toMatch(/^Verilator 5\./);
-
-    const unit = await adapter.unitTestPe(context);
-    expect(unit.ok, unit.message ?? '').toBe(true);
-    expect(unit.outcome.checks).toBeGreaterThan(0);
-    expect(unit.outcome.runs.map((r) => r.seed)).toEqual([1, 7]);
-    for (const run of unit.outcome.runs) expect(existsSync(run.vectorFile)).toBe(true);
-
-    const verify = await adapter.differentialVerify(context);
-    expect(verify.ok, verify.message ?? '').toBe(true);
-    const report = JSON.parse(readFileSync(verify.outcome.reportFile ?? '', 'utf8')) as {
-      totals: { cases: number };
-    };
-    expect(verify.outcome.totals?.cases).toBe(report.totals.cases);
-    expect(verify.outcome.totals?.random).toBe(10);
-    expect(verify.outcome.firstFailure).toBeNull();
-    for (const stage of [lint, unit, verify]) StageResultSchema.parse(stage);
+    await greenPath(adapter, candidate());
   });
 
   const mutants = readMutants();
@@ -243,4 +257,57 @@ describe.skipIf(missing !== null)('VerilatorAdapter on the real toolchain', () =
   it('leaves the Project 3 tree in the repository untouched', () => {
     expect(listBuild()).toEqual(buildBefore);
   });
+});
+
+const sandboxSkip = sandboxMissing(REPO);
+if (sandboxSkip !== null) console.warn(`Verilator sandbox tests skipped: ${sandboxSkip}`);
+
+describe.skipIf(sandboxSkip !== null)('VerilatorAdapter in the EDA sandbox image', () => {
+  let scratch: string;
+
+  /** A candidate copy of matmul and its output directory under `name`. */
+  function candidate(name: string): VerilatorRunContext {
+    const root = join(scratch, name);
+    cpSync(MATMUL, join(root, 'ws', 'hardware', 'accelerators', 'matmul'), {
+      recursive: true,
+      filter: (src) => src !== join(MATMUL, 'build'),
+    });
+    return {
+      workspaceRoot: join(root, 'ws'),
+      outDir: join(root, 'out'),
+      campaignSeed: 1,
+      experimentSeed: 7,
+      count: 10,
+      // amd64 under emulation on Apple Silicon compiles the simulators several times slower.
+      timeoutMs: 900_000,
+      peRandomClocks: 2000,
+    };
+  }
+
+  beforeAll(() => {
+    scratch = mkdtempSync(join(tmpdir(), 'verilator-sandbox-'));
+  });
+  afterAll(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it(
+    'passes the unmodified RTL with the same counts as the host run',
+    { timeout: 3_600_000 },
+    async () => {
+      const context = candidate('sandbox');
+      const runner = new SandboxCommandRunner({
+        image: SANDBOX_IMAGE,
+        baselineDir: REPO,
+        workspaceDir: context.workspaceRoot,
+        outputDir: context.outDir,
+      });
+      const adapter = new VerilatorAdapter({ repoRoot: REPO, runner });
+      const sandboxed = await greenPath(adapter, context);
+
+      if (missing !== null) return;
+      const host = await greenPath(new VerilatorAdapter({ repoRoot: REPO }), candidate('host'));
+      expect(sandboxed).toEqual(host);
+    },
+  );
 });

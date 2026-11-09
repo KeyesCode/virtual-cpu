@@ -36,6 +36,10 @@ export class ExperimentTransition {
   @Column({ type: 'text', nullable: true })
   reason!: string | null;
 
+  /** The stage attempt that caused this change, or null when no stage attempt did. */
+  @Column({ type: 'integer', nullable: true })
+  attempt!: number | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   at!: Date;
 }

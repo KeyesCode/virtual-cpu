@@ -108,14 +108,14 @@ stateDiagram-v2
 
 The diagram leaves out the other terminal edges for legibility. Every state from `CREATED` to `SCORING` can move to `CANCELLED`, and every state from `PREPARING` to `SCORING` can move to `REJECTED` or `FAILED`:
 
-| Terminal    | Meaning                                                                                | Failure classes                                                        |
-| ----------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `COMPLETED` | Verified and scored                                                                    | None                                                                   |
-| `REJECTED`  | The design failed a gate. Never retried                                                | `incorrect-design`, `unsupported-design`                               |
-| `FAILED`    | The experiment could not finish. The first three classes get here once retries run out | `tool-failure`, `timeout`, `infrastructure-failure`, `budget-exceeded` |
-| `CANCELLED` | A person or a campaign stop ended it                                                   | None                                                                   |
+| Terminal    | Meaning                                              | Failure classes                                              |
+| ----------- | ---------------------------------------------------- | ------------------------------------------------------------ |
+| `COMPLETED` | Verified and scored                                  | None                                                         |
+| `REJECTED`  | The design failed a gate or a policy. Never retried  | `incorrect-design`, `unsupported-design`, `policy-violation` |
+| `FAILED`    | The experiment could not finish: its retries ran out | `tool-failure`, `timeout`, `infrastructure-failure`          |
+| `CANCELLED` | A person or a campaign stop ended it                 | None, or `budget-exceeded` for a budget stop                 |
 
-Stages are idempotent, so a restarted worker resumes from the last persisted state. Heartbeats let a recovery job find stale work.
+Stages are idempotent, so a restarted worker resumes from the last persisted state. Heartbeats let a recovery job find stale work. [state-machine.md](state-machine.md) has the full transition table, the retry policy and how the worker runs stages.
 
 An experiment with a supplied candidate, such as the deterministic fixture or a reproduction run, passes through `GENERATING` without invoking an agent and records that none ran.
 
@@ -179,5 +179,5 @@ infrastructure/
 The decisions file leaves these for the tickets that implement them:
 
 - **Timing failures.** A candidate that misses the frozen clock is `REJECTED` for failing a hard constraint, but no failure class is named for it. VIRT-ZIH4RS settles this.
-- **`policy-violation`.** The class exists, but the allowlist case is defined as `unsupported-design`, so no case uses it yet. VIRT-JAA90W and VIRT-W3M5PV settle this.
-- **`budget-exceeded` in flight.** A limit pauses the campaign. This document records an experiment stopped by that limit as `FAILED`; VIRT-JAA90W confirms or changes it.
+- **`policy-violation`.** VIRT-JAA90W makes it a rejection class: an experiment with it ends `REJECTED` and is never retried. The allowlist case stays `unsupported-design`; VIRT-W3M5PV defines which cases are policy violations.
+- **`budget-exceeded` in flight.** Settled by VIRT-JAA90W: a limit pauses the campaign, and an experiment it stops ends `CANCELLED` with failure class `budget-exceeded`, not `FAILED`.

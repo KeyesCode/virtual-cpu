@@ -35,7 +35,7 @@
     "accel:check": "pnpm --filter @vcpu/accelerator-reference test && make -C hardware/accelerators/matmul tools-check && make -C hardware/accelerators/matmul lint ROWS=4 && make -C hardware/accelerators/matmul lint ROWS=8 && make -C hardware/accelerators/matmul lint ROWS=16 && make -C hardware/accelerators/matmul test verify synth-compare benchmark-compare wave-check",
     "research:dev": "bash infrastructure/scripts/not-implemented.sh research:dev VIRT-5LP8M4",
     "research:api": "bash infrastructure/scripts/not-implemented.sh research:api VIRT-1CIURP",
-    "research:worker": "bash infrastructure/scripts/not-implemented.sh research:worker VIRT-JAA90W",
+    "research:worker": "pnpm --silent --filter @vcpu/research-worker start",
     "research:dashboard": "pnpm --filter @vcpu/research-dashboard dev",
     "research:test": "vitest run --project \"@vcpu/research-*\" --project @vcpu/eda-adapters --project @vcpu/artifact-storage --project @vcpu/experiment-runner",
     "research:verify": "bash infrastructure/scripts/not-implemented.sh research:verify VIRT-ZIH4RS",

@@ -11,6 +11,7 @@ Project 4 builds a platform that proposes hardware design changes, verifies them
 | [research-workflow.md](research-workflow.md) | The 15-step loop, correctness gates, failure classes, rollout, budgets            |
 | [data-model.md](data-model.md)               | Tables, columns and units, constraints, what the migrations guarantee             |
 | [eda-adapters.md](eda-adapters.md)           | The command runner and Verilator adapter: commands, outputs, failure classes      |
+| [artifacts.md](artifacts.md)                 | The content-addressed artifact store: layout, kinds, limits, secrets, retention   |
 
 ## Getting started
 

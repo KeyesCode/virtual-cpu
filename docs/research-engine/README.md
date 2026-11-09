@@ -11,6 +11,7 @@ Project 4 builds a platform that proposes hardware design changes, verifies them
 | [research-workflow.md](research-workflow.md) | The 15-step loop, correctness gates, failure classes, rollout, budgets            |
 | [data-model.md](data-model.md)               | Tables, columns and units, constraints, what the migrations guarantee             |
 | [eda-adapters.md](eda-adapters.md)           | The command runner and Verilator adapter: commands, outputs, failure classes      |
+| [metrics.md](metrics.md)                     | Metric provenance and units, the PPA snapshot, tiers, ADP, comparability, Pareto  |
 | [state-machine.md](state-machine.md)         | Experiment states, transition table, failure classes, retries, the BullMQ worker  |
 
 ## Getting started

@@ -40,6 +40,8 @@ export interface AppendTransitionOptions extends TransitionOptions {
   readonly expectedState?: ExperimentState;
   /** The stage attempt that caused the move, recorded on the transition row. */
   readonly attempt?: number;
+  /** Refuse unless this worker still holds the stage's lease (it was not taken over). */
+  readonly expectedLeaseOwner?: string;
 }
 
 export interface ClaimRequest {
@@ -62,8 +64,9 @@ export interface ExperimentRepository {
    * Apply `event` to the experiment's current state, in one transaction: lock the row, compute the
    * move with `transition()`, update the status (and failure class and reason, `startedAt` on
    * `start`, `completedAt` on a terminal state), release the lease, reset the stage attempt, refresh
-   * the heartbeat and append the transition row. Throws `InvalidTransition` for an illegal move and
-   * `StaleExperimentState` when `expectedState` no longer holds.
+   * the heartbeat and append the transition row. Throws `InvalidTransition` for an illegal move,
+   * `StaleExperimentState` when `expectedState` no longer holds and `LeaseLost` when
+   * `expectedLeaseOwner` no longer holds the lease.
    */
   appendTransition(
     id: string,
@@ -125,5 +128,17 @@ export class ExperimentNotFound extends Error {
   constructor(readonly experimentId: string) {
     super(`experiment ${experimentId} does not exist`);
     this.name = 'ExperimentNotFound';
+  }
+}
+
+/** Another worker took the stage over (this one's heartbeat went stale). */
+export class LeaseLost extends Error {
+  constructor(
+    readonly experimentId: string,
+    readonly owner: string,
+    readonly holder: string | null,
+  ) {
+    super(`experiment ${experimentId}: lease is held by ${holder ?? 'nobody'}, not ${owner}`);
+    this.name = 'LeaseLost';
   }
 }

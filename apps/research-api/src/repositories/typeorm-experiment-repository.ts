@@ -1,5 +1,6 @@
 import {
   ExperimentNotFound,
+  LeaseLost,
   StaleExperimentState,
   isTerminal,
   transition,
@@ -117,6 +118,12 @@ export class TypeOrmExperimentRepository implements ExperimentRepository {
       if (!current) throw new ExperimentNotFound(id);
       if (options.expectedState !== undefined && current.status !== options.expectedState) {
         throw new StaleExperimentState(id, options.expectedState, current.status);
+      }
+      if (
+        options.expectedLeaseOwner !== undefined &&
+        current.lease_owner !== options.expectedLeaseOwner
+      ) {
+        throw new LeaseLost(id, options.expectedLeaseOwner, current.lease_owner);
       }
       const move = transition(
         current.status,

@@ -13,19 +13,22 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { StageResultSchema } from '@vcpu/research-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { SANDBOX_TOOL_BIN, SandboxCommandRunner } from '../runner/sandbox.js';
+import { SANDBOX_IMAGE, sandboxMissing } from '../test-support/sandbox.js';
 import { YosysAdapter } from './adapter.js';
 import { matmulTopDesign, peDesign, type SynthesisDesign } from './script.js';
 
 /**
  * The adapter on the real Yosys and the committed RTL. These need the pinned toolchain
- * (`pnpm hardware:setup`) and skip without it. The liberty test also needs the network the first time:
- * it downloads the sky130hd library into the temporary directory, and skips when offline.
+ * (`pnpm hardware:setup`) and skip without it. The liberty test reads the vendored sky130hd library,
+ * or downloads it into the temporary directory without one (and skips when offline). The last suite
+ * runs the same flows in the EDA sandbox image and skips without it.
  */
 
 const REPO = fileURLToPath(new URL('../../../../', import.meta.url));
 const MATMUL = join('hardware', 'accelerators', 'matmul');
 
-/** The same file for any host: the sandbox image will vendor it under hardware/asic/sky130hd/. */
+/** The same file for any host, vendored under hardware/asic/sky130hd/ (the same digest as ORFS v3.0). */
 const LIBERTY_NAME = 'sky130_fd_sc_hd__tt_025C_1v80.lib';
 const LIBERTY_URL = `https://raw.githubusercontent.com/The-OpenROAD-Project/OpenROAD-flow-scripts/v3.0/flow/platforms/sky130hd/lib/${LIBERTY_NAME}`;
 const LIBERTY_SHA256 = 'ec0e1067a35c8bf20b11e58d1e8ac53326067e4dac84a125cc1b917a3518d0d9';
@@ -62,15 +65,28 @@ interface Baseline {
   }[];
 }
 
-/** This platform's baseline, chosen as mk/platform.mk chooses it. */
-function readBaseline(): Baseline {
-  const name = platform() === 'linux' && arch() === 'x64' ? 'baseline-linux-x64' : 'baseline';
+/** A platform's baseline (this one's unless named), chosen as mk/platform.mk chooses it. */
+function readBaseline(
+  on = platform() === 'linux' && arch() === 'x64' ? 'linux-x64' : 'other',
+): Baseline {
+  const name = on === 'linux-x64' ? 'baseline-linux-x64' : 'baseline';
   const file = join(REPO, 'research', 'accelerators', 'matmul', 'synth', `${name}.json`);
   return JSON.parse(readFileSync(file, 'utf8')) as Baseline;
 }
 
-/** The library, downloaded once per temporary directory; null when offline. */
+/** The vendored library (hardware/asic/sky130hd/SOURCE.md), checked against the pinned digest. */
+function vendoredLiberty(): string | null {
+  const file = join(REPO, 'hardware', 'asic', 'sky130hd', 'lib', LIBERTY_NAME);
+  if (!existsSync(file)) return null;
+  const digest = createHash('sha256').update(readFileSync(file)).digest('hex');
+  if (digest !== LIBERTY_SHA256) throw new Error(`${file} has sha256 ${digest}`);
+  return file;
+}
+
+/** The vendored library, else one downloaded once per temporary directory; null when offline. */
 async function fetchLiberty(): Promise<string | null> {
+  const vendored = vendoredLiberty();
+  if (vendored !== null) return vendored;
   const dir = join(tmpdir(), `vcpu-sky130hd-${LIBERTY_SHA256.slice(0, 16)}`);
   const file = join(dir, LIBERTY_NAME);
   if (!existsSync(file)) {
@@ -247,6 +263,117 @@ describe.skipIf(missing !== null)('YosysAdapter on the real toolchain', () => {
       const again = await run();
       expect(again.outcome.areaUm2).toEqual(report.areaUm2);
       expect(again.outcome.mappedCellsByType).toEqual(report.mappedCellsByType);
+    },
+  );
+});
+
+const sandboxSkip = sandboxMissing(REPO);
+if (sandboxSkip !== null) console.warn(`Yosys sandbox tests skipped: ${sandboxSkip}`);
+
+describe.skipIf(sandboxSkip !== null)('YosysAdapter in the EDA sandbox image', () => {
+  let scratch: string;
+  let runs = 0;
+
+  /** An adapter whose runner binds the repository read-only and a fresh output directory. */
+  function sandboxed(): { adapter: YosysAdapter; outDir: string } {
+    runs += 1;
+    const workspace = join(scratch, `ws-${String(runs)}`);
+    const outDir = join(scratch, `run-${String(runs)}`);
+    mkdirSync(workspace, { recursive: true });
+    const runner = new SandboxCommandRunner({
+      image: SANDBOX_IMAGE,
+      baselineDir: REPO,
+      workspaceDir: workspace,
+      outputDir: outDir,
+    });
+    return {
+      adapter: new YosysAdapter({ repoRoot: REPO, runner, yosys: `${SANDBOX_TOOL_BIN}/yosys` }),
+      outDir,
+    };
+  }
+
+  beforeAll(() => {
+    scratch = mkdtempSync(join(tmpdir(), 'yosys-sandbox-'));
+  });
+  afterAll(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it(
+    'reproduces the processing_element row, with the same counts as the host run',
+    { timeout: 600_000 },
+    async () => {
+      const { adapter, outDir } = sandboxed();
+      const result = await adapter.synthesizeGeneric({
+        design: peDesign(REPO),
+        outDir,
+        timeoutMs: 300_000,
+      });
+      expect(() => StageResultSchema.parse(result)).not.toThrow();
+      expect(result).toMatchObject({ ok: true, failureClass: null });
+      for (const command of result.commands) {
+        expect(command.sandbox?.imageId).toMatch(/^sha256:/);
+      }
+      // The image is linux/amd64: its counts are the GitHub runner's baseline.
+      const baseline = readBaseline('linux-x64');
+      const row = baseline.sizes
+        .find((size) => size.size === '4x4')
+        ?.generic.blocks.find((b) => b.block === 'u_array: one processing_element');
+      expect(result.toolVersion).toBe(baseline.provenance.tools['yosys']);
+      expect(result.outcome.cells).toMatchObject({ value: row?.cells, provenance: 'measured' });
+      expect(result.outcome.flipFlops).toMatchObject({ value: row?.flipFlops });
+      expect(result.outcome.mulCells).toMatchObject({ value: 1 });
+
+      if (missing !== null) return;
+      const host = await new YosysAdapter({ repoRoot: REPO }).synthesizeGeneric({
+        design: peDesign(REPO),
+        outDir: join(scratch, 'host-generic'),
+        timeoutMs: 120_000,
+      });
+      const counts = (r: typeof result) => {
+        const { cells, flipFlops, mulCells, memories, abstractGates, logicDepthGates } = r.outcome;
+        return {
+          cells,
+          flipFlops,
+          mulCells,
+          memories,
+          abstractGates,
+          logicDepthGates,
+          cellsByType: r.outcome.cellsByType,
+          toolVersion: r.toolVersion,
+        };
+      };
+      expect(counts(result)).toEqual(counts(host));
+    },
+  );
+
+  it(
+    'maps the PE to the vendored sky130hd liberty, as the host does',
+    { timeout: 600_000 },
+    async () => {
+      const liberty = vendoredLiberty();
+      expect(liberty).not.toBeNull();
+      const { adapter, outDir } = sandboxed();
+      const result = await adapter.synthesizeMapped({
+        design: peDesign(REPO),
+        liberty: liberty ?? '',
+        outDir,
+        timeoutMs: 300_000,
+      });
+      expect(result).toMatchObject({ ok: true, failureClass: null });
+      expect(result.outcome.liberty?.sha256).toBe(LIBERTY_SHA256);
+      expect(result.outcome.flipFlops).toMatchObject({ value: 50 });
+      expect((result.outcome.areaUm2 as { value: number }).value).toBeGreaterThan(0);
+
+      if (missing !== null) return;
+      const host = await new YosysAdapter({ repoRoot: REPO }).synthesizeMapped({
+        design: peDesign(REPO),
+        liberty: liberty ?? '',
+        outDir: join(scratch, 'host-mapped'),
+        timeoutMs: 120_000,
+      });
+      expect(result.outcome.areaUm2).toEqual(host.outcome.areaUm2);
+      expect(result.outcome.mappedCellsByType).toEqual(host.outcome.mappedCellsByType);
     },
   );
 });

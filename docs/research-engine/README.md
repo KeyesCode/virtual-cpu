@@ -11,6 +11,7 @@ Project 4 builds a platform that proposes hardware design changes, verifies them
 | [research-workflow.md](research-workflow.md) | The 15-step loop, correctness gates, failure classes, rollout, budgets            |
 | [data-model.md](data-model.md)               | Tables, columns and units, constraints, what the migrations guarantee             |
 | [eda-adapters.md](eda-adapters.md)           | The command runner and Verilator adapter: commands, outputs, failure classes      |
+| [sandbox.md](sandbox.md)                     | The EDA sandbox image and runner: threat model, flags, mounts, macOS and Ubuntu   |
 
 ## Getting started
 
@@ -33,7 +34,7 @@ If a port is taken, change `POSTGRES_PORT` or `REDIS_PORT` in `.env`, and update
 | `pnpm research:dashboard`      | Works: serves the placeholder page                     |
 | `pnpm research:migrate`        | Works: applies pending migrations to `DATABASE_URL`    |
 | `pnpm research:migrate:revert` | Works: reverts the last migration                      |
-| `pnpm research:sandbox:build`  | Stub until VIRT-Q6RNBH                                 |
+| `pnpm research:sandbox:build`  | Works: builds the EDA sandbox image                    |
 | `pnpm research:worker`         | Stub until VIRT-JAA90W                                 |
 | `pnpm research:api`            | Stub until VIRT-1CIURP                                 |
 | `pnpm research:verify`         | Stub until VIRT-ZIH4RS                                 |

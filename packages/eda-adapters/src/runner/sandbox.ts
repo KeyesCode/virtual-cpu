@@ -1,6 +1,6 @@
 import { execFile, spawn, spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, lstatSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import type { CommandRecord } from '@vcpu/research-core';
@@ -237,6 +237,10 @@ export class SandboxCommandRunner implements CommandRunner {
       };
     };
 
+    // Adapters create their output directories as they go; the bind needs it before the first run.
+    if (!existsSync(this.options.outputDir) && this.options.outputDir !== sep) {
+      mkdirSync(this.options.outputDir, { recursive: true });
+    }
     const problem = this.checkRun(cwd, options.env ?? {});
     if (problem !== null) return refused(problem);
     let imageId: string;

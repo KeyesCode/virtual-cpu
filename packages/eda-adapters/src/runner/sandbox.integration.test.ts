@@ -1,6 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { classifyCommand, CommandRecordSchema } from '@vcpu/research-core';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -202,13 +210,40 @@ describe.skipIf(missing !== null)('SandboxCommandRunner isolation', { timeout: 1
     expect(existsSync(join(out, 'big.bin'))).toBe(false);
   });
 
-  it('refuses a baseline that holds a credential file', async () => {
+  it('refuses a baseline that holds a credential file, at any depth', async () => {
     const dirty = join(scratch, 'dirty-baseline');
-    mkdirSync(dirty);
-    writeFileSync(join(dirty, '.env'), 'RESEARCH_API_TOKEN=x\n');
+    mkdirSync(join(dirty, 'packages', 'api'), { recursive: true });
+    writeFileSync(join(dirty, 'packages', 'api', '.env.local'), 'RESEARCH_API_TOKEN=x\n');
     const { record } = await sh('true', runner({ baselineDir: dirty }));
-    expect(record.spawnError).toContain('.env');
+    expect(record.spawnError).toContain('.env.local');
     expect(record.pid).toBeNull();
+  });
+
+  it('refuses a bind that is a symbolic link to the home directory', async () => {
+    const link = join(scratch, 'innocent-looking');
+    symlinkSync(homedir(), link);
+    const { record } = await sh('true', runner({ workspaceDir: link }));
+    expect(record.spawnError).toContain('home directory');
+  });
+
+  it('refuses a workspace or output directory inside the baseline', async () => {
+    const nested = join(baseline, 'runs', 'out');
+    const { record } = await sh('true', runner({ outputDir: nested }));
+    expect(record.spawnError).toContain('inside the baseline');
+  });
+
+  it('kills a command that fills the disk while it runs', async () => {
+    const started = Date.now();
+    const { record } = await sh(
+      `while true; do head -c 1000000 /dev/zero >> ${out}/fill.bin; sleep 0.1; done`,
+      runner({ maxOutputBytes: 5_000_000, watchIntervalMs: 200 }),
+      { timeoutMs: 60_000 },
+    );
+    expect(Date.now() - started).toBeLessThan(30_000);
+    expect(record.timedOut).toBe(false);
+    expect(record.policyViolation).toContain('the command was killed');
+    expect(classifyCommand(record)).toBe('policy-violation');
+    expect(existsSync(join(out, 'fill.bin'))).toBe(false);
   });
 
   it('records a missing image as an infrastructure failure', async () => {

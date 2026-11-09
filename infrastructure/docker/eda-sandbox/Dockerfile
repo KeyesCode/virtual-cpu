@@ -26,7 +26,9 @@ ARG ORFS_IMAGE=openroad/orfs:26Q3-705-gecb3cfdeb@sha256:6da005d1c3447799f7401215
 FROM ${ORFS_IMAGE} AS orfs
 
 # ---------------------------------------------------------------------------------------------
-# Downloads, each verified against a pinned digest, in a stage the final image does not inherit.
+# Downloads, in a stage the final image does not inherit. The OSS CAD Suite and Node tarballs are
+# checked against pinned sha256 digests; pnpm and esbuild come from the npm registry at pinned
+# versions, checked by npm against the registry's own integrity hashes.
 FROM ${UBUNTU_IMAGE} AS fetch
 ARG TARGETARCH
 ARG NODE_VERSION=24.15.0

@@ -45,10 +45,17 @@ if [[ "${platform}" == linux/amd64 && "${host_arch}" != x86_64 ]]; then
     "expect EDA runs several times slower than native" >&2
 fi
 
-# The esbuild binary must match the esbuild package the lockfile installs, or tsx refuses it.
-esbuild_version="$(sed -n 's/^  esbuild@\([0-9][0-9.]*\):$/\1/p' pnpm-lock.yaml | head -n 1)"
-[[ -n "${esbuild_version}" ]] || die "no esbuild version in pnpm-lock.yaml"
-pnpm_version="$(sed -n 's/.*"packageManager": "pnpm@\([0-9][0-9.]*\)".*/\1/p' package.json)"
+# The esbuild binary must match the esbuild package tsx loads, or esbuild refuses it: read the
+# version from tsx's entry in the lockfile's snapshots, which names the esbuild it depends on.
+tsx_version="$(sed -n 's/^  tsx@\([0-9][0-9.]*\):$/\1/p' pnpm-lock.yaml | head -n 1)"
+[[ -n "${tsx_version}" ]] || die "no tsx in pnpm-lock.yaml"
+esbuild_version="$(awk -v entry="  tsx@${tsx_version}:" '
+  $0 == entry { n++; next }
+  n == 2 && /^  [^ ]/ { exit }
+  n == 2 && $1 == "esbuild:" { print $2; exit }
+' pnpm-lock.yaml)"
+[[ -n "${esbuild_version}" ]] || die "no esbuild dependency of tsx@${tsx_version} in pnpm-lock.yaml"
+pnpm_version="$(sed -n 's/.*"packageManager": "pnpm@\([0-9][0-9.]*\)[^"]*".*/\1/p' package.json)"
 [[ -n "${pnpm_version}" ]] || die "no pnpm version in package.json packageManager"
 
 build_args=(

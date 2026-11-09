@@ -8,18 +8,18 @@ A candidate is untrusted: an AI agent wrote it, and the pipeline runs it. Verila
 
 What the sandbox defends:
 
-| Asset                                                                        | Attack                                               | Defence                                                                                                                               |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Credentials: the API token, database and Redis URLs, Claude and Codex logins | Read them from the environment, files or the network | No host environment, no home directory, no credential file (the runner refuses a baseline holding `.env`), no network                 |
-| The baseline: golden model, testbenches, scripts, liberty, Makefiles         | Rewrite them so a wrong design passes                | The baseline tree is a read-only bind; everything outside the three binds is a read-only root filesystem                              |
-| The host                                                                     | Escape, escalate, or persist                         | Non-root user, every capability dropped, `no-new-privileges`, Docker's default seccomp profile, no Docker socket, `--rm`              |
-| Host resources                                                               | Exhaust CPU, memory, processes or disk; run forever  | `--cpus`, `--memory` with no swap, `--pids-limit`, a size-limited `/tmp`, an output size cap, a wall-clock timeout with `docker kill` |
-| Other experiments                                                            | Read or overwrite their outputs                      | Each command sees only its own workspace and output directory read-write                                                              |
+| Asset                                                                        | Attack                                               | Defence                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credentials: the API token, database and Redis URLs, Claude and Codex logins | Read them from the environment, files or the network | No host environment, no home directory, no credential file (the runner refuses a baseline holding any `.env` file), no network                                                                           |
+| The baseline: golden model, testbenches, scripts, liberty, Makefiles         | Rewrite them so a wrong design passes                | The baseline tree is a read-only bind; everything outside the three binds is a read-only root filesystem                                                                                                 |
+| The host                                                                     | Escape, escalate, or persist                         | Non-root user, every capability dropped, `no-new-privileges`, Docker's default seccomp profile, no Docker socket, the container removed after each command                                               |
+| Host resources                                                               | Exhaust CPU, memory, processes or disk; run forever  | `--cpus`, `--memory` with no swap, `--pids-limit`, a size-limited `/tmp`, a size cap on the read-write binds checked while the command runs, no daemon-side log, a wall-clock timeout with `docker kill` |
+| Other experiments                                                            | Read or overwrite their outputs                      | Each command sees only its own workspace and output directory, which must lie outside the baseline                                                                                                       |
 
 Not defended here (residual risks):
 
 - **Results the candidate can reach.** The candidate's simulation runs in the same container as the harness and can write to the output directory, and it controls its own console output. The harness writes `verify.json` last and the adapters read structured files where they can, but the integrity of a gate against a hostile candidate also depends on the pipeline's static validation, which rejects system tasks such as `$system`, file I/O and DPI in candidate source before anything runs. That validation belongs to the pipeline (VIRT-ZIH4RS), not this runner.
-- **The read-only baseline is readable.** A candidate can read any file in the baseline tree, so the baseline must hold nothing secret. The runner refuses a baseline with `.env` or `.env.*` files at its root (`.env.example` is allowed); anything else secret must simply not be there. The baseline should be a clean snapshot, not a developer checkout.
+- **The read-only baseline is readable.** A candidate can read any file in the baseline tree, so the baseline must hold nothing secret. The runner refuses a baseline with a `.env` or `.env.*` file anywhere outside `node_modules` and `.git` (`.env.example` is allowed); anything else secret must simply not be there. The baseline should be a clean snapshot, not a developer checkout: a checkout holds whatever local files its owner keeps there (the adapter tests use the checkout itself, so they expose its untracked files to the container, read-only and offline).
 - **Kernel and runtime bugs.** A container shares the host kernel (on macOS, Docker Desktop's VM kernel). This is defence in depth, not a VM boundary.
 - **Side channels and timing.** Not in scope.
 
@@ -75,35 +75,36 @@ The image is not pushed anywhere, so it has no registry digest: its local id is 
 
 ## How a command runs
 
-`SandboxCommandRunner` implements the same `CommandRunner` interface as `HostCommandRunner`, so the adapters do not change. Each `run(command, args, options)` is one `docker run`:
+`SandboxCommandRunner` implements the same `CommandRunner` interface as `HostCommandRunner`, so the adapters do not change. Each `run(command, args, options)` is one container: `docker create` with the flags below, `docker start --attach` streaming its output, `docker inspect` for how it ended, and `docker rm --force`. Splitting the steps tells Docker's own failures apart from the command's exit, whatever the command prints.
 
-| Flag                                                                    | Why                                                                                                |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `--rm`, `--name eda-sandbox-<uuid>`, `--label org.siliconlab.sandbox=1` | Nothing is left behind, and anything that is can be found                                          |
-| `--platform linux/amd64`                                                | The only platform with OpenROAD                                                                    |
-| `--network none`                                                        | Loopback only: no DNS, no route                                                                    |
-| `--read-only`                                                           | The image's filesystem cannot be written                                                           |
-| `--cap-drop ALL`, `--security-opt no-new-privileges`                    | No capabilities, and no setuid escalation to regain them                                           |
-| `--user <uid:gid>`                                                      | The caller's own ids, so outputs belong to them; `10001:10001` if the caller is root. Never uid 0. |
-| `--memory <m> --memory-swap <m>`                                        | A memory limit with no swap on top (default `4g`)                                                  |
-| `--cpus <c>`                                                            | Default 2                                                                                          |
-| `--pids-limit <p>`                                                      | Stops fork bombs (default 1024: a Verilator build runs many compiler processes)                    |
-| `--ulimit core=0`                                                       | No core dumps filling the output directory                                                         |
-| `--tmpfs /tmp:rw,noexec,nosuid,nodev,size=<n>`                          | The only writable scratch outside the binds (default 1 GiB); `HOME` points here                    |
-| three `--mount type=bind` (below)                                       | Exactly what the command may see                                                                   |
-| `--workdir <cwd>`                                                       | The adapter's working directory, which must be inside a bind                                       |
-| `--env HOME=/tmp`, plus allow-listed variables                          | Nothing else of the host's environment                                                             |
-| the image **id**                                                        | The command runs on the exact image recorded, even if the tag moves                                |
+| Flag                                                            | Why                                                                                                |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `--name eda-sandbox-<uuid>`, `--label org.siliconlab.sandbox=1` | Removed after every command; anything left behind can be found                                     |
+| `--platform linux/amd64`                                        | The only platform with OpenROAD                                                                    |
+| `--network none`                                                | Loopback only: no DNS, no route                                                                    |
+| `--read-only`                                                   | The image's filesystem cannot be written                                                           |
+| `--cap-drop ALL`, `--security-opt no-new-privileges`            | No capabilities, and no setuid escalation to regain them                                           |
+| `--user <uid:gid>`                                              | The caller's own ids, so outputs belong to them; `10001:10001` if the caller is root. Never uid 0. |
+| `--memory <m> --memory-swap <m>`                                | A memory limit with no swap on top (default `4g`)                                                  |
+| `--cpus <c>`                                                    | Default 2                                                                                          |
+| `--pids-limit <p>`                                              | Stops fork bombs (default 1024: a Verilator build runs many compiler processes)                    |
+| `--log-driver none`                                             | The daemon keeps no copy of the output, which could otherwise fill its disk                        |
+| `--ulimit core=0`                                               | No core dumps filling the output directory                                                         |
+| `--tmpfs /tmp:rw,noexec,nosuid,nodev,size=<n>`                  | The only writable scratch outside the binds (default 1 GiB); `HOME` points here                    |
+| three `--mount type=bind` (below)                               | Exactly what the command may see                                                                   |
+| `--workdir <cwd>`                                               | The adapter's working directory, which must be inside a bind                                       |
+| `--env HOME=/tmp`, plus allow-listed variables                  | Nothing else of the host's environment                                                             |
+| the image **id**                                                | The command runs on the exact image recorded, even if the tag moves                                |
 
 The Docker CLI itself is started with only `PATH`, `HOME` and the `DOCKER_*` variables that say how to reach the daemon. A variable in `RunOptions.env` that is not on the runner's `envAllow` list (empty by default) is refused, not dropped silently.
 
-**Timeout.** At `timeoutMs` the runner runs `docker kill <name>`; `--rm` then removes the container. If the CLI has not returned `killGraceMs` later (default 5 s), the runner kills the CLI, force-removes the container and records the command as ended by `SIGKILL`. Either way the record has `timedOut: true`.
+**Timeout.** At `timeoutMs` the runner runs `docker kill <name>` and then removes the container. If the CLI has not returned `killGraceMs` later (default 5 s), the runner kills the CLI, force-removes the container and records the command as ended by `SIGKILL`. Either way the record has `timedOut: true`. Every other Docker CLI call has a 60 s timeout, so a wedged daemon cannot hang the worker.
 
 **Logs.** stdout and stderr are capped at `maxLogBytes` each, exactly as on the host.
 
-**Output cap.** After every command the runner sums the output directory. Over `maxOutputBytes` (default 2 GiB), it deletes the largest files (never the command's own logs) until it fits, and sets `policyViolation` on the record. `classifyCommand` turns that into `policy-violation`, and both adapters stop the stage on it as they do on a timeout.
+**Write cap.** Every `watchIntervalMs` (default 2 s) while the command runs, and once after it, the runner sums the workspace and the output directory. Over `maxOutputBytes` (default 2 GiB), or over 100,000 files, it kills the container, deletes the largest output files (never the command's own logs, never the workspace) until it fits, and sets `policyViolation` on the record. `classifyCommand` turns that into `policy-violation`, and both adapters stop the stage on it as they do on a timeout. A disk can still take up to one interval's worth of writes over the cap.
 
-**Refusals.** A missing image, an unreachable daemon, a bad bind, a root user, a refused variable or a working directory outside the binds never starts a container. It is a record with a `spawnError` and no `pid`, so the stage is an `infrastructure-failure`. Docker's own failures (exit 125, or 126/127 with a daemon error) are recorded the same way.
+**Refusals.** A missing image, an unreachable daemon, a bad bind, a uid or gid of 0, a malformed limit, a refused variable or a working directory outside the binds never starts a container. It is a record with a `spawnError` and no `pid`, so the stage is an `infrastructure-failure`. A failed `docker create`, or a container whose state carries an error (a command the image cannot execute), is recorded the same way.
 
 **Record.** Every record of a command that started has `sandbox: { image, imageId, container, user }`.
 
@@ -117,9 +118,9 @@ Each bind is mounted at its own host path, so every path an adapter puts in an a
 | `workspaceDir` | read-write | The candidate copy of `hardware/accelerators/matmul/`                                                     |
 | `outputDir`    | read-write | Everything the run writes: `build/`, `logs/`, `unit/`, the Yosys flow directories                         |
 
-The workspace and output directory may sit inside the baseline tree (for example under `.research/`); a read-write bind of a subdirectory is mounted over the read-only one. The runner refuses a workspace or output directory that contains the baseline, which would expose it read-write, and any bind that is `/` or contains the home directory. It creates a missing output directory.
+Every check is made on the real path, with symbolic links resolved, and Docker mounts that real path at the path the adapters use. The runner refuses a workspace or output directory that is inside the baseline (another experiment's directories there would be readable) or contains it (which would expose it read-write), any bind that is `/` or contains the home directory, and any bind that is, sits under or contains `/proc`, `/sys`, `/dev`, `/run`, `/var/run`, `/var/lib/docker` or `/etc`. So runs live outside the baseline tree, for example in a `.research/runs/` that is not part of the baseline snapshot. It creates a missing output directory.
 
-**Never mounted:** the Docker socket, the home directory, `~/.claude`, `~/.codex`, `~/.ssh`, `~/.npmrc`, `~/.docker`, cloud credentials, `.env`, `/var/run`, or any other host path. There is no `--privileged`, no `--device`, no `--cap-add`, and no host network, PID or IPC namespace.
+**Never mounted:** the Docker socket, the home directory, `~/.claude`, `~/.codex`, `~/.ssh`, `~/.npmrc`, `~/.docker`, cloud credentials, `.env`, `/var/run`, or any other host path: the runner refuses the system paths above outright. There is no `--privileged`, no `--device`, no `--cap-add`, and no host network, PID or IPC namespace.
 
 ## Choosing the runner
 
@@ -170,6 +171,6 @@ The image is not built in CI yet: that is the CI ticket (VIRT-5LP8M4), which sho
 
 All skip, with a message, when Docker or the image is missing (`EDA_SANDBOX_IMAGE` names another image).
 
-- `src/runner/sandbox.integration.test.ts`: the isolation suite. DNS and TCP fail and there is no route; the user is not root, has no capabilities and has `NoNewPrivs`; writing to the baseline fails; writing outside the binds fails while the workspace, output directory and `/tmp` work, and there is no Docker socket; a bounded fork bomb stops below `--pids-limit`; a `sleep 60` with a 2 s timeout is a `timeout` within 5 s and leaves no container; a host `DATABASE_URL` does not reach the container and an off-list variable is refused; an output over the cap is a `policy-violation` and is deleted; a baseline with `.env` and a missing image are refused.
+- `src/runner/sandbox.integration.test.ts`: the isolation suite. DNS and TCP fail and there is no route; the user is not root, has no capabilities and has `NoNewPrivs`; writing to the baseline fails; writing outside the binds fails while the workspace, output directory and `/tmp` work, and there is no Docker socket; a bounded fork bomb stops below `--pids-limit`; a `sleep 60` with a 2 s timeout is a `timeout` within 5 s and leaves no container; a host `DATABASE_URL` does not reach the container and an off-list variable is refused; an output over the cap is a `policy-violation` and is deleted, and a command filling the disk is killed while it runs; a baseline with a nested `.env.local`, a symbolic link to the home directory, an output directory inside the baseline and a missing image are refused.
 - `src/verilator/verilator.integration.test.ts` and `src/yosys/yosys.integration.test.ts` run their green paths in the sandbox too, on an unmodified RTL copy, and compare with the host run when the pinned toolchain is installed: the same unit check counts and differential totals, and the same generic cell, flip-flop, gate and depth counts and mapped area.
 - `src/runner/sky130hd.test.ts` checks the vendored files against `MANIFEST.sha256`.

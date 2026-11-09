@@ -6,6 +6,7 @@ import type { LogCapture } from '@vcpu/research-core';
 export class CappedLog {
   private readonly fd: number;
   private bytes = 0;
+  private closed = false;
 
   constructor(
     private readonly path: string,
@@ -16,6 +17,8 @@ export class CappedLog {
   }
 
   write(chunk: Buffer): void {
+    // A stream may still deliver after the runner gave up on it; its fd may belong to a new file.
+    if (this.closed) return;
     const room = this.cap - this.bytes;
     this.bytes += chunk.length;
     if (room <= 0) return;
@@ -27,6 +30,9 @@ export class CappedLog {
   }
 
   close(): LogCapture {
+    if (this.closed)
+      return { path: this.path, bytes: this.bytes, truncated: this.bytes > this.cap };
+    this.closed = true;
     const truncated = this.bytes > this.cap;
     try {
       if (truncated) {

@@ -287,7 +287,11 @@ export class VerilatorAdapter {
         });
 
         const first = log.mismatches[0];
-        if (!record.timedOut && (first !== undefined || log.failedChecks !== null)) {
+        // A run that was killed or broke the sandbox policy gives no verdict on the design.
+        if (
+          !stopsStage(classifyCommand(record)) &&
+          (first !== undefined || log.failedChecks !== null)
+        ) {
           const firstFailure = {
             seed,
             line: first?.line ?? 0,

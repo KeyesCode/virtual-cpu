@@ -40,8 +40,8 @@ included. Everything here is public and redistributable.
 this directory checks it; `packages/eda-adapters/src/runner/sky130hd.test.ts` runs the same check in
 `pnpm test`). The liberty's digest,
 `ec0e1067a35c8bf20b11e58d1e8ac53326067e4dac84a125cc1b917a3518d0d9`, is the same as at ORFS `v3.0`,
-which the Yosys adapter's integration test pins. These files are a protected path: a candidate that
-touches them is rejected.
+which the Yosys adapter's integration test pins. Decisions §4 list `hardware/asic/` as a protected path, which the candidate allowlist check
+(VIRT-PWZZNZ, VIRT-W3M5PV) is to enforce; nothing enforces it yet.
 
 ## Updating
 

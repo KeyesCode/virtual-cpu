@@ -6,7 +6,8 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const portableImportMessage = 'cpu-core and shared must not depend on Node.js or React APIs.';
+const portableImportMessage =
+  'cpu-core, shared and research-core must not depend on Node.js or React APIs.';
 
 export default defineConfig(
   globalIgnores(['**/dist/', '**/coverage/', '.fredrin/', '.agents/', '.claude/', '.research/']),
@@ -51,8 +52,12 @@ export default defineConfig(
     rules: { '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }] },
   },
   {
-    // cpu-core and shared must run anywhere: no Node built-ins and no React.
-    files: ['packages/cpu-core/**/*.ts', 'packages/shared/**/*.ts'],
+    // cpu-core, shared and research-core must run anywhere: no Node built-ins and no React.
+    files: [
+      'packages/cpu-core/**/*.ts',
+      'packages/shared/**/*.ts',
+      'packages/research-core/**/*.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

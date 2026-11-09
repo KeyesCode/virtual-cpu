@@ -2,4 +2,5 @@
 export const packageName = '@vcpu/research-core';
 
 export * from './domain/index.js';
+export * from './metrics/index.js';
 export * from './pipeline/index.js';

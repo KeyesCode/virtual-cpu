@@ -519,7 +519,7 @@ describe.skipIf(!databaseUrl)('research schema', () => {
     );
   });
 
-  // This reverts the schema, so it has to stay the last test.
+  // This reverts every migration, so it has to stay the last test.
   it('reverts to no research tables, and migrates again from there', async () => {
     const tables = async (): Promise<string[]> => {
       const rows: { tablename: string }[] = await dataSource.query(
@@ -530,7 +530,9 @@ describe.skipIf(!databaseUrl)('research schema', () => {
     };
 
     await expect(tables()).resolves.toHaveLength(14);
-    await dataSource.undoLastMigration();
+    for (let left = dataSource.migrations.length; left > 0; left -= 1) {
+      await dataSource.undoLastMigration();
+    }
     await expect(tables()).resolves.toEqual([]);
     await dataSource.runMigrations();
     await expect(tables()).resolves.toHaveLength(14);
